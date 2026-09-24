@@ -43,7 +43,7 @@ function s5View(tau) {
   const A = [960, 640, 120, 1.02, 0], R = [1470, 800, 250, 1.28, 0], Lf = [540, 700, 150, 1.3, 20], Wd = [790, 780, 120, 1.26, 50], J = [1420, 850, 330, 1.52, 10], Lf2 = [680, 800, 120, 1.24, 20], E = [1000, 790, 140, 1.08, 40];
   const K = [[0, A], [1.9, A], [2.7, R], [s5T(1) - .1, R], [s5T(1) + .7, Lf], [s5T(2) + .1, Lf], [s5T(2) + .8, Wd], [s5E(3) - .1, Wd], [s5E(3) + .5, J],
     [s5E(4) - .1, J], [s5T(5) + .5, Lf2], [s5T(7) - .7, Lf2], [s5T(7) + .2, E], [S5OUT.fold, E], [S5OUT.tilt1, A]];
-  const [X, Y, hc, z0, yo] = key(tau, K), V = { p: -.88 * tilt, cx: CX + (X - CX) * tilt, cy: S5CY, zm: lerp(1, z0, tilt), tilt, dy: 0 };
+  const [X, Y, hc, z0, yo] = key(tau, K), V = { p: -.88 * tilt, cx: CX + (X - CX) * tilt, cy: S5CY, zm: lerp(1, z0 * (1 + .018 * Math.sin(tau * .45)), tilt), tilt, dy: 0 };   // 镜头有一点点呼吸
   const pt = s5P(V, X, Y, hc); V.dy = (yo - 30 - (pt[1] - CY) * V.zm) * tilt;
   return V;
 }
@@ -348,10 +348,12 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       add({ z: landed ? -1e9 : STY + 5, draw: cc => { const pp = s5Proj(V, q); fade(cc, outA, () => cutPaper(cc, pp, S5GR, { seed: 890 + i, step: 6, blur: 2, sx: 1, sy: 1.2, grain: .05 })); },
         shadow: landed ? null : g => { g.fillStyle = '#000'; g.fill(polyPath(s5Proj(V, s5Hull(q.map(s5Sh))))); } }); }
     // 吸入器（L0「反面教材」时立起；L7 咳嗽时喷一下）
-    add(s5Card(V, 1590, 900, fold(s5W(0, '反面', .3)), g => {
+    add(s5Card(V, 1590, 900, fold(s5W(0, '反面', .3)), g => { g.scale(1.4, 1.4);
       cutPaper(g, [[-14, 0], [14, 0], [14, -54], [8, -60], [-8, -60], [-14, -54]], P.g1, { seed: 895, step: 6 });
       cutPaper(g, [[-14, -8], [-34, -8], [-36, -24], [-14, -24]], P.g2, { seed: 896, step: 5 });
       cutPaper(g, rectPts(-10, -76, 20, 18, 3), P.g2, { seed: 897, step: 5 });
+      const q = tau - s5W(7, '哮喘', -.1); if (q > 0 && q < 1) for (let k = 0; k < 3; k++) { const u = clamp(q * 1.6 - k * .15, 0, 1); if (u <= 0 || u >= 1) continue;
+        s5Circ(g, -6 + k * 9 + u * 16, -86 - u * 80 - k * 8, 7 + u * 14, alpha(S5WH, .95 * (1 - u * u)), 898 + k, { shadow: false }); }
     }, { ref: 40, al: outA }));
 
     // ---------- L1：大脑 + 五个运动小人 ----------
@@ -370,8 +372,8 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
 
     // ---------- L2–L3：「150 分钟」纸条 → 剪成七段 → 七顶日历帐篷；两顶帐篷上立起哑铃 ----------
     const tentOn = i => t2 + .9 + i * .09, tentOff = i => t5 - .4 + i * .05, cutT = s5W(2, '拆开'), cutDur = .5;
-    const tents = [];
-    for (let i = 0; i < 7; i++) { const k = clamp(fold(tentOn(i), tentOff(i)) / (Math.PI / 2), 0, 1.15); if (k <= 0) continue; const G = s5TentGeo(V, i, Math.min(k, 1)); tents[i] = G;
+    const tents = [], waveT = s5W(2, '就够', -.1);   // 「就够」：七顶帐篷依次一压一弹，像人浪
+    for (let i = 0; i < 7; i++) { const k = clamp(fold(tentOn(i), tentOff(i)) / (Math.PI / 2), 0, 1.15); if (k <= 0) continue; const wv = sm(0, .15, tau - waveT - i * .09) * (1 - sm(.15, .4, tau - waveT - i * .09)), G = s5TentGeo(V, i, Math.min(k, 1) * (1 - .45 * wv)); tents[i] = G;
       const sideCol = mix(P.paper2, P.g2, .25);
       add({ z: S5TENT.Y, draw: cc => fade(cc, outA, () => {
           cutPaper(cc, s5Proj(V, G.B), mix(sideCol, P.ink, .12), { seed: 910 + i, step: 14, blur: 2, sx: 1, sy: 1.5 });
