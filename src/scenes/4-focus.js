@@ -53,7 +53,7 @@ function s4Axon(c, A, B, r, o = {}) {
       const h = .5 * (1 - cut);
       if (h > .01) { rline(c, s4Cut(pts, 0, h), { w, color: col, seed, t }); rline(c, s4Cut(pts, 1 - h, 1), { w, color: col, seed: seed + 3, t }); }
       const k = win(0, .55, cut, .12), mp = s4At(pts, .5);
-      if (k > 0) { sparkle(c, mp[0], mp[1], 26 * k, { color: P.red, rot: cut * 3 }); sparkle(c, mp[0], mp[1], 13 * k, { color: '#fff' }); }
+      if (k > 0) { sparkle(c, mp[0], mp[1], 38 * k, { color: P.red, rot: cut * 3 }); sparkle(c, mp[0], mp[1], 18 * k, { color: '#fff' }); }
       return;
     }
     rline(c, pts, { w, color: col, p, seed, t });
@@ -606,7 +606,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
       // 左边三个大字：吸 · 再吸 · 呼——（当前那个放大、变金）
       const words = [['吸', 330], ['再吸', 520], ['呼——', 720]];
       words.forEach(([w, y], j) => {
-        const first = phases.find(p => p[2] === j)[0], k = sm(first, first + .3, tau, easeOutBack); if (k <= 0) return;
+        const k = sm(fsIn0 + .8 + j * .25, fsIn0 + 1.1 + j * .25, tau, easeOutBack); if (k <= 0) return;
         const on = ph === j, big = on ? 1.18 : 1, x = 360;
         let pw = 1; if (j === 2 && on) pw = .34 + .66 * sm(cur[0], cur[0] + 2.2, tau, x => x);
         pop(c, 170, y - 40, k * big, () => {
