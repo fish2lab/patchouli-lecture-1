@@ -154,7 +154,7 @@ const PCH_CAP_DOME = [[-104, -112], [-130, -138], [-138, -174], [-120, -206], [-
 const PCH_CAP_SHADE = [[16, -148], [84, -140], [124, -158], [127, -184], [106, -206], [104, -186], [86, -164], [48, -154]];
 const PCH_CAP_FOLDS = [[[-30, -228], [-48, -206], [-56, -180]], [[24, -232], [44, -208], [52, -184]], [[-88, -214], [-104, -192], [-110, -168]], [[86, -218], [104, -192]]];
 const PCH_FRILL_UP = pchCurve(10, u => -118 + 236 * u, u => -106 - 62 * Math.sin(Math.PI * u));
-const PCH_FRILL_LOW = pchScallop(pchCurve(14, u => 122 - 244 * u, u => -80 - 62 * Math.sin(Math.PI * u) + 12 * (1 - Math.sin(Math.PI * u)) ** 3), 15, 5);
+const PCH_FRILL_LOW = pchScallop(pchCurve(14, u => 124 - 248 * u, u => -80 - 62 * Math.sin(Math.PI * u) + 12 * (1 - Math.sin(Math.PI * u)) ** 3), 12, 7);
 const PCH_FRILL_SHADE = [...PCH_FRILL_UP.map(p => [p[0] * .99, p[1] + 1]), ...PCH_FRILL_UP.slice().reverse().map(p => [p[0] * .98, p[1] + 7])];
 const PCH_FRILL = [...PCH_FRILL_UP.map((p, i) => [p[0], p[1], i === 0 || i === 10 ? 1 : 0]), ...PCH_FRILL_LOW];
 const PCH_FRILL_PLEATS = pchValleys(PCH_FRILL_LOW).filter((p, i) => i % 2 === 0).map(p => { const u = (122 - p[0]) / 244, top = -106 - 62 * Math.sin(Math.PI * u); return [[p[0], p[1]], [p[0] * .98, lerp(p[1], top, .45)]]; });
@@ -445,6 +445,13 @@ function pchHand(c, g, rg, sd) {
   for (const l of hd.lines) pchLine(c, l, 1.3, PCH_C.skinDeep, 0, 0, .9);
   c.restore();
 }
+// 单独一根拇指（托书时扣在书上）
+function pchThumb(c, a, b, rg, k = 1) {
+  c.save(); c.lineCap = 'round';
+  c.strokeStyle = PCH_C.line; c.lineWidth = (7 + 4.8) * k; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+  c.strokeStyle = PCH_C.skin; c.lineWidth = 7 * k; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+  c.restore();
+}
 function pchArmFull(c, g, rg, sd) { pchSleeve(c, g, rg, sd); pchHand(c, g, rg, sd + 5); pchCuff(c, g, rg, sd + 9); }
 
 // ===================== 书 =====================
@@ -551,16 +558,20 @@ function drawPatchouli(c, o = {}) {
   for (const sg of [-1, 1]) {
     const pts = upper(pchMap(PCH_ROBE, px => sg * px, (px, py) => py), ub);
     pchShape(c, pts, { fill: PCH_C.robe, w: 3, j: rg.jb, sd: 141 + sg + rg.tk, under: () => pchFillPts(c, upper(pchMap(PCH_ROBE_SHADE, px => sg * px, (px, py) => py), ub), PCH_C.robeShade, sg < 0 ? .9 : .5) });
-    pchShape(c, upper(pchMap(PCH_ROBE_FRILL, px => sg * px, (px, py) => py), ub), { fill: PCH_C.robeLight, w: 1.6, line: PCH_C.lineSoft, j: rg.jb * .5, sd: 145 + sg + rg.tk });
+    const fr = upper(pchMap(PCH_ROBE_FRILL, px => sg * px, (px, py) => py), ub);
+    pchShape(c, fr, { fill: PCH_C.robeLight, w: 0 });
+    pchShape(c, fr.slice(0, 33), { open: true, w: 1.5, line: PCH_C.lineSoft, j: rg.jb * .4, sd: 145 + sg + rg.tk });
   }
   pchBow(c, -86, -392, 24, PCH_C.red, PCH_C.redShade, .3, rg.jb, 151 + rg.tk, 1.2);
   // 手臂
   const S = sg => [sg * 58, -590 + ub + q.sh];
   const gR = pchArmGeo({ S: S(1), ...q.R }), gL = pchArmGeo({ S: S(-1), ...q.Lf });
   if (q.book === 'open') {
-    pchArmFull(c, gL, rg, 161); pchSleeve(c, gR, rg, 171);
-    const u = gR.u2; pchBookOpen(c, gR.Wr[0] + u[0] * 30 - 4, gR.Wr[1] + u[1] * 30 - 12, -.12 + Math.sin(t * 1.1) * .02, rg, .95);
-    pchHand(c, gR, rg, 176); pchCuff(c, gR, rg, 179);
+    // 托书：袖子 → 手掌 → 袖口 → 书压在手掌上 → 拇指扣住书页前沿
+    pchArmFull(c, gL, rg, 161); pchArmFull(c, gR, rg, 171);
+    const u = gR.u2, up = [u[1], -u[0]], W = gR.Wr, bx = W[0] + u[0] * 30 + up[0] * 16, by = W[1] + u[1] * 30 + up[1] * 16;
+    pchBookOpen(c, bx, by, -.1 + Math.sin(t * 1.1) * .02, rg, 1);
+    pchThumb(c, [W[0] + u[0] * 12 + up[0] * 5, W[1] + u[1] * 12 + up[1] * 5], [W[0] + u[0] * 22 + up[0] * 19, W[1] + u[1] * 22 + up[1] * 19], rg);
   } else if (!q.front) { pchArmFull(c, gL, rg, 161); pchArmFull(c, gR, rg, 171); }
   else { pchSleeve(c, gL, rg, 161); pchSleeve(c, gR, rg, 171); }
   // 披肩

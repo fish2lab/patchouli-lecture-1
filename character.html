@@ -62,6 +62,16 @@ const CH_SHEETS = {
     libraryBg(c, t); board(c, STAGE.board.x, STAGE.board.y, STAGE.board.w, STAGE.board.h, { t, title: '睡眠' });
     stageChar(c, t, { mood: 'normal', mouth: mouthAt(t % 3, { t0: 0, t1: 3, text: '第一页睡眠所有调理' }) });
   } },
+  // 杂项：朝左、小尺寸、Q 版朝左
+  misc: { w: 1920, h: 1080, draw(c, t) {
+    chBg(c, 1920, 1080);
+    drawPatchouli(c, { x: 260, y: 1000, h: 700, facing: -1, pose: 'lecture', mood: 'smile', t, mouth: .5 });
+    drawPatchouli(c, { x: 620, y: 1000, h: 700, facing: -1, pose: 'point', mood: 'surprised', t });
+    ['lecture', 'point', 'read', 'cheer', 'tired', 'shrug'].forEach((p, i) => drawPatchouli(c, { x: 900 + i * 110, y: 560, h: 300, pose: p, t, mood: 'smug' }));
+    ['stand', 'run', 'sit', 'lift', 'flat', 'lie'].forEach((p, i) => { const x = 960 + (i % 3) * 330, y = 800 + Math.floor(i / 3) * 250; const r = drawPatchouliChibi(c, { x, y, h: 180, facing: -1, pose: p, t, mood: 'smile' });
+      for (const hd of r.hands) { c.fillStyle = P.green; c.beginPath(); c.arc(hd[0], hd[1], 5, 0, TAU); c.fill(); } c.fillStyle = P.red; c.beginPath(); c.arc(r.head[0], r.head[1], 5, 0, TAU); c.fill();
+      rline(c, [[x - 150, y], [x + 150, y]], { w: 2, color: P.faint }); });
+  } },
   // 头部特写
   zoom: { w: 1200, h: 900, draw(c, t) {
     chBg(c, 1200, 900);
