@@ -377,9 +377,20 @@ function s0Stage(c, tau, L) {
       pop(c, 1790, 150, k4, () => { const x = 1790, y = 150 + dy;
         rshape(c, [[x, y - 60], [x + 30, y - 5], [x + 32, y + 22], [x, y + 44], [x - 32, y + 22], [x - 30, y - 5]], { fill: P.sky, stroke: P.ink, w: 4, seed: 501, smooth: true, t: tau });
         rline(c, [[x - 14, y + 6], [x - 12, y + 24]], { w: 5, color: '#ffffff', seed: 502 }); });
-      for (let q = 0; q < 3; q++) { const kq = easeOutBack(clamp((u4 - .9 - q * .25) / .3, 0, 1)); if (kq <= 0) continue;
-        const qx = 1520 + q * 72, qy = 200 + Math.sin(tau * 4 + q) * 6 - q * 12;
-        pop(c, qx, qy, kq, () => zh(c, '？', qx, qy + 20, { size: 64 + q * 8, align: 'center', color: P.red, outline: P.paper, ow: 8 })); }
+      // 「说服力」仪表：念到「说服力」时指针冲上去，抖两下，又掉回 0
+      const kd = easeOutBack(clamp((u4 - .3) / .35, 0, 1)), DX = 1645, DY = 270, R = 76;
+      pop(c, DX, DY - 30, kd, () => {
+        [P.red, P.orange, P.green].forEach((col, q) => { const arc = []; for (let j = 0; j <= 12; j++) { const a = Math.PI + (q + j / 12) * Math.PI / 3; arc.push([DX + Math.cos(a) * R, DY + Math.sin(a) * R]); }
+          rline(c, arc, { w: 14, color: col, seed: 530 + q, t: tau }); });
+        const v = key(u4, [[0, .04], [17 * CH - .1, .04], [17 * CH + .4, .96], [17 * CH + .6, .86], [17 * CH + .8, .95], [21 * CH + .1, .9], [21 * CH + .6, .02]]) + (u4 > 17 * CH + .4 && u4 < 21 * CH + .1 ? Math.sin(u4 * 40) * .03 : 0);
+        const na = Math.PI + v * Math.PI;
+        rline(c, [[DX, DY], [DX + Math.cos(na) * R * .92, DY + Math.sin(na) * R * .92]], { w: 6, color: P.paper, seed: 535, t: tau });
+        rshape(c, circPts(DX, DY, 10), { fill: P.moon, stroke: P.ink, w: 3, seed: 536 });
+        zh(c, '说服力', DX - R - 22, DY - 4, { size: 36, align: 'right', color: P.paper });
+      });
+      for (let q = 0; q < 3; q++) { const kq = easeOutBack(clamp((u4 - 21 * CH - .5 - q * .2) / .3, 0, 1)); if (kq <= 0) continue;
+        const qx = 1535 + q * 56, qy = 182 + Math.sin(tau * 4 + q) * 6 - q * 8;
+        pop(c, qx, qy, kq, () => zh(c, '？', qx, qy + 20, { size: 56 + q * 8, align: 'center', color: P.red, outline: P.night2, ow: 8 })); }
     }
     // L5：「反面教材」印章
     const u5 = tau - t[4];

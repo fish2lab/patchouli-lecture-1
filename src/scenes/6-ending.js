@@ -186,7 +186,8 @@ function s6Stage(c, tau, L) {
       c.save(); c.translate(RX, RY - 10 - (1 - drop) * 140); c.rotate(.05 - (1 - drop) * .2); c.globalAlpha *= clamp(kn * 3, 0, 1);
       rshape(c, rectPts(-235, -230, 470, 470, 10), { fill: mix(P.sun, P.paper, .55), stroke: P.ink, w: 4, seed: 980, t: tau });
       rshape(c, rectPts(-80, -254, 160, 44, 4), { fill: alpha(P.paperEdge, .75), stroke: false, seed: 981 });
-      s6Icon(c, 'hospital', 0, -118, 62, tau, 982);
+      const hb = 1 + .07 * Math.max(0, Math.sin((tau - t[6]) * 5)) * sm(.5, 1, tau - t[6]);
+      pop(c, 0, -118, hb, () => s6Icon(c, 'hospital', 0, -118, 62, tau, 982));
       zh(c, '科普 ≠ 诊断', 0, 30, { size: 58, align: 'center', color: P.ink, p: writeP(tau, t[6] + .4, '科普 ≠ 诊断', .07) });
       rline(c, [[-150, 56], [150, 56]], { w: 4, color: P.red, p: sm(t[6] + 1.2, t[6] + 1.5, tau), seed: 983, t: tau });
       zh(c, '身体不舒服', 0, 128, { size: 48, align: 'center', color: P.ink, p: writeP(tau, t[6] + 11 * CH, '身体不舒服', .07) });
