@@ -1,9 +1,14 @@
 'use strict';
-// 第 6 段：总结。
-//   讲台：魔导书页刷刷翻过五页 → 「今天的四条」逐条写出、打金色勾（右边配大插图）→ cheer 一起闪 → 免责便签
-//         → 「下课」合上魔导书、打哈欠、蜡烛一盏盏灭掉。
-//   片尾（满屏，约 9 秒）：深色底，Q 版帕秋莉抱书躺着睡，上方演职信息。
-// 顶层名字一律带本段前缀 S6 / s6。翻页时的五个章节图标借用第 0 段的 s0Icon。
+// 第 6 段：总结（第二版，魔导书「漫步」主题回归，见 docs/画风v2.md、docs/分镜v2.md 第 6 节）。
+//   L1：书页哗哗翻过五页，每页一闪而过前面五幅「画」的缩影（灯箱、桌面、线轨、星图、立体书），停在空白跨页。
+//   L2–L5：四件东西像压花一样从空中落下、压进左页，贴两条硫酸纸胶带，手写一条、金色打勾：
+//          剪纸月亮「睡够、睡好」、被划掉的香烟「不吸烟」、一只鞋（蹦着进来）「每天动一动」、被划掉的方糖「少吃糖」。
+//   L6：四件东西依次轻轻跳一下；「剩下的慢慢调」时左页底爬出一只墨线蜗牛。
+//   L7：帕秋莉从书里抽出一张折起的纸条，钉在右页、展开：小红十字「科普 ≠ 诊断」「不舒服去校医院」。
+//   L8：鞠躬「下课」，打哈欠；左半本书（封面）从空中翻过来盖下（逐列透视），她跳起来落在封面上。
+//   片尾（约 9 秒）：合上的书滑到桌子正中，金墨逐行写出演职信息；帕秋莉像纸板一样扑倒、躺在封面上睡着（呼吸、Z）；
+//          最后镜头从正上方慢慢抬到斜看（tiltPlane，开场的反向）。
+// 顶层名字一律带本段前缀 S6 / s6。
 const S6LINES = seq(1.0, [
   ['最后，把今天浓缩成四条。', { hold: .8 }],
   ['一，睡够、睡好。', { hold: .35 }],
@@ -12,275 +17,377 @@ const S6LINES = seq(1.0, [
   ['四，少吃糖。', { hold: .35 }],
   ['能做到这四条，身体就已经不错了。剩下的慢慢调。', { mood: 'smile', hold: .3 }],
   ['以上是科普，不是诊断。身体不舒服，请去校医院。', { hold: .9 }],
-  ['帕秋莉讲座第一集，下课。……我也该去睡觉了。', { mood: 'sleepy', hold: .8 }],
+  ['帕秋莉讲座第一集，下课。……我也该去睡觉了。', { mood: 'sleepy', hold: 1.7 }],
 ]);
-// 四条清单：图标、文字、颜色
-const S6ITEMS = [['moon', '睡够、睡好', P.purple], ['smoke', '不吸烟', P.red], ['shoe', '每天动一动', P.green], ['sugar', '少吃糖', P.orange]];
-// 图书馆左侧的四支蜡烛（L8 一盏盏灭掉）
-const S6CANDLES = [[72, 310], [640, 310], [58, 610], [652, 610]];
-const S6CREDIT = 10;   // 片尾时长（含 1 秒转场）
+const s6T = i => S6LINES[i][0], s6E = i => S6LINES[i][1];
+// 节拍（都从台词时间推出来）
+const S6K = (() => { const e7 = s6E(7);
+  return { riff0: 1.25, riffStep: .5, riffDur: .46, hop0: 4.02, hop1: 4.55,
+    yawn0: e7 - 1.6, yawn1: e7 - .5, close0: e7 - .6, close1: e7 + 1.0, slide1: e7 + 1.8, flop0: e7 + 2.15, flop1: e7 + 2.45,
+    title: e7 + 1.55, cred0: e7 + 2.5, credStep: .4, tilt0: e7 + 1.9, tilt1: e7 + 6.3, tilt2: e7 + 8.6, end: e7 + 8.9 }; })();
+const S6LEATHER = '#5b3034';                                       // 书壳（和 kit 的 spread、开场封面同一张皮）
+const S6GOLD = mix(P.moon, P.cap, .32);                            // 封面金墨（月牙金调淡，暗皮面上看得清）
+const S6CW = BOOK.w / 2 + 20;                                      // 封面宽
+const S6PAT = { x: 1240, y: 900, h: 520, land: 1600 };            // 帕秋莉在右页的站位（脚底）；land 合书时跳上封面的落点
+// 左页四个压花格：物件中心、标签基线
+const S6CELLS = [[300, 290], [705, 290], [300, 630], [705, 630]];
+const S6ITEMS = [['moon', '睡够、睡好', '一'], ['cig', '不吸烟', '二'], ['shoe', '每天动一动', '三'], ['sugar', '少吃糖', '四']];
+// 演职信息（逐字照 docs/分镜v2.md 第 6 节，按意思断行）
+const S6CREDITS = [
+  ['知识来源：zijie0/HumanSystemOptimization', 0], ['（整理自 Huberman Lab 播客）；', 0], ['WHO《关于身体活动和久坐行为的指南》（2020）', 0],
+  ['角色：东方 Project © 上海爱丽丝幻乐团。', 1], ['本片为同人科普作品，不构成医疗建议。', 1],
+  ['字体：霞鹜文楷（SIL OFL）', 2], ['语音：AquesTalk（株式会社アクエスト）', 2],
+];
 
-// ===================== 小图标 =====================
-function s6Icon(c, name, x, y, s, t = null, seed = 1) {
-  const w = Math.max(3, s * .09), o = { w, t, seed };
-  if (name === 'moon') s0Icon(c, 'moon', x, y, s, t, seed);
-  else if (name === 'cig') {   // 香烟（没划掉）
-    c.save(); c.translate(x, y); c.rotate(-.45);
-    rshape(c, rectPts(-s * .95, -s * .15, s * 1.45, s * .3, 4), { fill: '#ffffff', stroke: P.ink, ...o });
-    rshape(c, rectPts(s * .5, -s * .15, s * .45, s * .3, 4), { fill: P.orange, stroke: P.ink, ...o, seed: seed + 1 });
-    rshape(c, rectPts(-s * 1.02, -s * .15, s * .14, s * .3, 3), { fill: P.red, stroke: P.ink, ...o, w: w * .7, seed: seed + 2 });
-    c.restore();
-    const ex = x - Math.cos(-.45) * s * .98, ey = y - Math.sin(-.45) * s * .98;
-    const g = c.createRadialGradient(ex, ey, 2, ex, ey, s * .4); g.addColorStop(0, alpha(P.orange, .7)); g.addColorStop(1, alpha(P.orange, 0)); c.fillStyle = g; c.fillRect(ex - s * .4, ey - s * .4, s * .8, s * .8);
-    for (let k = 0; k < 2; k++) rline(c, [[ex, ey - s * .1], [ex - s * .15 + k * s * .1, ey - s * .4], [ex + s * .08 + k * s * .1, ey - s * .7], [ex - s * .1 + k * s * .15, ey - s * 1.0]], { ...o, color: P.gray, w: w * .8, smooth: true, seed: seed + 5 + k });
-  } else if (name === 'smoke') { s6Icon(c, 'cig', x, y + s * .1, s * .85, t, seed); s6No(c, x, y, s, t, 1, seed + 20); }
-  else if (name === 'shoe') {
-    const q = [[-.9, .3], [-.92, -.12], [-.5, -.22], [-.4, -.62], [-.02, -.62], [.08, -.25], [.55, -.08], [.92, .08], [.92, .3]].map(([a, b]) => [x + a * s, y + b * s]);
-    rshape(c, q, { fill: P.blue, stroke: P.ink, ...o, smooth: false });
-    rline(c, [[x - s * .88, y + s * .02], [x - s * .3, y - s * .02], [x + s * .3, y + s * .1], [x + s * .88, y + s * .14]], { ...o, color: P.paper, w: w * 1.1, smooth: true, seed: seed + 3 });
-    for (let k = 0; k < 3; k++) rline(c, [[x - s * (.36 - k * .12), y - s * (.5 - k * .1)], [x - s * (.18 - k * .12), y - s * (.44 - k * .1)]], { ...o, color: P.paper, w: w * .8, seed: seed + 5 + k });
-    rshape(c, rectPts(x - s * .96, y + s * .28, s * 1.92, s * .2, s * .08), { fill: P.paper, stroke: P.ink, ...o, seed: seed + 1 });
-  } else if (name === 'cube') {
-    const a = s * .62, top = [[x, y - a], [x + a * .95, y - a * .5], [x, y], [x - a * .95, y - a * .5]];
-    rshape(c, [[x - a * .95, y - a * .5], [x, y], [x, y + a * 1.05], [x - a * .95, y + a * .55]], { fill: P.paper2, stroke: P.ink, ...o, seed: seed + 1 });
-    rshape(c, [[x + a * .95, y - a * .5], [x, y], [x, y + a * 1.05], [x + a * .95, y + a * .55]], { fill: P.faint, stroke: P.ink, ...o, seed: seed + 2 });
-    rshape(c, top, { fill: '#ffffff', stroke: P.ink, ...o, seed: seed + 3 });
-    for (let k = 0; k < 5; k++) { c.fillStyle = alpha(P.ink2, .35); c.beginPath(); c.arc(x + (hash(k, seed) - .5) * a * 1.4, y + (hash(k, seed + 1) - .2) * a * .9, 2, 0, TAU); c.fill(); }
-  } else if (name === 'sugar') { s6Icon(c, 'cube', x, y + s * .05, s * .95, t, seed); s6No(c, x, y, s, t, 1, seed + 20); }
-  else if (name === 'hospital') {
-    rshape(c, circPts(x, y, s), { fill: '#ffffff', stroke: P.ink, ...o });
-    rshape(c, [[x - s * .2, y - s * .62], [x + s * .2, y - s * .62], [x + s * .2, y - s * .2], [x + s * .62, y - s * .2], [x + s * .62, y + s * .2], [x + s * .2, y + s * .2], [x + s * .2, y + s * .62], [x - s * .2, y + s * .62], [x - s * .2, y + s * .2], [x - s * .62, y + s * .2], [x - s * .62, y - s * .2], [x - s * .2, y - s * .2]], { fill: P.red, stroke: P.ink, ...o, w: w * .7, seed: seed + 1 });
-  } else if (name === 'heart') {
-    rshape(c, heartPts(x, y, s), { fill: P.pink, stroke: P.ink, ...o, smooth: true });
-    rline(c, [[x - s * .45, y - s * .25], [x - s * .32, y - s * .35], [x - s * .2, y - s * .25]], { ...o, w: w * .9, smooth: true, seed: seed + 2 });
-    rline(c, [[x + s * .2, y - s * .25], [x + s * .32, y - s * .35], [x + s * .45, y - s * .25]], { ...o, w: w * .9, smooth: true, seed: seed + 3 });
-    rline(c, [[x - s * .22, y + s * .02], [x, y + s * .2], [x + s * .22, y + s * .02]], { ...o, w: w * .9, smooth: true, seed: seed + 4 });
-    for (const sx of [-1, 1]) { c.fillStyle = alpha(P.red, .35); c.beginPath(); c.ellipse(x + sx * s * .5, y + s * .02, s * .12, s * .07, 0, 0, TAU); c.fill(); }
+// ===================== 小画具 =====================
+// s6Shadow：只画 path 的软影（路径挪到画外，用 shadowOffset 挪回来）
+function s6Shadow(c, path, dx, dy, blur, a) {
+  const T = c.getTransform(), OFF = 6000, sc = Math.hypot(T.a, T.b) || 1;
+  c.save(); c.shadowColor = `rgba(30,20,15,${a})`; c.shadowBlur = blur * sc; c.shadowOffsetX = T.a * OFF + dx * sc; c.shadowOffsetY = T.b * OFF + dy * sc;
+  c.translate(-OFF, 0); c.fillStyle = '#000'; c.fill(path); c.restore();
+}
+// s6Piece：有厚度的一片纸：离纸面 lift 像素高时影子更远更虚；th 是纸板厚度（下右方露出一道暗边）
+function s6Piece(c, pts, col, o = {}) {
+  const { seed = 1, lift = 0, th = 3, step = 10, grain: gr = .1, sh = 1 } = o, path = polyPath(scissor(pts, seed, step), true);
+  if (sh) s6Shadow(c, path, 2 + lift * .3, 3 + lift * .42, 4 + lift * .09, .34 * sh * (1 - Math.min(.55, lift / 500)));
+  if (th) { c.save(); c.translate(th * .5, th); c.fillStyle = mix(col, P.ink, .38); c.fill(path); c.restore(); }
+  c.fillStyle = col; c.fill(path); if (gr) grain(c, path, gr);
+  c.strokeStyle = alpha(mix(col, '#ffffff', .45), .55); c.lineWidth = 1; c.stroke(path);
+  return path;
+}
+const s6Map = (pts, x, y, s, rot = 0) => { const co = Math.cos(rot), si = Math.sin(rot); return pts.map(([u, v]) => [x + (u * co - v * si) * s, y + (u * si + v * co) * s]); };
+
+// ===================== 四件压花 =====================
+// 每件在自己的坐标里画：中心 (0,0)，s ≈ 半宽。lift 离纸面的高度（影子用）
+function s6Moon(c, s, lift) {
+  s6Piece(c, crescentPts(0, 0, s, -.55, 64), P.moon, { seed: 601, lift, th: 3, step: 9 });
+  for (const [x, y, r, k] of [[s * 1.05, -s * .75, s * .2, 0], [s * 1.25, -s * .1, s * .13, 1]]) s6Piece(c, starPts(x, y, r, 4, .38, .2), P.cap, { seed: 603 + k, lift, th: 2, step: 4 });
+}
+function s6Cig(c, s, lift, smoke) {
+  const rot = -.32, body = s6Map(rectPts(-1.1, -.13, 1.55, .26), 0, 0, s, rot), filt = s6Map(rectPts(.45, -.13, .6, .26), 0, 0, s, rot);
+  s6Piece(c, body, P.cap, { seed: 611, lift, th: 2.5, step: 12 });
+  s6Piece(c, filt, mix(P.moon, P.paper2, .45), { seed: 612, lift, th: 0, step: 8, sh: 0 });
+  const tip = s6Map([[-1.1, 0]], 0, 0, s, rot)[0];
+  s6Piece(c, s6Map(rectPts(-1.1, -.13, .14, .26), 0, 0, s, rot), P.g2, { seed: 613, lift, th: 0, step: 4, sh: 0 });
+  c.fillStyle = P.red; c.beginPath(); c.arc(tip[0] - 2, tip[1] + 1, s * .06, 0, TAU); c.fill();
+  // 一缕烟：压平之前往上飘，压平后变成一条压扁的灰线
+  if (smoke > 0) { const pts = []; for (let k = 0; k <= 16; k++) { const u = k / 16; pts.push([tip[0] - 4 + Math.sin(u * 7 + smoke * 3) * 10 * u, tip[1] - u * s * 1.3 * smoke]); }
+    rline(c, pts, { w: 2.5, color: alpha(P.g2, .8), smooth: true, seed: 615, amp: .6 }); }
+}
+function s6Shoe(c, s, lift) {
+  const sole = [[-1, .34], [-1.02, .12], [1, .12], [1.04, .34]].map(([u, v]) => [u * s, v * s]);
+  const up = [[-1, .16], [-1, -.12], [-.8, -.3], [-.35, -.32], [-.18, -.1], [.3, -.04], [.75, .02], [1.02, .14]].map(([u, v]) => [u * s, v * s]);
+  s6Piece(c, sole, P.cap, { seed: 621, lift, th: 3, step: 10 });
+  s6Piece(c, up, P.purple, { seed: 622, lift, th: 2, step: 9 });
+  s6Piece(c, [[-.62 * s, -.3 * s], [-.5 * s, -.31 * s], [-.08 * s, .02 * s], [-.2 * s, .04 * s]], P.cap, { seed: 623, lift: 0, th: 0, step: 5, sh: .6 });   // 鞋襻
+  c.fillStyle = P.moon; c.beginPath(); c.arc(-.14 * s, .01 * s, s * .05, 0, TAU); c.fill();
+}
+function s6Sugar(c, s, lift) {
+  const a = s * .72, top = [[0, -a], [a * .95, -a * .5], [0, 0], [-a * .95, -a * .5]], lf = [[-a * .95, -a * .5], [0, 0], [0, a * 1.02], [-a * .95, a * .52]], rt = [[a * .95, -a * .5], [0, 0], [0, a * 1.02], [a * .95, a * .52]];
+  const all = polyPath(scissor([[0, -a], [a * .95, -a * .5], [a * .95, a * .52], [0, a * 1.02], [-a * .95, a * .52], [-a * .95, -a * .5]], 631, 10), true);
+  s6Shadow(c, all, 2 + lift * .3, 3 + lift * .42, 4 + lift * .09, .34 * (1 - Math.min(.55, lift / 500)));
+  s6Piece(c, lf, P.g1, { seed: 632, th: 0, step: 10, sh: 0 }); s6Piece(c, rt, mix(P.g1, P.g2, .4), { seed: 633, th: 0, step: 10, sh: 0 }); s6Piece(c, top, P.cap, { seed: 634, th: 0, step: 10, sh: 0 });
+  c.fillStyle = alpha(P.ink2, .35); for (let k = 0; k < 7; k++) { c.beginPath(); c.arc((hash(k, 7) - .5) * a * 1.4, (hash(k, 8) - .1) * a * .9, 1.6, 0, TAU); c.fill(); }
+}
+// s6Tape：一条硫酸纸胶带
+function s6Tape(c, x, y, rot, k, seed) { if (k <= 0) return; pop(c, x, y, lerp(1.25, 1, k), () => fade(c, k, () => vellum(c, s6Map(rectPts(-34, -11, 68, 22), x, y, 1, rot), { seed, step: 14, blur: 2, sx: 1, sy: 1.5 }))); }
+// s6Strike：红墨划掉（两笔 X）
+function s6Strike(c, x, y, s, p) { if (p <= 0) return;
+  rline(c, [[x - s * 1.05, y + s * .75], [x + s * 1.05, y - s * .75]], { w: 7, color: P.red, p: clamp(p * 1.7, 0, 1), seed: 641, amp: 1.2 });
+  rline(c, [[x - s * .95, y - s * .7], [x + s * 1.0, y + s * .72]], { w: 7, color: P.red, p: clamp(p * 1.7 - .7, 0, 1), seed: 642, amp: 1.2 }); }
+function s6Check(c, x, y, p) { if (p <= 0) return; rline(c, [[x - 20, y - 8], [x - 5, y + 12], [x + 26, y - 26]], { w: 7, color: P.moon, p, seed: 651, amp: .8 }); }
+// s6Snail：墨线小蜗牛（「剩下的慢慢调」）
+function s6Snail(c, x, y, tau, a) { if (a <= 0) return; c.save(); c.globalAlpha *= a; const o = { w: 2.6, color: P.ink, seed: 661, amp: .5 }, b = Math.sin(twos(tau) * 5) * 1.5;
+  const sp = []; for (let k = 0; k <= 40; k++) { const u = k / 40, r = 22 * (1 - u * .85), an = -Math.PI / 2 + u * TAU * 1.7; sp.push([x + Math.cos(an) * r, y - 24 + Math.sin(an) * r]); }
+  rline(c, sp, { ...o, smooth: true });
+  rline(c, [[x - 30, y], [x + 24, y], [x + 40, y - 4], [x + 44, y - 14], [x + 38, y - 18]], { ...o, smooth: true, seed: 662 });
+  rline(c, [[x + 38, y - 16], [x + 44 + b, y - 38]], { ...o, w: 2, seed: 663 }); rline(c, [[x + 42, y - 15], [x + 56, y - 34 - b]], { ...o, w: 2, seed: 664 });
+  c.fillStyle = P.ink; c.beginPath(); c.arc(x + 44 + b, y - 39, 3, 0, TAU); c.arc(x + 57, y - 35 - b, 3, 0, TAU); c.fill();
+  c.restore(); }
+
+// 一件压花：从空中落下（高度 → 放大、影子远而虚）、压平（小小的纸屑动一下）、胶带、划掉、写字、打勾
+function s6Specimen(c, tau, i, t0) {
+  if (tau < t0) return; const [cx, cy] = S6CELLS[i], [kind, label, num] = S6ITEMS[i], u = tau - t0, s = 82;
+  // 下落：前 0.55 秒从 360 高落到纸面；鞋是蹦着进来的（三步）
+  let x = cx, y = cy, lift = 0, rot = 0;
+  if (kind === 'shoe') { const hp = sm(0, .95, u, t => t); const n = 3, k = Math.min(n - 1, Math.floor(hp * n)), f = hp * n - k;
+    x = lerp(cx - 190, cx, hp); lift = hp < 1 ? Math.sin(f * Math.PI) * 90 * (1 - k * .25) : 0; rot = hp < 1 ? -.18 * Math.sin(f * Math.PI) : 0;
+    for (let j = 0; j < 3; j++) { const fx = lerp(cx - 190, cx, j / n) + 10, fa = sm(j / n * .95, j / n * .95 + .05, u) * (1 - sm(4, 6, u) * .6);
+      if (fa > 0) { c.fillStyle = alpha(P.ink2, .3 * fa); c.beginPath(); c.ellipse(fx, cy + 34, 16, 6, 0, 0, TAU); c.fill(); } } }
+  else { const f = sm(0, .55, u, easeIn); lift = (1 - f) * 360; rot = (1 - f) * (i % 2 ? -.5 : .45) + Math.sin(u * 7) * .1 * (1 - f); x = cx + (1 - f) * (i % 2 ? 60 : -60); }
+  // 纸条糖块想逃：落地后蹦两下，被划掉后抖一下
+  if (kind === 'sugar') { const b = u - .6; if (b > 0 && b < .9) { lift += Math.abs(Math.sin(b / .45 * Math.PI)) * 38 * (1 - b / .9); x += sm(0, .9, b) * 26; }
+    if (u > .6) x += 26 * sm(.6, 1.5, u) - 26 * sm(1.7, 2.0, u); }
+  const pressT = kind === 'shoe' ? .95 : .55, press = u > pressT ? Math.sin(clamp((u - pressT) / .18, 0, 1) * Math.PI) : 0;
+  // 压过的一圈淡渍（压花会在纸上留下的痕迹）
+  const st = sm(pressT, pressT + 1.2, u); if (st > 0) { const g = c.createRadialGradient(cx, cy, 10, cx, cy, s * 1.6); g.addColorStop(0, alpha(P.paperEdge, .16 * st)); g.addColorStop(1, alpha(P.paperEdge, 0)); c.fillStyle = g; c.fillRect(cx - s * 2, cy - s * 2, s * 4, s * 4); }
+  const k = 1 + lift / 1300 - press * .03;
+  c.save(); c.translate(x - lift * .12, y - lift * .2); c.scale(k, k * (1 - press * .05)); c.rotate(rot);
+  if (kind === 'moon') s6Moon(c, s, lift);
+  else if (kind === 'cig') s6Cig(c, s, lift, u < .7 ? sm(0, .5, u) : 1 - sm(1.25, 1.6, u) * 1);
+  else if (kind === 'shoe') s6Shoe(c, s, lift);
+  else s6Sugar(c, s, lift);
+  c.restore();
+  // 压下去那一下：两侧几道短墨线
+  if (u > pressT && u < pressT + .3) { const a = 1 - (u - pressT) / .3; for (const sd of [-1, 1]) for (let j = 0; j < 3; j++) { const an = (j - 1) * .45 + (sd < 0 ? Math.PI : 0), r0 = s * 1.25 + (1 - a) * 18;
+    rline(c, [[cx + Math.cos(an) * r0, cy + Math.sin(an) * r0 * .6], [cx + Math.cos(an) * (r0 + 16), cy + Math.sin(an) * (r0 + 16) * .6]], { w: 2.5, color: alpha(P.ink, a), seed: 670 + j, amp: .3 }); } }
+  // 胶带
+  const tp = [[[-s * .55, s * .35, .6], [s * .5, s * .5, -.5]], [[-s * .8, -s * .3, -.4], [s * .75, s * .1, .45]], [[-s * .75, s * .3, .35], [s * .8, s * .25, -.3]], [[-s * .65, -s * .1, .5], [s * .6, s * .5, -.45]]][i];
+  tp.forEach(([dx, dy, r], j) => s6Tape(c, cx + dx, cy + dy, r, sm(pressT + .15 + j * .12, pressT + .3 + j * .12, u, easeOut), 680 + i * 2 + j));
+  // 划掉（香烟、糖）
+  if (kind === 'cig' || kind === 'sugar') s6Strike(c, cx + (kind === 'sugar' ? 0 : 0), cy, s * 1.05, sm(pressT + .5, pressT + 1.0, u));
+  // 手写标签（序号小一号）+ 金色勾
+  const ly = cy + 160, lw = zhWidth(c, label, 52), lp = writeP(tau, t0 + pressT + .25, label, .09);
+  zh(c, num, cx - lw / 2 - 26, ly, { size: 34, align: 'right', color: P.ink2, p: sm(t0 + pressT + .1, t0 + pressT + .2, tau) > 0 ? 1 : 0 });
+  zh(c, label, cx, ly, { size: 52, align: 'center', color: P.ink, p: lp });
+  s6Check(c, cx + lw / 2 + 40, ly - 16, sm(t0 + pressT + .3 + label.length * .09, t0 + pressT + .6 + label.length * .09, tau));
+}
+
+// ===================== 翻过五页：每页一闪而过的缩影 =====================
+// 贴在右页上的一张插页（稍小的纸 + 投影），k 章节 1..5
+const S6PLATES = ['第一页 · 睡眠', '第二页 · 吃饭', '第三页 · 动力', '第四页 · 专注', '第五页 · 运动'];
+function s6Plate(c, k, tau) {
+  if (k < 1 || k > 5) return; const R = BOOK.R, cx = R.x + R.w / 2 - 20, cy = R.y + 430, w = 560, h = 440, x0 = cx - w / 2, y0 = cy - h / 2;
+  drawMoonIcon(c, R.x + 60, R.y + 50, 14, P.moon, -.5); zh(c, S6PLATES[k - 1], R.x + 86, R.y + 64, { size: 34, color: P.ink2 });
+  const bg = [null, P.night, P.paper2, P.paper, mix(P.blue, P.ink, .35), P.paper][k];
+  cutPaper(c, rectPts(x0, y0, w, h, 3), bg, { seed: 700 + k, step: 40, blur: 8, sy: 5 });
+  c.save(); c.beginPath(); c.rect(x0, y0, w, h); c.clip();
+  if (k === 1) {   // 剪纸灯箱：夜空、月、远山、宿舍楼、一扇亮窗，底下一道暖光
+    cutPaper(c, circPts(x0 + 420, y0 + 110, 46, 32), P.cap, { seed: 711, step: 10, blur: 10, sx: 0, sy: 0 });
+    const hill = (yy, amp, col, sd) => { const p = [[x0 - 10, y0 + h + 10]]; for (let i = 0; i <= 12; i++) p.push([x0 + i / 12 * (w + 20) - 10, yy - Math.sin(i * .9 + sd) * amp - Math.sin(i * 2.1) * amp * .3]); p.push([x0 + w + 10, y0 + h + 10]); cutPaper(c, p, col, { seed: 712 + sd, step: 18, blur: 8, sx: 0, sy: -3 }); };
+    hill(y0 + 260, 30, mix(P.night, P.purple, .45), 1);
+    cutPaper(c, [[x0 + 90, y0 + h + 10], [x0 + 90, y0 + 190], [x0 + 150, y0 + 160], [x0 + 210, y0 + 190], [x0 + 210, y0 + h + 10]], P.night3, { seed: 715, step: 14, blur: 8, sx: 0, sy: -3 });
+    cutPaper(c, rectPts(x0 + 130, y0 + 240, 34, 40), P.lamp, { seed: 716, step: 8, shadow: false });
+    hill(y0 + 350, 18, P.night2, 3);
+    const g = c.createLinearGradient(0, y0 + h - 60, 0, y0 + h); g.addColorStop(0, alpha(P.lamp, 0)); g.addColorStop(1, alpha(P.lamp, .35)); c.fillStyle = g; c.fillRect(x0, y0 + h - 60, w, 60);
+  } else if (k === 2) {   // 俯拍桌面：格子桌布、盘子、叉子、小钟
+    c.strokeStyle = alpha(P.purple, .18); c.lineWidth = 16; for (let i = 0; i < 12; i++) { c.beginPath(); c.moveTo(x0 + i * 56, y0); c.lineTo(x0 + i * 56, y0 + h); c.stroke(); c.beginPath(); c.moveTo(x0, y0 + i * 56); c.lineTo(x0 + w, y0 + i * 56); c.stroke(); }
+    s6Piece(c, circPts(cx - 30, cy + 10, 140, 48), P.cap, { seed: 721, th: 5, step: 16 }); s6Piece(c, circPts(cx - 30, cy + 10, 96, 40), mix(P.cap, P.g1, .4), { seed: 722, th: 0, step: 14, sh: .4 });
+    s6Piece(c, [[cx + 150, cy - 110], [cx + 164, cy - 110], [cx + 162, cy + 150], [cx + 152, cy + 150]], P.g2, { seed: 723, th: 2, step: 20 });
+    s6Piece(c, circPts(x0 + 90, y0 + 80, 50, 32), P.paper, { seed: 724, th: 3, step: 10 });
+    rline(c, [[x0 + 90, y0 + 80], [x0 + 90, y0 + 50]], { w: 3, seed: 725 }); rline(c, [[x0 + 90, y0 + 80], [x0 + 112, y0 + 92]], { w: 3, seed: 726 });
+  } else if (k === 3) {   // 一根线的过山车：地平线、向远处延伸的单线（近粗远细），地上一道淡影，线上一颗珠子
+    const hy = y0 + 150, gy = 250, pt = z => { const sc = 1 / (1 + z * 4), X = -270 + 380 * z + 90 * Math.sin(z * 6), Y = 190 * Math.pow(Math.sin(z * Math.PI * 3.6), 2) * Math.exp(-z * 1.2);
+      return [[cx + 40 + X * sc, hy + (gy - Y) * sc, sc], [cx + 40 + X * sc, hy + gy * sc, sc]]; };
+    rline(c, [[x0 + 20, hy], [x0 + w - 20, hy]], { w: 1.5, color: alpha(P.ink, .25), seed: 731, amp: .3 });
+    const top = [], gnd = []; for (let i = 0; i <= 80; i++) { const [a, b] = pt(i / 80); top.push(a); gnd.push(b); }
+    for (let i = 1; i < gnd.length; i += 2) rline(c, [gnd[i - 1], gnd[i]], { w: 4 * gnd[i][2] + .6, color: alpha(P.ink, .18), seed: 732, amp: 0 });
+    for (let i = 1; i < top.length; i++) rline(c, [top[i - 1], top[i]], { w: 9 * top[i][2] + 1, color: P.ink, seed: 733, amp: 0 });
+    const b = top[9]; cutPaper(c, circPts(b[0], b[1] - 12 * b[2] - 4, 16 * b[2] + 3, 16), P.red, { seed: 739, step: 4 });
+  } else if (k === 4) {   // 蓝晒星图：白色星点和连线
+    const st = [[-200, -120], [-120, -60], [-40, -140], [60, -80], [150, -150], [200, -20], [110, 40], [10, 10], [-90, 80], [-190, 40], [40, 130], [170, 120]].map(([a, b]) => [cx + a, cy + b]);
+    [[0, 1], [1, 2], [2, 3], [3, 4], [3, 7], [7, 6], [6, 5], [7, 8], [8, 9], [8, 10], [10, 11], [6, 11]].forEach(([a, b], j) => rline(c, [st[a], st[b]], { w: 1.8, color: alpha(P.cap, .75), seed: 740 + j, amp: .4 }));
+    st.forEach(([a, b], j) => { c.fillStyle = P.cap; c.beginPath(); c.arc(a, b, 3 + hash(j, 4) * 5, 0, TAU); c.fill(); });
+    c.strokeStyle = alpha(P.cap, .18); c.lineWidth = 1.5; c.beginPath(); c.arc(cx, cy, 240, 0, TAU); c.stroke(); c.beginPath(); c.arc(cx, cy, 150, 0, TAU); c.stroke();
+  } else {   // 立体书：斜放的书页上立起三个纸小人
+    rline(c, [[x0 + 40, y0 + h - 60], [x0 + 140, y0 + 150], [x0 + w - 140, y0 + 150], [x0 + w - 40, y0 + h - 60]], { w: 3, seed: 751 });
+    rline(c, [[x0 + 90, y0 + 300], [x0 + w - 90, y0 + 300]], { w: 2, color: alpha(P.ink, .5), seed: 752, dash: [8, 8] });
+    [[-150, 1], [0, 1.15], [150, .95]].forEach(([dx, sc], j) => { const fx = cx + dx, fy = y0 + 300;
+      c.save(); c.translate(fx, fy); c.scale(sc, sc);
+      s6Piece(c, [[-26, 0], [-18, -70], [18, -70], [26, 0]], [P.green, P.purple, P.blue][j], { seed: 753 + j, th: 2, step: 10, lift: 20 });
+      s6Piece(c, circPts(0, -92, 20, 16), P.skin, { seed: 756 + j, th: 2, step: 6, lift: 20 }); c.restore(); });
+  }
+  c.restore();
+}
+// 快速翻页：每一次右页翻起来（正面是上一张插页，按宽度压扁），翻完露出下一张
+function s6Riffle(c, tau) {
+  const K = S6K, n = clamp(Math.floor((tau - K.riff0) / K.riffStep) + 1, 0, 6), u = n ? (tau - K.riff0 - (n - 1) * K.riffStep) / K.riffDur : 0;
+  s6Plate(c, n, tau);
+  if (n < 1 || u >= 1) return;
+  turnPage(c, u);
+  const R = BOOK.R, e = easeIO(u), cw = R.w * Math.cos(e * Math.PI), lift = Math.sin(e * Math.PI) * 36;
+  if (cw > 20 && n - 1 >= 1) { const pts = [[CX, R.y], [CX + cw, R.y - lift], [CX + cw, R.y + R.h + lift], [CX, R.y + R.h]];
+    c.save(); c.clip(polyPath(pts)); c.translate(CX, 0); c.scale(cw / R.w, 1); c.translate(-CX, 0); s6Plate(c, n - 1, tau); c.restore();
+    c.save(); c.clip(polyPath(pts)); const g = c.createLinearGradient(CX, 0, CX + cw, 0); g.addColorStop(0, 'rgba(60,40,20,.25)'); g.addColorStop(1, 'rgba(60,40,20,0)'); c.fillStyle = g; c.fill(polyPath(pts)); c.restore(); }
+}
+
+// ===================== 右页：折起来的纸条（免责） =====================
+function s6Note(c, tau) {
+  const t0 = s6T(6); if (tau < t0) return; const u = tau - t0, x = 1375, y = 230, pw = 156, h = 320, rot = -.025;
+  const fly = sm(0, .55, u, easeOut), open2 = sm(.75, 1.05, u, easeOut), open3 = sm(1.05, 1.35, u, easeOut);
+  const sx = lerp(S6PAT.x + 120, x, fly), sy = lerp(S6PAT.y - 330, y, fly), sc = lerp(.35, 1, fly);
+  c.save(); c.translate(sx, sy); c.rotate(rot + (1 - fly) * .5); c.scale(sc, sc);
+  const lift = (1 - fly) * 160;
+  s6Piece(c, rectPts(0, 0, pw, h, 2), P.cap, { seed: 801, lift, th: 2, step: 26 });
+  // 第二、三折：从右边一折一折展开（压扁的那一折颜色略暗）
+  const p2 = pw * open2, p3 = pw * open3;
+  if (p2 > 2) { s6Piece(c, rectPts(pw, 0, p2, h, 2), mix(P.cap, P.g1, (1 - open2) * .6), { seed: 802, th: 0, step: 26, sh: open2 }); }
+  if (p3 > 2) { s6Piece(c, rectPts(pw * 2, 0, p3, h, 2), mix(P.cap, P.g1, (1 - open3) * .6), { seed: 803, th: 0, step: 26, sh: open3 }); }
+  // 折痕
+  if (open2 > .9) rline(c, [[pw, 8], [pw, h - 8]], { w: 1.2, color: alpha(P.ink, .18), seed: 804, amp: .3 });
+  if (open3 > .9) rline(c, [[pw * 2, 8], [pw * 2, h - 8]], { w: 1.2, color: alpha(P.ink, .18), seed: 805, amp: .3 });
+  // 内容：小红十字 + 两行字（展开到哪里露到哪里）
+  c.save(); c.beginPath(); c.rect(0, 0, pw + p2 + p3, h); c.clip();
+  const cr = [[-1, -3], [1, -3], [1, -1], [3, -1], [3, 1], [1, 1], [1, 3], [-1, 3], [-1, 1], [-3, 1], [-3, -1], [-1, -1]].map(([a, b]) => [72 + a * 11, 78 + b * 11]);
+  if (u > .35) cutPaper(c, cr, P.red, { seed: 806, step: 6, blur: 2, sx: 1, sy: 1.5 });
+  zh(c, '科普 ≠ 诊断', 128, 96, { size: 48, color: P.ink, p: writeP(tau, t0 + 1.3, '科普 ≠ 诊断', .08) });
+  rline(c, [[40, 140], [pw * 3 - 40, 140]], { w: 1.5, color: alpha(P.ink2, .4), seed: 807, p: sm(t0 + 1.9, t0 + 2.3, tau) });
+  zh(c, '不舒服', 60, 210, { size: 46, color: P.ink, p: writeP(tau, t0 + 2.4, '不舒服', .09) });
+  zh(c, '去校医院', 200, 272, { size: 46, color: P.ink, p: writeP(tau, t0 + 2.75, '去校医院', .09) });
+  arrow(c, [150, 222], [192, 254], { w: 3, head: 12, p: sm(t0 + 2.65, t0 + 2.8, tau), seed: 808 });
+  c.restore();
+  if (fly >= 1) brassPin(c, pw * 1.5, 18, 10 * sm(.55, .65, u, easeOutBack) + .01);
+  c.restore();
+}
+
+// 右页角落的生活痕迹：一圈茶渍（翻页时跟着被翻走，翻完才出现）
+function s6Stain(c, tau) { const a = sm(S6K.riff0 + 5 * S6K.riffStep, S6K.riff0 + 5 * S6K.riffStep + .3, tau); if (a <= 0) return;
+  c.save(); c.globalAlpha *= a; c.strokeStyle = alpha(mix(P.moon, P.shelf, .5), .22); c.lineCap = 'round';
+  c.lineWidth = 5; c.beginPath(); c.arc(1690, 800, 66, .3, TAU - .5); c.stroke(); c.lineWidth = 2.5; c.beginPath(); c.arc(1694, 797, 60, 2.2, 5.6); c.stroke();
+  c.fillStyle = alpha(mix(P.moon, P.shelf, .5), .12); c.beginPath(); c.arc(1766, 842, 7, 0, TAU); c.fill(); c.restore(); }
+
+// ===================== 左页 =====================
+function s6LeftPage(c, tau) {
+  const K = S6K;
+  pageHeader(c, '合上魔导书', tau, .2, { t1: K.riff0 + .02 });
+  pageHeader(c, '合上魔导书', tau, K.riff0 + 5 * K.riffStep + .15, { t1: 1e6 });   // 不传 t1 时 kit 里 Infinity−Infinity 得 NaN，月牙会提前出现
+  for (let i = 0; i < 4; i++) {
+    // L6：四件东西依次轻轻跳一下
+    const j = s6T(5) + .35 + i * .28, hop = Math.sin(clamp((tau - j) / .32, 0, 1) * Math.PI);
+    if (hop > 0) { const [cx, cy] = S6CELLS[i]; c.save(); c.translate(cx, cy); c.scale(1 + hop * .05, 1 + hop * .05); c.translate(-cx, cy * 0 - cy - hop * 10); s6Specimen(c, tau, i, s6T(i + 1)); c.restore(); }
+    else s6Specimen(c, tau, i, s6T(i + 1));
+    const sp = sm(j + .15, j + .3, tau, easeOutBack) * (1 - sm(j + 1.0, j + 1.3, tau)); if (sp > 0) { const [cx, cy] = S6CELLS[i]; cutPaper(c, starPts(cx + 80, cy - 70, 16 * sp, 4, .3, .3), P.moon, { seed: 690 + i, step: 4, blur: 2 }); }
+  }
+  // 「剩下的慢慢调」：底边一只蜗牛慢慢爬
+  const sT = s6T(5) + (s6E(5) - s6T(5)) * .6; if (tau > sT) { const x = 150 + (tau - sT) * 13, a = sm(sT, sT + .4, tau);
+    rline(c, [[130, 884], [x - 30, 884]], { w: 3, color: alpha(P.g1, .8 * a), seed: 668, amp: .4 }); s6Snail(c, x, 882, tau, a); }
+}
+
+// ===================== 帕秋莉（讲台部分） =====================
+function s6Char(c, tau, L) {
+  const K = S6K, blink = blinkAt(tau, 6);
+  const cur = i => tau >= s6T(i) && tau < (i < 7 ? s6T(i + 1) : 1e9);
+  let x = S6PAT.x, y = S6PAT.y, facing = -1, pose = 'lecture', mood = L.mood || 'normal', look = .3, gesture = null, mouth = L.mouth, rot = 0, tilt = 0, bl = blink;
+  if (tau < K.hop0) { x = BOOK.L.x + 690; facing = 1; pose = tau < K.riff0 - .2 ? 'stand' : 'point'; look = .6; }
+  else if (tau < K.hop1) { const f = sm(K.hop0, K.hop1, tau, easeIO); x = lerp(BOOK.L.x + 690, S6PAT.x, f); y = S6PAT.y - Math.sin(f * Math.PI) * 140; pose = 'stand'; facing = f < .5 ? 1 : -1; rot = Math.sin(f * Math.PI) * .12 * (f < .5 ? 1 : -1); }
+  else if (cur(1)) { pose = 'point'; look = .5; }
+  else if (cur(2)) { const lt = tau - s6T(2); pose = lt > .8 && lt < 2.4 ? 'hide' : 'lecture'; mood = lt > .8 && lt < 2.4 ? 'annoyed' : mood; }
+  else if (cur(3)) { pose = 'cross'; mood = 'pout'; }
+  else if (cur(4)) { pose = 'lecture'; mood = 'annoyed'; gesture = .8; }
+  else if (cur(5)) { const lp = (tau - s6T(5)) / (s6E(5) - s6T(5)); pose = lp < .6 ? 'lecture' : 'stand'; mood = lp < .6 ? 'smile' : 'smug'; gesture = lp < .6 ? .95 : null; }
+  else if (cur(6)) { const lt = tau - s6T(6); pose = lt < .7 || lt > 3.2 ? 'point' : 'lecture'; gesture = .55; facing = 1; look = .4; }
+  else if (tau >= s6T(7)) {
+    const lt = tau - s6T(7);
+    if (lt < 2.4) { pose = 'stand'; mood = 'smug'; rot = -.14 * Math.sin(clamp((lt - 1.4) / .9, 0, 1) * Math.PI); tilt = .15 * Math.sin(clamp((lt - 1.4) / .9, 0, 1) * Math.PI); }   // 「下课」鞠一躬
+    else { pose = 'tired'; mood = 'sleepy'; }
+    const yw = Math.sin(clamp((tau - K.yawn0) / (K.yawn1 - K.yawn0), 0, 1) * Math.PI); if (yw > 0) { mouth = Math.max(mouth, clamp(yw * 1.4, 0, 1)); tilt -= yw * .12; bl = Math.max(bl, clamp(yw * 1.6 - .3, 0, 1)); }
+  }
+  c.save(); c.translate(x, y); c.rotate(rot * facing); c.translate(-x, -y);
+  const r = drawPatchouli(c, { x, y, h: S6PAT.h, pose, mood, look, facing, mouth, blink: bl, t: tau, gesture, tilt });
+  c.restore();
+  // 咳嗽：两朵小纸云（L3，烟飘过来）
+  if (cur(2)) { const lt = tau - s6T(2); for (let k = 0; k < 2; k++) { const a = sm(1.0 + k * .45, 1.15 + k * .45, lt, easeOutBack) * (1 - sm(1.6 + k * .45, 1.9 + k * .45, lt)); if (a <= 0) continue;
+    const hx = r.head[0] - 95 - k * 34, hy = r.head[1] + 20 - k * 30 - (lt - 1 - k * .45) * 20; pop(c, hx, hy, a, () => { [[0, 0, 16], [14, -6, 12], [-13, -4, 11]].forEach(([a2, b, rr], j) => cutPaper(c, circPts(hx + a2, hy + b, rr, 14), P.cap, { seed: 820 + k * 3 + j, step: 5, blur: 3 })); }); } }
+  // 哈欠的一滴眼泪
+  const yw = Math.sin(clamp((tau - K.yawn0) / (K.yawn1 - K.yawn0), 0, 1) * Math.PI); if (yw > .4) cutPaper(c, circPts(r.head[0] - 22, r.head[1] - 4, 4.5 * yw, 10), mix(P.ribbonBlue, P.cap, .6), { seed: 830, step: 3, blur: 1 });
+  return r;
+}
+
+// ===================== 合书与片尾 =====================
+// 封面（合着的书）：皮面、金线框、月牙徽记；ct = 封面落下后的秒数（< 0 不写字）
+function s6Cover(c, tau, x0, ct) {
+  const { y, h } = BOOK, cx = x0 + S6CW / 2;
+  cutPaper(c, rectPts(x0, y - 8, S6CW, h + 20, 10), S6LEATHER, { seed: 1201, step: 28, blur: 16, sx: 0, sy: 8, grain: .14 });
+  rline(c, rectPts(x0 + 36, y + 26, S6CW - 72, h - 52, 6), { w: 2, color: alpha(P.moon, .55), close: true, seed: 1202 });
+  drawMoonIcon(c, cx, y + 88, 34, P.moon, -.5);
+  if (ct < 0) return;
+  const K = S6K, T = s => s - K.close1;   // 以封面落下为 0
+  zh(c, '帕秋莉讲座 · 第 1 集 · 完', cx, y + 190, { size: 52, align: 'center', color: S6GOLD, p: writeP(ct, T(K.title), '帕秋莉讲座 · 第 1 集 · 完', .06) });
+  rline(c, [[cx - 170, y + 222], [cx + 170, y + 222]], { w: 2, color: alpha(P.moon, .6), seed: 1203, p: sm(T(K.title) + .6, T(K.title) + 1.0, ct) });
+  let yy = y + 300, grp = 0;
+  S6CREDITS.forEach(([s, g], i) => { if (g !== grp) { yy += 34; grp = g; } const t0 = T(K.cred0) + i * K.credStep;
+    zh(c, s, cx, yy, { size: 36, align: 'center', color: S6GOLD, p: writeP(ct, t0, s, .03), al: sm(t0 - .05, t0 + .2, ct) }); yy += 54; });
+}
+// 合书：左半本（左页 + 封面）绕书脊从左翻到右，逐列透视（翻到半空时离镜头近、变大），th 0..π
+const S6BUF = document.createElement('canvas');
+function s6Swing(c, tau, L, th) {
+  const sc = c.getTransform().a || 1; if (S6BUF.width !== W * sc) { S6BUF.width = W * sc; S6BUF.height = H * sc; }
+  const b = S6BUF.getContext('2d'); b.setTransform(sc, 0, 0, sc, 0, 0); b.clearRect(0, 0, W, H);
+  const face = Math.cos(th) > 0;   // true：看到的是左页那面；false：封面那面
+  if (face) { spread(b, tau); s6LeftPage(b, tau); } else s6Cover(b, tau, CX - 10, -1);
+  const f = 2900, y0 = BOOK.y - 8, y1 = BOOK.y + BOOK.h + 12, span = CX - (BOOK.x - 10), step = 3;
+  const col = (s) => { const hz = s * Math.sin(th), k = f / (f - hz); return [CX - s * Math.cos(th) * k, k]; };
+  const shade = .38 * (1 - Math.abs(Math.cos(th)));
+  for (let s = 0; s < span; s += step) {
+    const [xa, ka] = col(s), [xb] = col(Math.min(span, s + step)), xs = face ? CX - s - step : CX - 10 + s;
+    const dx = Math.min(xa, xb), dw = Math.abs(xb - xa) + .7; if (dw < .05) continue;
+    const top = CY + (y0 - CY) * ka, hh = (y1 - y0) * ka;
+    c.drawImage(S6BUF, xs * sc, y0 * sc, step * sc, (y1 - y0) * sc, dx, top, dw, hh);
+    if (shade > .01) { c.fillStyle = `rgba(20,12,10,${shade * (face ? 1 : .7)})`; c.fillRect(dx, top, dw, hh); }
   }
 }
-// 禁止符号：红圈 + 斜杠，p 画出进度
-function s6No(c, x, y, s, t, p = 1, seed = 1) {
-  rline(c, circPts(x, y, s * 1.02, 64), { w: Math.max(4, s * .13), color: P.red, close: true, p: clamp(p * 1.6, 0, 1), seed, t });
-  rline(c, [[x - s * .72, y - s * .72], [x + s * .72, y + s * .72]], { w: Math.max(4, s * .13), color: P.red, p: clamp(p * 2.5 - 1.5, 0, 1), seed: seed + 1, t });
-}
-// 蜡烛：on 0..1 亮度，off 熄灭后几秒（冒烟）
-function s6Candle(c, tau, x, y, on, off, i) {
-  if (on > 0) { const g = c.createRadialGradient(x, y - 50, 4, x, y - 50, 120); g.addColorStop(0, alpha(P.lamp, .45 * on)); g.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = g; c.fillRect(x - 120, y - 170, 240, 240); }
-  rshape(c, [[x - 20, y], [x + 20, y], [x + 14, y - 8], [x - 14, y - 8]], { fill: P.gold, stroke: P.ink, w: 2.5, seed: 700 + i, t: tau });
-  rshape(c, rectPts(x - 8, y - 46, 16, 38, 3), { fill: P.paper, stroke: P.ink, w: 2.5, seed: 710 + i, t: tau });
-  if (on > 0) { const fl = 1 + .12 * Math.sin(tau * 13 + i * 2) + .06 * noise1(tau * 6, i);
-    rshape(c, [[x, y - 46 - 26 * fl], [x + 7, y - 54], [x, y - 47], [x - 7, y - 54]], { fill: mix(P.sun, P.lamp, .4), stroke: false, smooth: true, seed: 720 + i, t: tau, al: on }); }
-  if (off > 0 && off < 1.6) for (let k = 0; k < 2; k++) rline(c, [[x, y - 50], [x + 6 + k * 4, y - 70 - off * 30], [x - 6, y - 95 - off * 50], [x + 4, y - 120 - off * 70]], { w: 3, color: P.gray, smooth: true, seed: 730 + i + k, t: tau, al: (1 - off / 1.6) * .7 });
-}
-
-// ===================== 讲台 =====================
-// 一页「章节页」：大图标 + 标题（翻页时一闪而过）。k = -1 空白页，0..4 = 五个章节，5 = 清单页（只画标题底）
-function s6Page(c, tau, k, B) {
-  if (k < 0 || k > 4) return;
-  const [ic, name, col] = S0PAGES[k], cx = B.x + B.w / 2, cy = B.y + B.h / 2 - 40;
-  rshape(c, circPts(cx, cy, 160), { fill: mix(col, P.paper, .7), stroke: col, w: 6, seed: 750 + k, t: tau });
-  s0Icon(c, ic, cx, cy, 105, tau, 760 + k * 10);
-  zh(c, '第' + '一二三四五'[k] + '页 · ' + name, cx, cy + 250, { size: 64, align: 'center', color: P.ink });
-}
-// 书页从右往左翻过去：翻起的那页从右边往左边书脊压扁
-function s6Flip(c, tau, u, k, B) {
-  const sx = Math.cos(u * Math.PI / 2);   // 1 → 0
-  if (sx <= .01) return;
-  const x0 = B.x + 6, fw = (B.w - 12) * sx;
-  c.save();
-  const sh = c.createLinearGradient(x0 + fw, 0, x0 + fw + 80, 0); sh.addColorStop(0, alpha(P.ink, .25 * (1 - sx))); sh.addColorStop(1, alpha(P.ink, 0));
-  c.fillStyle = sh; c.fillRect(x0 + fw, B.y, 80, B.h);
-  c.beginPath(); c.rect(x0, B.y - 10, fw, B.h + 20); c.clip();
-  c.translate(x0, 0); c.scale(sx, 1); c.translate(-x0, 0);
-  rshape(c, rectPts(B.x, B.y, B.w, B.h, 18), { fill: P.paper, stroke: P.paperEdge, w: 6, seed: 11 + k, amp: 1 });
-  const g = c.createLinearGradient(B.x, 0, B.x + B.w, 0); g.addColorStop(0, alpha(P.paperEdge, 0)); g.addColorStop(1, alpha(P.paperEdge, .6 * (1 - sx))); c.fillStyle = g; c.fillRect(B.x, B.y, B.w, B.h);
-  s6Page(c, tau, k, B);
-  c.restore();
-}
-function s6Stage(c, tau, L) {
-  const t = S6LINES.map(l => l[0]), end = seqEnd(S6LINES), B = STAGE.board, CH = .16;
-  // L8 的节拍：「下课」合书、哈欠、蜡烛一盏盏灭
-  const t8 = t[7], close0 = t8 + 1.2, close1 = t8 + 1.9, yawn0 = t8 + 2.0, offs = [t8 + 2.7, t8 + 3.15, t8 + 3.6, t8 + 4.05];
-  const nOff = offs.filter(o => tau >= o).length, flick = offs.reduce((a, o) => a + (tau > o && tau < o + .15 ? Math.sin((tau - o) * 60) * .06 : 0), 0);
-  const dim = [0, .2, .34, .46, .58][nOff] + flick;
-  // 镜头：清单阶段慢慢推近一点，cheer 时轻轻一弹，合书后退回
-  const push = .03 * sm(t[1], t[4] + 1, tau) * (1 - sm(t[6] - .3, t[6] + .5, tau)) + .02 * Math.sin(clamp((tau - t[5]) / .6, 0, 1) * Math.PI);
-  c.save(); c.translate(1280, 470); c.scale(1 + push, 1 + push); c.translate(-1280, -470);
-  libraryBg(c, tau);
-  S6CANDLES.forEach(([x, y], i) => s6Candle(c, tau, x, y, tau < offs[i] ? sm(.35 + i * .18, .6 + i * .18, tau) : 0, tau - offs[i], i));   // 段首一支支点亮，L8 一支支熄灭
-  board(c, B.x, B.y, B.w, B.h, { t: tau });
-  // L1：翻页。0.2 秒一页，空白页 → 五个章节 → 清单页
-  const f0 = t[0] + .3, fd = .3, fi = Math.floor((tau - f0) / fd);
-  if (tau >= f0 && fi <= 5) { s6Page(c, tau, fi, B); s6Flip(c, tau, (tau - f0) / fd - fi, fi - 1, B); }
-  const listA = sm(f0 + 6 * fd - .05, f0 + 6 * fd, tau) * (1 - sm(close0 - .1, close0 + .3, tau));
-  if (listA > 0) fade(c, listA, () => {
-    const u0 = f0 + 6 * fd, title = '今天的四条';
-    zh(c, title, B.x + B.w / 2, 170, { size: 64, align: 'center', color: P.ink, p: writeP(tau, u0, title, .08) });
-    rline(c, [[B.x + B.w / 2 - 190, 196], [B.x + B.w / 2 + 190, 196]], { w: 4, color: P.moon, p: sm(u0 + .3, u0 + .7, tau), seed: 801, t: tau });
-    // 「四条」：清单页先出四个虚线空位
-    S6ITEMS.forEach((_, r) => { const y = 310 + r * 132, kg = easeOutBack(clamp((tau - u0 - .45 - r * .12) / .3, 0, 1)), a = 1 - sm(t[r + 1] - .05, t[r + 1] + .2, tau);
-      if (kg > 0 && a > 0) pop(c, 822, y - 18, kg, () => fade(c, a, () => {
-        rline(c, circPts(822, y - 18, 52), { w: 4, color: P.faint, close: true, dash: [10, 10], seed: 870 + r, t: tau });
-        zh(c, String(r + 1), 822, y + 2, { size: 52, align: 'center', color: P.faint });
-        rline(c, [[900, y + 16], [1230, y + 16]], { w: 4, color: P.faint, dash: [14, 12], seed: 875 + r, t: tau }); })); });
-    // 四条
-    const flash = Math.max(0, Math.sin(clamp((tau - t[5] - .15) / .7, 0, 1) * Math.PI));
-    S6ITEMS.forEach(([ic, text, col], r) => {
-      const t0 = t[r + 1], y = 310 + r * 132, k = easeOutBack(clamp((tau - t0) / .4, 0, 1)); if (k <= 0) return;
-      if (flash > 0) { c.save(); c.globalAlpha = flash * .8; rshape(c, rectPts(760, y - 62, 580, 104, 30), { fill: alpha(P.sun, .45), stroke: P.moon, w: 3, seed: 810 + r, t: tau }); c.restore(); }
-      pop(c, 822, y - 18, k, () => {
-        rshape(c, circPts(822, y - 18, 54), { fill: mix(col, P.paper, .72), stroke: P.ink, w: 4, seed: 820 + r, t: tau });
-        s6Icon(c, ic, 822, y - 18, 36, tau, 830 + r * 10);
-        rshape(c, circPts(778, y - 62, 20), { fill: P.moon, stroke: P.ink, w: 3, seed: 840 + r, t: tau });
-        zh(c, String(r + 1), 778, y - 51, { size: 32, align: 'center', color: P.ink });
-      });
-      const tw = t0 + .3, wp = writeP(tau, tw, text, .09);
-      zh(c, text, 900, y + 4, { size: 62, color: P.ink, p: wp });
-      const tc = tw + [...text].length * .09 + .15;
-      if (tau > tc) { check(c, 1290, y - 20, 70, { color: P.moon, p: sm(tc, tc + .3, tau), t: tau, seed: 850 + r, w: 11 });
-        const d = tau - tc - .3; if (d > 0 && d < .6) for (let q = 0; q < 6; q++) { const a = q / 6 * TAU + r; sparkle(c, 1300 + Math.cos(a) * (30 + d * 110), y - 20 + Math.sin(a) * (30 + d * 110), 14 * (1 - d / .6), { color: P.moon }); } }
-    });
-    // 右边的大插图：每条一张；L6 一颗笑脸心；L7 换成免责便签
-    const RX = 1600, RY = 480, ill = (a, b) => Math.min(sm(a, a + .3, tau, easeOutBack), 1 - sm(b - .2, b, tau));
-    const k1 = ill(t[1], t[2]);
-    if (k1 > 0) pop(c, RX, RY, k1, () => {
-      s0Icon(c, 'moon', RX - 20, RY, 150, tau, 900);
-      for (let z = 0; z < 3; z++) { const ph = ((tau - t[1]) * .7 + z / 3) % 1; zh(c, 'Z', RX + 110 + ph * 90, RY - 90 - ph * 190, { size: 50 + z * 14, color: P.purple, al: Math.sin(ph * Math.PI) }); }
-      for (let z = 0; z < 4; z++) sparkle(c, RX - 160 + z * 90, RY + 190 - (z % 2) * 40, 12 + 6 * Math.sin(tau * 4 + z), { color: P.moon });
-    });
-    const k2 = ill(t[2], t[3]);
-    if (k2 > 0) pop(c, RX, RY, k2, () => {
-      s6Icon(c, 'cig', RX, RY + 20, 170, tau, 910);
-      const u = clamp((tau - t[2] - .5) / .45, 0, 1); if (u > 0) pop(c, RX, RY, lerp(1.6, 1, easeOut(u)), () => s6No(c, RX, RY, 200, tau, u, 915));
-    });
-    const k3 = ill(t[3], t[4]);
-    if (k3 > 0) pop(c, RX, RY, k3, () => {
-      const u = tau - t[3], stepN = Math.floor(u / .32);
-      for (let q = 0; q < Math.min(stepN, 6); q++) { const fx = RX - 190 + q * 70, fy = RY + 170 + (q % 2 ? 26 : -8);
-        rshape(c, ellPts(fx, fy, 22, 12, 20, -.2), { fill: alpha(P.ink2, .45), stroke: false, seed: 920 + q }); }
-      const hop = Math.abs(Math.sin(u * Math.PI / .32)) * 40;
-      c.save(); c.translate(RX, RY - hop); c.rotate(-.12 * Math.sin(u * Math.PI / .32)); s6Icon(c, 'shoe', 0, 0, 160, tau, 930); c.restore();
-      for (let q = 0; q < 3; q++) rline(c, [[RX - 230, RY - 40 + q * 40], [RX - 180 + q * 10, RY - 40 + q * 40]], { w: 5, color: P.faint, seed: 935 + q, t: tau });
-    });
-    const k4 = ill(t[4], t[5]);
-    if (k4 > 0) pop(c, RX, RY, k4, () => {
-      const u = tau - t[4];
-      [[RX - 80, RY + 90], [RX + 80, RY + 90], [RX, RY - 40]].forEach(([x, y], q) => {
-        const go = q ? sm(.55 + q * .15, .95 + q * .15, u) : 0;
-        if (go < 1) fade(c, 1 - go, () => pop(c, x, y, 1 - go * .5, () => s6Icon(c, 'cube', x + go * (q === 1 ? 70 : -40), y - go * 110, 110, tau, 940 + q * 5)));
-      });
-      const ka = easeOutBack(clamp((u - 1.1) / .35, 0, 1));
-      pop(c, RX + 190, RY + 60, ka, () => { arrow(c, [RX + 190, RY - 40], [RX + 190, RY + 140], { w: 10, color: P.green, head: 36, seed: 950, t: tau }); });
-    });
-    const k5 = ill(t[5], t[6] + .1);
-    if (k5 > 0) pop(c, RX, RY, k5, () => {
-      const beat = 1 + .06 * Math.max(0, Math.sin((tau - t[5]) * 7));
-      pop(c, RX, RY - 20, beat, () => s6Icon(c, 'heart', RX, RY - 20, 170, tau, 960));
-      S6ITEMS.forEach(([ic], q) => { const a = (tau - t[5]) * .9 + q / 4 * TAU; s6Icon(c, ic, RX + Math.cos(a) * 225, RY - 20 + Math.sin(a) * 185, 34, tau, 970 + q * 7); });
-      const tx = '剩下的，慢慢调'; zh(c, tx, RX, RY + 290, { size: 44, align: 'center', color: P.purple, p: writeP(tau, t[5] + 16 * CH, tx, .08) });
-    });
-    // L7：免责便签
-    const kn = clamp((tau - t[6] - .05) / .45, 0, 1);
-    if (kn > 0) {
-      const drop = easeOutBack(kn);
-      c.save(); c.translate(RX, RY - 10 - (1 - drop) * 140); c.rotate(.05 - (1 - drop) * .2); c.globalAlpha *= clamp(kn * 3, 0, 1);
-      rshape(c, rectPts(-235, -230, 470, 470, 10), { fill: mix(P.sun, P.paper, .55), stroke: P.ink, w: 4, seed: 980, t: tau });
-      rshape(c, rectPts(-80, -254, 160, 44, 4), { fill: alpha(P.paperEdge, .75), stroke: false, seed: 981 });
-      const hb = 1 + .07 * Math.max(0, Math.sin((tau - t[6]) * 5)) * sm(.5, 1, tau - t[6]);
-      pop(c, 0, -118, hb, () => s6Icon(c, 'hospital', 0, -118, 62, tau, 982));
-      zh(c, '科普 ≠ 诊断', 0, 30, { size: 58, align: 'center', color: P.ink, p: writeP(tau, t[6] + .4, '科普 ≠ 诊断', .07) });
-      rline(c, [[-150, 56], [150, 56]], { w: 4, color: P.red, p: sm(t[6] + 1.2, t[6] + 1.5, tau), seed: 983, t: tau });
-      zh(c, '身体不舒服', 0, 128, { size: 48, align: 'center', color: P.ink, p: writeP(tau, t[6] + 11 * CH, '身体不舒服', .07) });
-      zh(c, '→ 去校医院', 0, 192, { size: 48, align: 'center', color: P.red, p: writeP(tau, t[6] + 17 * CH, '→ 去校医院', .07) });
-      c.restore();
-    }
-  });
-  // L6：cheer 时满黑板飘星星
-  const st = tau - t[5];
-  if (st > 0 && st < 4.2) for (let q = 0; q < 16; q++) { const ph = (st * .6 + hash(q, 2)) % 1, x = B.x + 60 + hash(q, 3) * (B.w - 120), y = B.y + B.h - 40 - ph * (B.h - 60);
-    sparkle(c, x, y, (10 + hash(q, 4) * 14) * Math.sin(ph * Math.PI), { color: q % 3 ? P.moon : P.pink, al: sm(0, .3, st) * (1 - sm(3.6, 4.2, st)), rot: tau * 2 + q }); }
-  // L8：「下课」—— 封面从左边盖过来，合上魔导书
-  const cu = sm(close0, close1, tau, easeIO);
-  if (cu > 0) {
-    const cw = B.w * cu, leather = mix(P.red, P.ink, .55);
-    c.save(); c.beginPath(); c.rect(B.x - 10, B.y - 16, cw + 24, B.h + 32); c.clip();
-    c.translate(B.x, 0); c.scale(Math.max(cu, .02), 1); c.translate(-B.x, 0);
-    rshape(c, rectPts(B.x - 6, B.y - 10, B.w + 12, B.h + 20, 20), { fill: leather, stroke: P.ink, w: 6, seed: 990, t: tau });
-    rshape(c, rectPts(B.x - 6, B.y - 10, 50, B.h + 20, 14), { fill: mix(P.red, P.ink, .7), stroke: P.ink, w: 4, seed: 991, t: tau });
-    rline(c, rectPts(B.x + 70, B.y + 30, B.w - 110, B.h - 60, 14), { w: 6, color: P.moon, close: true, seed: 992, t: tau });
-    const mx = B.x + B.w / 2 + 20, my = B.y + B.h / 2 - 20;
-    rline(c, circPts(mx, my, 170), { w: 5, color: P.moon, close: true, seed: 993, t: tau });
-    drawMoonIcon(c, mx, my, 120, P.moon, -.35);
-    zh(c, '帕秋莉讲座 · 第 1 集', mx, B.y + B.h - 70, { size: 44, align: 'center', color: P.moon });
-    c.restore();
-    const land = tau - close1; if (land > 0 && land < .5) for (let q = 0; q < 10; q++) { const a = q / 10 * Math.PI + Math.PI; sparkle(c, B.x + B.w / 2 + Math.cos(a) * (B.w * .5 + land * 120), B.y + B.h + Math.sin(a) * -20 - land * 60, 14 * (1 - land / .5), { color: P.lamp }); }
+// 片尾之后的镜头俯仰：y → [屏幕 y, 缩放]（和 kit 的 tiltPlane 同一个公式）
+function s6TiltMap(x, y, pitch, f = 1400) { const cp = Math.cos(pitch), sp = Math.sin(pitch), d = y - CY, k = f / (f + d * sp); return [CX + (x - CX) * k, CY + d * cp * k, k]; }
+function s6Closing(c, tau, L) {
+  const K = S6K, e7 = s6E(7);
+  const cu = sm(K.close0, K.close1, tau, easeIO), th = cu * Math.PI;
+  // 书滑到桌子正中（开场的反向），随后镜头慢慢抬起来
+  const slide = sm(K.close1, K.slide1, tau, easeIO), x0 = lerp(CX - 10, CX - S6CW / 2, slide), dx = x0 - (CX - 10);
+  const pitch = tau < K.tilt1 ? lerp(0, -.2, sm(K.tilt0, K.tilt1, tau, easeIO)) : lerp(-.2, -.8, sm(K.tilt1, K.tilt2, tau, easeIO));
+  const zoom = lerp(1, .9, sm(K.tilt1, K.tilt2, tau, easeIO)) * (1 - .035 * Math.sin(cu * Math.PI));
+  const thud = tau > K.close1 && tau < K.close1 + .25 ? Math.sin((tau - K.close1) / .25 * Math.PI * 3) * 3 * (1 - (tau - K.close1) / .25) : 0;
+  c.fillStyle = WOOD; c.fillRect(0, 0, W, H);
+  c.save(); c.translate(CX, CY + thud); c.scale(zoom, zoom); c.translate(-CX, -CY);
+  if (cu < 1) {
+    desk(c);
+    c.save(); c.beginPath(); c.rect(CX - 12, 0, W, H); c.clip(); spread(c, tau); c.restore();
+    // 右半本还摊着：右页上的纸条；翻过来的封面在上面投一道越来越深的影
+    s6Note(c, tau);
+    if (th > Math.PI / 2) { const a = sm(Math.PI / 2, Math.PI, th, t => t), wv = BOOK.R.w * (1 - a) + 60; const g = c.createLinearGradient(CX, 0, CX + wv + 200, 0); g.addColorStop(0, `rgba(20,12,10,${.45 * a})`); g.addColorStop(1, 'rgba(20,12,10,0)'); c.fillStyle = g; c.fillRect(CX, BOOK.y, BOOK.R.w + 60, BOOK.h); }
+    s6Swing(c, tau, L, th);
+  } else {
+    const ct = tau - K.close1;
+    tiltPlane(c, b => { desk(b); b.save(); b.translate(dx, 0);
+      // 书口的厚度：封面底下露出一圈书页
+      cutPaper(b, rectPts(CX - 10 + 6, BOOK.y - 2, S6CW - 6, BOOK.h + 18, 6), BOOK.page2, { seed: 1210, step: 50, blur: 14, sx: 0, sy: 8, grain: .1 });
+      s6Cover(b, tau, CX - 10, ct); b.restore(); }, { pitch, cy: CY });
+    // 书的前侧面（镜头抬起来才看得到）：一道书页的厚边
+    if (pitch < -.01) { const [ax, ay, ka] = s6TiltMap(x0 + 6, BOOK.y + BOOK.h + 12, pitch), [bx] = s6TiltMap(x0 + S6CW, BOOK.y + BOOK.h + 12, pitch), th2 = 30 * Math.sin(-pitch) * ka;
+      cutPaper(c, [[ax, ay], [bx, ay], [bx, ay + th2], [ax, ay + th2]], BOOK.page2, { seed: 1211, step: 60, shadow: false, grain: .1 });
+      c.strokeStyle = alpha(P.paperEdge, .7); c.lineWidth = 1; for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(ax, ay + th2 * k / 5); c.lineTo(bx, ay + th2 * k / 5); c.stroke(); }
+      cutPaper(c, [[ax - 6, ay + th2], [bx, ay + th2], [bx, ay + th2 + 10 * Math.sin(-pitch) * ka], [ax - 6, ay + th2 + 10 * Math.sin(-pitch) * ka]], mix(S6LEATHER, P.ink, .3), { seed: 1212, step: 60, shadow: false }); }
   }
-  // 帕秋莉
-  const pose = tau >= t[5] && tau < t[6] ? 'cheer' : tau >= t[1] && tau < t[5] ? (tau - t[1]) % 4 < 2 ? 'point' : 'lecture' : tau >= t[7] + 2 ? 'tired' : 'lecture';
-  const yawn = Math.sin(clamp((tau - yawn0) / .9, 0, 1) * Math.PI);
-  stageChar(c, tau, L, { pose, gesture: L && L.talking ? .55 + .45 * Math.sin(tau * 2.4) : .3, mouth: Math.max((L && L.mouth) || 0, yawn), mood: yawn > .1 || tau > yawn0 ? 'sleepy' : (L && L.mood) || 'normal', blink: yawn > .3 ? 1 : blinkAt(tau) });
-  if (yawn > .05) { const hx = STAGE.char.x + 130, hy = STAGE.char.y - STAGE.char.h * .72; zh(c, '哈～', hx, hy - yawn * 30, { size: 48, color: P.paper, outline: P.ink, ow: 6, al: yawn }); }
+  s6Sleeper(c, tau, L, dx, pitch);
   c.restore();
-  if (dim > 0) { c.fillStyle = alpha(mix(P.night, '#000000', .6), dim); c.fillRect(0, 0, W, H); }
-  chapterTag(c, tau, '合上魔导书');
+  if (pitch < -.01) { const a = sm(0, -.8, pitch, t => t), g = c.createLinearGradient(0, 0, 0, H * .55); g.addColorStop(0, alpha('#0d0908', .85 * a)); g.addColorStop(1, alpha('#0d0908', 0)); c.fillStyle = g; c.fillRect(0, 0, W, H * .55); }
+  // 最后半秒压暗
+  const dk = sm(K.end - .7, K.end, tau); if (dk > 0) { c.fillStyle = alpha('#0d0908', dk * .75); c.fillRect(0, 0, W, H); }
+}
+// 帕秋莉：翻书时跳起来落在封面上 → 纸板一样扑倒 → 躺着睡（呼吸、Z）
+function s6Sleeper(c, tau, L, dx, pitch) {
+  const K = S6K, j = sm(K.close0 + .35, K.close1 + .05, tau, t => t), jump = Math.sin(j * Math.PI) * 190, ground = S6PAT.y - (tau > K.close1 ? 6 : 0);
+  const fx = S6PAT.land + dx;
+  if (tau < K.flop0) {
+    const x = lerp(S6PAT.x, S6PAT.land, sm(0, 1, j, easeIO)) + dx, y = ground - jump, rot = j > 0 && j < 1 ? -.08 * Math.sin(j * TAU) : 0;
+    const pose = j > 0 && j < 1 ? 'stand' : tau < K.close0 + .35 ? 'tired' : 'tired', mood = j > .02 && j < .6 ? 'surprised' : 'sleepy';
+    const [px, py, k] = s6TiltMap(x, y, pitch);
+    c.save(); c.translate(px, py); c.rotate(rot); c.translate(-px, -py);
+    drawPatchouli(c, { x: px, y: py, h: S6PAT.h * k, pose, mood, facing: -1, look: .2, blink: mood === 'surprised' ? 0 : Math.max(.5, blinkAt(tau, 6)), mouth: L.mouth, t: tau });
+    c.restore(); return;
+  }
+  // 扑倒：绕脚底往左倒下（头朝左），落地的瞬间换成躺姿，小小弹一下
+  if (tau < K.flop1) { const f = sm(K.flop0, K.flop1, tau, easeIn), [px, py, k] = s6TiltMap(fx, ground, pitch);
+    c.save(); c.translate(px, py); c.rotate(-f * Math.PI / 2); c.translate(-px, -py);
+    drawPatchouli(c, { x: px, y: py, h: S6PAT.h * k, pose: 'tired', mood: 'sleepy', facing: -1, blink: 1, t: tau }); c.restore(); return; }
+  const bo = tau - K.flop1, bounce = bo < .35 ? Math.abs(Math.sin(bo / .35 * Math.PI)) * 14 * (1 - bo / .35) : 0;
+  const lx = fx - 250, ly = ground + 96;
+  const [px, py, k] = s6TiltMap(lx, ly, pitch);
+  const fl = 1 - (1 - Math.cos(pitch)) * .7; c.save(); c.translate(px, py); c.scale(1, fl); c.translate(-px, -py);
+  const r = drawPatchouli(c, { x: px, y: py - bounce * k, h: S6PAT.h * k, pose: 'lie', mood: 'sleepy', facing: 1, blink: 1, t: tau }); c.restore();
+  r.head = [r.head[0], py + (r.head[1] - py) * fl];
+  // Z：从脸边一个个冒出来往右上飘
+  for (let n = 0; n < 3; n++) { const per = 2.4, ph = ((tau - K.flop1 - .6 - n * .8) % per + per) % per, on = tau - K.flop1 - .6 - n * .8; if (on < 0) continue;
+    const a = Math.min(sm(0, .3, ph), 1 - sm(1.7, 2.3, ph)); if (a <= 0) continue;
+    zh(c, n % 2 ? 'z' : 'Z', r.head[0] + 40 + ph * 40, r.head[1] - 60 - ph * 50, { size: (30 + ph * 8) * k, color: P.cap, al: a * .9, base: 'middle' }); }
 }
 
-// ===================== 片尾 =====================
-function s6Credits(c, tau, u) {   // u = 片尾开始后几秒
-  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, mix(P.night, '#000000', .45)); g.addColorStop(1, P.night2); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  // 星星
-  for (let k = 0; k < 70; k++) { const x = hash(k, 11) * W, y = hash(k, 12) * 620, tw = .35 + .65 * Math.max(0, Math.sin(tau * (1 + hash(k, 13) * 2) + k));
-    if (k % 5 === 0) sparkle(c, x, y, 5 + 4 * tw, { color: P.lamp, al: .7 * tw }); else { c.fillStyle = alpha(P.paper, .5 * tw); c.beginPath(); c.arc(x, y, 1.6, 0, TAU); c.fill(); } }
-  // 地板和一圈烛光
-  const fy = 800;
-  const fg = c.createLinearGradient(0, fy, 0, H); fg.addColorStop(0, mix(P.shelf, P.night, .45)); fg.addColorStop(1, mix(P.shelfDark, '#000000', .4)); c.fillStyle = fg; c.fillRect(0, fy, W, H - fy);
-  for (let k = 0; k < 6; k++) rline(c, [[0, fy + 18 + k * k * 9], [W, fy + 18 + k * k * 9]], { w: 2, color: alpha(P.shelfDark, .8), seed: 1000 + k, t: tau });
-  const cx = CX + 120, cy = 868, lg = c.createRadialGradient(cx + 400, cy - 60, 10, cx, cy, 620);
-  lg.addColorStop(0, alpha(P.lamp, .32)); lg.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = lg; c.fillRect(0, 300, W, H - 300);
-  // 书堆 + 小蜡烛
-  const bx = cx + 400;
-  [[P.purple, 150, 38], [P.teal, 130, 34], [P.red, 142, 36]].forEach(([col, bw, bh], k) => { const y0 = cy + 40 - (k + 1) * bh + 6;
-    rshape(c, rectPts(bx - bw / 2 + (k % 2 ? 10 : -6), y0, bw, bh, 5), { fill: mix(col, P.night, .25), stroke: P.ink, w: 3, seed: 1010 + k, t: tau });
-    rline(c, [[bx - bw / 2 + (k % 2 ? 22 : 6), y0 + bh / 2], [bx + bw / 2 - 20, y0 + bh / 2]], { w: 2, color: alpha(P.moon, .7), seed: 1015 + k, t: tau }); });
-  s6Candle(c, tau, bx + 10, cy + 40 - 3 * 36, .75, 0, 9);
-  // Q 版帕秋莉抱书躺着睡（轻轻呼吸）
-  const br = Math.sin(tau * 1.6);
-  c.save(); c.translate(cx + 190, cy); c.scale(1, 1 + br * .012); c.translate(-(cx + 190), -cy);
-  const r = drawPatchouliChibi(c, { x: cx + 190, y: cy, h: 360, pose: 'lie', mood: 'sleepy', blink: 1, mouth: .1 + .08 * br, t: tau });
-  c.restore();
-  const head = (r && r.head) || [cx, cy - 100];
-  for (let z = 0; z < 3; z++) { const ph = (u * .45 + z / 3) % 1;
-    zh(c, 'z', head[0] + 40 + ph * 70 + Math.sin(ph * 6) * 10, head[1] - 60 - ph * 150, { size: 38 + ph * 34, color: P.hair, outline: P.night, ow: 5, al: Math.sin(ph * Math.PI) * sm(.8, 1.6, u) }); }
-  // 演职信息
-  const ln = (k, d = .5) => sm(.7 + k * .32, .7 + k * .32 + d, u);
-  const title = '帕秋莉讲座 · 第 1 集 · 完', a0 = ln(0, .7);
-  if (a0 > 0) { fade(c, a0, () => {
-    zh(c, title, CX, 190 - (1 - a0) * 16, { size: 76, align: 'center', color: P.moon });
-    const tw = zhWidth(c, title, 76) / 2 + 60; drawMoonIcon(c, CX - tw, 165, 26, P.moon, -.35); drawMoonIcon(c, CX + tw, 165, 26, P.moon, -.35);
-    rline(c, [[CX - 330, 232], [CX + 330, 232]], { w: 3, color: alpha(P.moon, .7), p: sm(1.3, 2.0, u), seed: 1020, t: tau });
-  }); }
-  const rows = [
-    ['知识来源：', 'zijie0/HumanSystemOptimization（整理自 Huberman Lab 播客）', 318],
-    ['', 'WHO《关于身体活动和久坐行为的指南》（2020）', 372],
-    ['角色：', '东方 Project © 上海爱丽丝幻乐团', 452],
-    ['', '本片为同人科普作品，不构成医疗建议。', 506],
-    ['字体：', '霞鹜文楷（SIL OFL）', 586],
-    ['语音：', 'AquesTalk（株式会社アクエスト）', 640],
-  ];
-  const LX = CX - Math.max(...rows.map(q => zhWidth(c, q[1], 38))) / 2 + 60;   // 标签右对齐到这里，正文从这里起（整块大致居中）
-  rows.forEach(([lab, txt, y], k) => { const a = ln(k + 1); if (a <= 0) return;
-    fade(c, a, () => { const yy = y + (1 - a) * 14;
-      if (lab) zh(c, lab, LX, yy, { size: 38, align: 'right', color: P.moon });
-      zh(c, txt, LX, yy, { size: 38, color: P.paper }); }); });
-  // 开头从黑里淡入
-  const fin = 1 - sm(0, .9, u); if (fin > 0) { c.fillStyle = `rgba(0,0,0,${fin})`; c.fillRect(0, 0, W, H); }
-}
-
-scene({ order: 6, key: 'ending', title: '总结', dur: seqEnd(S6LINES) + S6CREDIT, lines: S6LINES,
+scene({ order: 6, key: 'ending', title: '总结', dur: S6K.end, lines: S6LINES,
   fn(c, tau, L) {
-    const E = seqEnd(S6LINES), cr = E + .9;   // 讲台在 E+0.9 秒前黑下去，之后是片尾
-    if (tau < cr) {
-      s6Stage(c, tau, L);
-      const bk = sm(E + .1, cr, tau); if (bk > 0) { c.fillStyle = `rgba(0,0,0,${bk})`; c.fillRect(0, 0, W, H); }
-    } else s6Credits(c, tau, tau - cr);
+    if (tau >= S6K.close0) { s6Closing(c, tau, L); return; }
+    spread(c, tau);
+    s6LeftPage(c, tau);
+    s6Stain(c, tau);
+    s6Riffle(c, tau);
+    s6Note(c, tau);
+    s6Char(c, tau, L);
   } });
