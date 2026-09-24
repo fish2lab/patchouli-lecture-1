@@ -196,10 +196,18 @@ function s3Feast(c, tau, x, y, s = 1, glow = 1) {   // 大餐：(x, y) 盘子中
   for (let i = 0; i < 4; i++) { const a = tau * 1.4 + i * 1.7; sparkle(c, x + Math.cos(a) * 140 * s, y - 60 * s + Math.sin(a * 1.3) * 60 * s, (12 + 6 * Math.sin(tau * 5 + i)) * glow, { color: i % 2 ? P.moon : '#fff6d8' }); }
   for (let i = 0; i < 3; i++) rline(c, [[x - 40 * s + i * 40 * s, y - 70 * s], [x - 30 * s + i * 40 * s, y - 95 * s], [x - 40 * s + i * 40 * s, y - 120 * s]], { w: 3, color: P.faint, seed: 427 + i, t: tau, smooth: true, al: .7 * glow });
 }
+function s3Tea(c, tau, x, y, s = 1, k = 1) {   // 奶茶（外卖），(x, y) 杯底
+  pop(c, x, y, k, () => {
+    rline(c, [[x + 10 * s, y - 130 * s], [x + 26 * s, y - 196 * s]], { w: 9 * s, color: P.pink, seed: 450, t: tau });
+    rshape(c, [[x - 44 * s, y - 130 * s], [x + 44 * s, y - 130 * s], [x + 34 * s, y], [x - 34 * s, y]], { fill: mix(P.orange, P.paper, .55), w: 4, seed: 451, t: tau });
+    rshape(c, rectPts(x - 50 * s, y - 142 * s, 100 * s, 14 * s, 4), { fill: P.paper, w: 4, seed: 452, t: tau });
+    for (let i = 0; i < 6; i++) rshape(c, circPts(x - 22 * s + (i % 3) * 22 * s, y - 16 * s - Math.floor(i / 3) * 18 * s, 8 * s, 10), { fill: P.ink, stroke: false, seed: 453 + i });
+  });
+}
 function s3Star(c, tau, x, y, r, text, k, rot = 0) {
   pop(c, x, y, easeOutBack(clamp(k, 0, 1), 2.4), () => {
-    rshape(c, starPts(x, y, r, 5, .5, rot + Math.sin(tau * 3) * .06), { fill: P.sun, w: 5, seed: 430, t: tau });
-    zh(c, text, x + 2, y + 6, { size: r * .72, align: 'center', base: 'middle', color: P.ink });
+    rshape(c, starPts(x, y, r, 5, .56, rot + Math.sin(tau * 3) * .06), { fill: P.sun, w: 5, seed: 430, t: tau });
+    zh(c, text, x + 2, y + 8, { size: r * .56, align: 'center', base: 'middle', color: P.ink });
   });
 }
 // s3Scribble：头顶一团乱线（一直在转）
@@ -255,11 +263,11 @@ function s3Student(c, tau, x, y, s = 1, o = {}) {
   c.save(); c.globalAlpha *= al; c.translate(x, y); c.scale(s * facing, s);
   if (pose === 'slump') {
     const br = Math.sin(tau * 1.6) * 3;   // 呼吸
-    rshape(c, [[-120, 0], [-104, -86 + br], [-40, -110 + br], [40, -110 + br], [104, -86 + br], [120, 0]], { fill: shirt, w: 4, seed, t: tau, smooth: true });
-    s3Head(c, tau, -18, -62 + br * .6, 58, { face, seed: seed + 10 });
-    rshape(c, ellPts(-78, -14, 78, 24, 24, .06), { fill: mix(shirt, '#ffffff', .12), w: 4, seed: seed + 2, t: tau });
-    rshape(c, ellPts(64, -12, 84, 24, 24, -.05), { fill: mix(shirt, '#ffffff', .12), w: 4, seed: seed + 3, t: tau });
-    rshape(c, circPts(138, -14, 16, 14), { fill: P.skin, w: 3, seed: seed + 4, t: tau });
+    rshape(c, [[-120, 0], [-108, -96 + br], [-46, -128 + br], [46, -128 + br], [108, -96 + br], [120, 0]], { fill: shirt, w: 4, seed, t: tau, smooth: true });
+    rshape(c, ellPts(-86, -16, 74, 20, 24, .06), { fill: mix(shirt, '#ffffff', .12), w: 4, seed: seed + 2, t: tau });
+    s3Head(c, tau, -10, -84 + br * .6, 60, { face, seed: seed + 10 });
+    rshape(c, ellPts(70, -14, 80, 20, 24, -.05), { fill: mix(shirt, '#ffffff', .12), w: 4, seed: seed + 3, t: tau });
+    rshape(c, circPts(142, -16, 16, 14), { fill: P.skin, w: 3, seed: seed + 4, t: tau });
   } else {
     const walk = pose === 'walk', sw = walk ? Math.sin(phase * TAU) : 0, bob = walk ? -Math.abs(Math.cos(phase * TAU)) * 6 : 0;
     const hipY = -84 + bob, shY = hipY - 80;
@@ -298,6 +306,7 @@ function s3Desk(c, tau, t0) {
   for (let i = 0; i < 7; i++) sparkle(c, 1210 + hash(i, 3) * 320, 110 + hash(i, 4) * 260, 5 + 4 * Math.sin(tau * 3 + i), { color: '#fff6d8', al: .8 });
   // 挂历「考试周」
   const ck = sm(.1, .5, u, easeOutBack);
+  c.save(); c.translate(20, 60);
   pop(c, 330, 120, ck, () => {
     rline(c, [[330, 60], [330, 100]], { w: 4, color: P.faint, seed: 503 });
     rshape(c, rectPts(170, 100, 320, 290, 10), { fill: P.paper, w: 5, seed: 504, t: tau });
@@ -309,6 +318,7 @@ function s3Desk(c, tau, t0) {
       if (hash(id, 9) < .55) cross(c, cx, cy, 36, { p: sm(.6 + id * .08, .9 + id * .08, u, s3Lin), t: tau, seed: 530 + id });
     }
   });
+  c.restore();
   // 台灯光
   const lg = c.createRadialGradient(1300, 560, 20, 1300, 640, 620); lg.addColorStop(0, alpha(P.lamp, .45)); lg.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = lg; c.fillRect(-100, 0, W + 200, 900);
   rline(c, [[1700, 740], [1650, 520], [1520, 450]], { w: 12, color: P.ink2, seed: 540, t: tau });
@@ -318,6 +328,8 @@ function s3Desk(c, tau, t0) {
   rshape(c, rectPts(40, 740, 1840, 60, 6), { fill: P.shelf2, w: 5, seed: 543, t: tau });
   c.fillStyle = P.shelf; c.fillRect(40, 800, 1840, 400);
   rline(c, [[40, 800], [1880, 800]], { w: 5, seed: 544, t: tau });
+  for (const dx of [240, 1380]) { rshape(c, rectPts(dx, 830, 300, 120, 6), { fill: mix(P.shelf, P.shelf2, .4), w: 4, seed: 545 + dx, t: tau });
+    rline(c, [[dx + 120, 870], [dx + 180, 870]], { w: 8, color: P.moon, seed: 546 + dx, t: tau }); }
   // 书山：一本本砸下来
   S3BOOKS.forEach((pile, pi) => { let yy = 740;
     pile.forEach(([bx, bw, bh, col, label], i) => {
@@ -334,15 +346,16 @@ function s3Desk(c, tau, t0) {
   const ph = sm(1.3, 1.6, u, easeOutBack);
   pop(c, 1180, 720, ph, () => { c.save(); c.translate(1180, 722); c.scale(1, .45); s3Phone(c, tau, 0, 0, 1.1, { glow: .6 + .4 * Math.sin(tau * 6) }); c.restore(); });
   // 趴着的大学生 + 头顶乱线
-  s3Student(c, tau, 960, 740, 1, { pose: 'slump', face: 'tired', shirt: P.blue });
-  s3Scribble(c, tau, 940, 540, 95, sm(1.0, 2.6, u, s3Lin));
+  s3Tea(c, tau, 1290, 740, 1, sm(1.5, 1.8, u, easeOutBack));
+  s3Student(c, tau, 960, 742, 1.3, { pose: 'slump', face: 'tired', shirt: P.blue });
+  s3Scribble(c, tau, 945, 470, 120, sm(1.0, 2.6, u, s3Lin));
   c.restore();
 }
 
 // ===================== 满屏 2：上楼梯 =====================
-const S3STEP = { x: 60, y: 930, w: 150, h: 60, n: 12 };
+const S3STEP = { x: 90, y: 930, w: 160, h: 62, n: 11 };
 function s3Stairs(c, tau, t0) {
-  const u = tau - t0, st = S3STEP, per = .42, fk = Math.max(0, (u - .5) / per), k = Math.min(st.n - 2, Math.floor(fk)), fr = k >= st.n - 2 ? 1 : fk - k;
+  const u = tau - t0, st = S3STEP, per = .46, fk = Math.max(0, (u - .5) / per), k = Math.min(st.n - 2, Math.floor(fk)), fr = clamp(fk - k, 0, 1);
   const hopK = clamp(fr / .55, 0, 1), sx = x => st.x + x * st.w + st.w / 2, sy = x => st.y - x * st.h;
   const px = lerp(sx(k), sx(k + 1), easeIO(hopK)), py = lerp(sy(k), sy(k + 1), easeIO(hopK)) - Math.sin(hopK * Math.PI) * 50;
   const landed = j => t0 + .5 + (j - 1) * per + per * .55;   // 第 j 级落脚的时刻
@@ -352,7 +365,7 @@ function s3Stairs(c, tau, t0) {
   const sg = c.createRadialGradient(1700, 150, 20, 1700, 150, 420); sg.addColorStop(0, alpha(P.sun, .7)); sg.addColorStop(1, alpha(P.sun, 0)); c.fillStyle = sg; c.fillRect(0, 0, W, H);
   rshape(c, circPts(1700, 150, 70, 28), { fill: P.sun, w: 5, seed: 600, t: tau });
   // 镜头：跟着小人，轻轻推近
-  const z = lerp(1.22, 1.08, sm(0, 5, u, easeSine)), cx = clamp(px, 700, 1300), cy = clamp(py - 160, 380, 700);
+  const z = lerp(1.22, 1.08, sm(0, 5, u, easeSine)), cx = clamp(px, 700, 1300), cy = clamp(py - 150, 200, 700);
   c.save(); c.translate(CX, CY); c.scale(z, z); c.translate(-cx, -cy);
   for (let i = 0; i < 4; i++) { const x0 = (hash(i, 61) * 2200 - 200 + u * 14 * (i + 1)) , y0 = 120 + hash(i, 62) * 300;
     rshape(c, ellPts(x0, y0, 90, 34, 18), { fill: alpha('#ffffff', .75), stroke: false, seed: 610 + i, smooth: true });
@@ -366,7 +379,7 @@ function s3Stairs(c, tau, t0) {
     rshape(c, rectPts(x, y, st.w + 6, 16, 3), { fill: lit ? mix(P.paper, P.sun, .6 * lk) : P.paper, w: 4, seed: 660 + j, t: tau });
   }
   // 终点小旗
-  const fx = sx(st.n - 1), fy = sy(st.n - 1);
+  const fx = sx(st.n - 1) + 62, fy = sy(st.n - 1);
   rline(c, [[fx, fy], [fx, fy - 150]], { w: 6, seed: 680, t: tau });
   rshape(c, [[fx, fy - 150], [fx + 80, fy - 128 + Math.sin(tau * 5) * 6], [fx, fy - 104]], { fill: P.red, w: 4, seed: 681, t: tau });
   // 每一级的小火花（落脚时迸一下，之后一直在台阶上跳）
@@ -407,7 +420,7 @@ function s3BoardContent(c, tau) {
     // 「爽！」
     const pk = [s3X(.27), s3Y(.85)], sk = sm(.265, .31, uA, s3Lin);
     s3Burst(c, pk[0], pk[1], sm(T2 + 1.45, T2 + 2.1, tau, s3Lin), 90, 740);
-    s3Star(c, tau, pk[0] + 96, pk[1] + 6, 58, '爽！', sk, .1);
+    s3Star(c, tau, pk[0] + 128, pk[1] - 24, 72, '爽！', sk, .1);
     // 低谷 + 还要待一阵
     const dx = s3X(.49), dk = sm(.4, .46, uA, s3Lin);
     if (dk > 0) zh(c, '低谷', dx, 640, { size: 46, color: P.red, align: 'center', p: dk });
