@@ -167,7 +167,7 @@ function s6Stage(c, tau, L) {
       const u = tau - t[4];
       [[RX - 80, RY + 90], [RX + 80, RY + 90], [RX, RY - 40]].forEach(([x, y], q) => {
         const go = q ? sm(.55 + q * .15, .95 + q * .15, u) : 0;
-        if (go < 1) fade(c, 1 - go, () => s6Icon(c, 'cube', x + go * (q === 1 ? 160 : -160), y - go * 80, 110, tau, 940 + q * 5));
+        if (go < 1) fade(c, 1 - go, () => pop(c, x, y, 1 - go * .5, () => s6Icon(c, 'cube', x + go * (q === 1 ? 70 : -40), y - go * 110, 110, tau, 940 + q * 5)));
       });
       const ka = easeOutBack(clamp((u - 1.1) / .35, 0, 1));
       pop(c, RX + 190, RY + 60, ka, () => { arrow(c, [RX + 190, RY - 40], [RX + 190, RY + 140], { w: 10, color: P.green, head: 36, seed: 950, t: tau }); });
@@ -252,7 +252,7 @@ function s6Credits(c, tau, u) {   // u = 片尾开始后几秒
   for (let z = 0; z < 3; z++) { const ph = (u * .45 + z / 3) % 1;
     zh(c, 'z', head[0] + 40 + ph * 70 + Math.sin(ph * 6) * 10, head[1] - 60 - ph * 150, { size: 38 + ph * 34, color: P.hair, outline: P.night, ow: 5, al: Math.sin(ph * Math.PI) * sm(.8, 1.6, u) }); }
   // 演职信息
-  const ln = (k, d = .5) => sm(1.0 + k * .45, 1.0 + k * .45 + d, u);
+  const ln = (k, d = .5) => sm(.7 + k * .32, .7 + k * .32 + d, u);
   const title = '帕秋莉讲座 · 第 1 集 · 完', a0 = ln(0, .7);
   if (a0 > 0) { fade(c, a0, () => {
     zh(c, title, CX, 190 - (1 - a0) * 16, { size: 76, align: 'center', color: P.moon });
