@@ -487,6 +487,10 @@ function s3BoardContent(c, tau) {
   // ---- D：对策一：只剩一样，平缓的小起伏（L7）----
   if (tau >= T(6) && tau < T(7)) fade(c, out(T(7)), () => {
     s3Card(c, tau, 960, 196, 680, 76, '对策一：别每次都叠满 buff', T(6) + .1, { size: 44 });
+    // 上一张图的超高峰超深坑留一个淡淡的影子，做对比
+    const gk = .3 * (1 - sm(T(6) + 2.2, E(6) - .4, tau));
+    if (gk > 0) { const gp = []; for (let i = 0; i <= 200; i++) { const uu = i / 200 * .62; gp.push([s3X(uu), s3Y(S3C(uu))]); }
+      rline(c, gp, { w: 4, color: P.ink2, dash: [10, 12], al: gk, seed: 818 }); }
     const uD = key(tau, [[T(6) + 2.1, 0], [E(6) - .3, .96]], s3Lin);
     s3Curve(c, tau, S3D, uD, { seed: 820, color: P.green });
     const ck = sm(E(6) - .5, E(6) - .2, tau, s3Lin);
@@ -507,14 +511,13 @@ function s3BoardContent(c, tau) {
     fade(c, rk, () => {
       rshape(c, road, { fill: mix(P.gray, P.paper, .35), w: 5, seed: 840, t: tau });
       for (let i = 0; i < 6; i++) { const x = 800 + i * 130; rline(c, [[x, 655 - i * 7], [x + 60, 651 - i * 7]], { w: 5, color: P.paper, seed: 841 + i, t: tau, al: .7 }); }
-      for (let i = 0; i < 7; i++) { const x = 820 + i * 110, y = 560 + hash(i, 4) * 30; rshape(c, ellPts(x, y, 30, 12, 12), { fill: alpha(P.gray, .35), stroke: false, seed: 850 + i }); }
     });
     // 慢吞吞走路的小人 + 头顶灰云
     const wx = lerp(830, 980, sm(E(8), D - .8, tau, s3Lin)), ph = (tau * .9) % 1;
     fade(c, rk, () => {
       s3Student(c, tau, wx, 650, .72, { pose: 'walk', phase: ph, face: 'grim', shirt: mix(P.teal, P.gray, .75) });
       s3Drop(c, tau, wx + 44, 480 + Math.sin(tau * 4) * 4, 11, 860);
-      const cy = 330 + Math.sin(tau * 2) * 5;
+      const cy = 390 + Math.sin(tau * 2) * 5;
       rshape(c, [...ellPts(wx - 10, cy, 70, 34, 18)], { fill: P.gray, w: 4, seed: 861, t: tau, smooth: true });
       rshape(c, ellPts(wx + 34, cy - 20, 44, 30, 16), { fill: P.gray, w: 4, seed: 862, t: tau, smooth: true });
       for (let i = 0; i < 3; i++) { const yy = cy + 40 + ((tau * 90 + i * 30) % 60); rline(c, [[wx - 40 + i * 30, yy], [wx - 46 + i * 30, yy + 16]], { w: 3, color: P.gray, seed: 863 + i }); }
@@ -564,9 +567,17 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES,
     // 满屏镜头：[开始, 结束, 画法]
     const shots = [[.4, S3E(0) + .15, s3Desk], [S3T(8) - .3, S3E(8) + .25, s3Stairs]];
     let f = 0, full = null, st = 0;
-    for (const [a, b, draw] of shots) { const k = Math.min(sm(a, a + .35, tau), 1 - sm(b - .35, b, tau)); if (k > 0) { f = k; full = draw; st = a; } }
-    if (f < 1) { c.save(); if (f > 0) { const z = 1 + .6 * easeIn(f); c.translate(S3BC[0], S3BC[1]); c.scale(z, z); c.translate(-S3BC[0], -S3BC[1]); }
+    for (const [a, b, draw] of shots) { const k = Math.min(sm(a, a + .4, tau), 1 - sm(b - .4, b, tau)); if (k > 0) { f = k; full = draw; st = a; } }
+    // 转场：从黑板中心开一个圆（金色魔法边），满屏插图在圆里；出来时圆收回黑板
+    if (f < 1) { c.save(); if (f > 0) { const z = 1 + .25 * easeIn(f); c.translate(S3BC[0], S3BC[1]); c.scale(z, z); c.translate(-S3BC[0], -S3BC[1]); }
       s3StageDraw(c, tau, L); c.restore(); }
-    if (f > 0) { c.save(); c.globalAlpha = f; const z = lerp(1.12, 1, easeOut(f)); c.translate(CX, CY); c.scale(z, z); c.translate(-CX, -CY); full(c, tau, st); c.restore(); }
+    if (f > 0) {
+      const R = 1500 * easeIO(f);
+      c.save(); if (f < 1) { c.beginPath(); c.arc(S3BC[0], S3BC[1], R, 0, TAU); c.clip(); }
+      const z = lerp(1.1, 1, easeOut(f)); c.translate(CX, CY); c.scale(z, z); c.translate(-CX, -CY); full(c, tau, st); c.restore();
+      if (f < 1) { c.save(); c.globalAlpha = .9; c.strokeStyle = P.moon; c.lineWidth = 10; c.beginPath(); c.arc(S3BC[0], S3BC[1], R, 0, TAU); c.stroke();
+        c.lineWidth = 3; c.beginPath(); c.arc(S3BC[0], S3BC[1], R + 16, 0, TAU); c.stroke(); c.restore();
+        for (let i = 0; i < 10; i++) { const a = i / 10 * TAU + tau * 2; sparkle(c, S3BC[0] + Math.cos(a) * R, S3BC[1] + Math.sin(a) * R, 14, { color: '#fff6d8' }); } }
+    }
     chapterTag(c, tau, '第三页 · 动力', { t0: .05 });
   } });
