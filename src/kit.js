@@ -1,17 +1,20 @@
 'use strict';
 // 画具：颜色、手绘线、字、背景、讲台布局。所有场景共用，场景文件不改这里（缺什么先写在自己文件里，汇报里提）。
-// 画风：「魔法图书馆的讲义」——深紫夜色的大图书馆做底，羊皮纸魔导书页当黑板，线条是手绘的、每秒抖 8 次，
-// 字是霞鹜文楷手写体。颜色饱和度中等，暖光。
+// 画风第二版（docs/画风v2.md）：克制、写意。全片是一本摊开的魔导书——暖白纸、墨线、几级灰、一种帕秋莉紫；
+// 夜里是整页墨加白色刮痕线。帕秋莉是放在书页上的剪纸人偶（cutPaper）。字是霞鹜文楷手写体。
 
 const P = {
-  // 图书馆夜色
-  night: '#1c1530', night2: '#271d42', night3: '#352858', shelf: '#4a2f2a', shelf2: '#62402f', shelfDark: '#2c1c1a', lamp: '#ffcf7a',
-  // 纸和墨
-  paper: '#f5ecd7', paper2: '#eadbb8', paperEdge: '#c9ae7f', ink: '#2b2140', ink2: '#5a4b73', faint: '#b8a98f',
-  // 帕秋莉的颜色
-  hair: '#9d7fd6', hairDark: '#6f55a8', dress: '#f3e6f0', stripe: '#b9a0d8', cap: '#fbf4f7', moon: '#e9b949', ribbonRed: '#d8394d', ribbonBlue: '#3d78d6', skin: '#fde8dc', blush: '#f4a7b0',
-  // 功能色
-  red: '#e0474c', green: '#4caf7a', blue: '#4a8fe0', sky: '#8fcaf2', sun: '#f7b733', orange: '#f08a3c', gold: '#e8b64c', purple: '#7b5ea7', pink: '#f09bb5', teal: '#3fb3a8', gray: '#8b8398',
+  // 纸、墨、灰（主色）
+  paper: '#ece5d6', paper2: '#e2d9c6', paperEdge: '#b9ab90', ink: '#221c26', ink2: '#4a4250', faint: '#b3aa9a',
+  g1: '#cfc7b8', g2: '#8f887e', g3: '#57514b',
+  // 夜：整页墨
+  night: '#1d1a22', night2: '#26222c', night3: '#332e3a', shelf: '#3a3230', shelf2: '#4a403b', shelfDark: '#241f1e', lamp: '#e8cf9a',
+  // 帕秋莉（剪纸用的彩纸，压暗、低饱和）
+  hair: '#8676a8', hairDark: '#65588a', dress: '#ebe3e6', stripe: '#aea2c4', cap: '#f1ece4', moon: '#c9a24a', ribbonRed: '#ad4550', ribbonBlue: '#4f6b98', skin: '#f1e2d6', blush: '#dea3a3',
+  // 强调色（一页最多一种）
+  purple: '#6d5d8c', red: '#a8434a', green: '#5b7d5f', blue: '#4f6b8c', gold: '#c9a24a',
+  // 旧键（第一版场景还在用，重做后删）
+  sky: '#a9b8c4', sun: '#c9a24a', orange: '#b8794a', pink: '#c98f9c', teal: '#5b7d78', gray: '#8f887e',
 };
 
 // ===================== 几何 =====================
@@ -194,4 +197,52 @@ function blinkAt(t, seed = 1) { const period = 3.2 + hash(1, seed) * 1.5, u = ((
 // stageChar：在讲台位置画帕秋莉，嘴型、表情、眨眼自动从当前台词取。o 覆盖 drawPatchouli 的参数
 function stageChar(c, tau, L, o = {}) {
   drawPatchouli(c, { x: STAGE.char.x, y: STAGE.char.y, h: STAGE.char.h, facing: 1, pose: 'lecture', mood: (L && L.mood) || 'normal', mouth: (L && L.mouth) || 0, blink: blinkAt(tau), t: tau, ...o });
+}
+
+// ===================== 第二版画具 =====================
+// 纸纹：一张 256² 的细纤维纹理（载入时生成一次，确定性的），cutPaper 和 paperBg 叠在上面
+const PAPER_GRAIN = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'), r = rng(77);
+  for (let k = 0; k < 900; k++) { const x = r() * 256, y = r() * 256, a = r() * TAU, l = 2 + r() * 9; g.strokeStyle = r() < .5 ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.35)'; g.lineWidth = .4 + r() * .6;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+  for (let k = 0; k < 2500; k++) { g.fillStyle = r() < .5 ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.3)'; g.fillRect(r() * 256, r() * 256, 1, 1); }
+  return cv; })();
+function grain(c, path, al = .08) { c.save(); c.clip(path); c.globalAlpha *= al; c.fillStyle = c.createPattern(PAPER_GRAIN, 'repeat'); c.fillRect(-4000, -4000, 8000, 8000); c.restore(); }
+// scissor：把轮廓变成剪刀剪出来的边——每 step 像素一段直线，段与段之间有细小的折角
+function scissor(pts, seed = 1, step = 12, amp = .9) {
+  const q = resample(pts, 3, true), out = []; let acc = 0, k = 0;
+  for (let i = 0; i < q.length; i++) { if (i && (acc += Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1])) < step) continue; acc = 0; k++;
+    const a = q[(i + 1) % q.length], b = q[(i - 1 + q.length) % q.length], tx = a[0] - b[0], ty = a[1] - b[1], L = Math.hypot(tx, ty) || 1, j = (hash(k, seed) - .5) * 2 * amp;
+    out.push([q[i][0] - ty / L * j, q[i][1] + tx / L * j]); }
+  return out;
+}
+// cutPaper：一片剪纸。pts 是轮廓（闭合），o = { seed, step 剪刀段长, shadow 投影（默认有）, sx/sy 投影偏移, blur, grain 纸纹浓度, edge 剪口亮边, al }
+// 返回 Path2D，方便在里面再裁剪、贴纸条。
+function cutPaper(c, pts, color, o = {}) {
+  const { seed = 1, step = 12, shadow = true, sx = 2.5, sy = 3.5, blur = 5, grain: gr = .1, edge = true, al = 1, smooth = false } = o;
+  const path = polyPath(scissor(smooth ? spline(pts, 6, true) : pts, seed, step), true);
+  c.save(); c.globalAlpha *= al;
+  if (shadow) { c.save(); c.shadowColor = 'rgba(30,20,35,.30)'; c.shadowBlur = blur; c.shadowOffsetX = sx; c.shadowOffsetY = sy; c.fillStyle = color; c.fill(path); c.restore(); }
+  c.fillStyle = color; c.fill(path);
+  if (gr) grain(c, path, gr);
+  if (edge) { c.strokeStyle = alpha(mix(color, '#ffffff', .45), .55); c.lineWidth = 1; c.stroke(path); }
+  c.restore(); return path;
+}
+// paperBg：整页纸（纸纹 + 极淡横格 + 四周略暗），o = { color, lines 横格, dark 夜页（整页墨）}
+function paperBg(c, o = {}) {
+  const { color = o.dark ? P.night : P.paper, lines = !o.dark } = o, full = polyPath(rectPts(0, 0, W, H));
+  c.fillStyle = color; c.fillRect(0, 0, W, H); grain(c, full, o.dark ? .06 : .12);
+  if (lines) { c.save(); c.strokeStyle = alpha(P.ink, .045); c.lineWidth = 1; for (let y = 120; y < H; y += 54) { c.beginPath(); c.moveTo(0, y + .5); c.lineTo(W, y + .5); c.stroke(); } c.restore(); }
+  const v = c.createRadialGradient(CX, CY, H * .45, CX, CY, W * .75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, `rgba(40,30,20,${o.dark ? .35 : .06})`); c.fillStyle = v; c.fillRect(0, 0, W, H);
+}
+// handFrame：手画的外框（整片的「画框」）。film.js 每帧最后画
+function handFrame(c, t, o = {}) { const { color = P.ink, w = 7, inset = 14 } = o;
+  rline(c, rectPts(inset, inset, W - inset * 2, H - inset * 2), { w, color, close: true, seed: 901, t, amp: 1.6 }); }
+// caption：左上角展签（白底黑框，手写字逐字写出）。t0 出现，t1 收起（可省）
+function caption(c, text, tau, t0 = 0, o = {}) {
+  const { t1 = Infinity, size = 40 } = o, k = Math.min(sm(t0, t0 + .25, tau), 1 - sm(t1, t1 + .2, tau)); if (k <= 0) return;
+  const w = zhWidth(c, text, size) + 44, h = size + 30, x = 40, y = 40;
+  c.save(); c.globalAlpha *= k;
+  rshape(c, rectPts(x, y, w, h), { fill: '#f6f2ea', stroke: P.ink, w: 3.5, seed: 911, t: tau, amp: .8 });
+  zh(c, text, x + 22, y + h / 2 + size * .36, { size, color: P.ink, p: writeP(tau, t0 + .1, text, .06) });
+  c.restore();
 }
