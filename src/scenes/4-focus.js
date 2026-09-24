@@ -73,10 +73,10 @@ const S4ST = (() => { const r = rng(404), out = []; let guard = 0;
 const s4D = (i, j) => Math.hypot(S4ST[i][0] - S4ST[j][0], S4ST[i][1] - S4ST[j][1], S4ST[i][2] - S4ST[j][2]);
 // 连线：最近邻，每颗星最多 3 条
 const S4ED = (() => { const pr = []; for (let i = 0; i < S4N; i++) for (let j = i + 1; j < S4N; j++) pr.push([s4D(i, j), i, j]); pr.sort((a, b) => a[0] - b[0]);
-  const deg = Array(S4N).fill(0), E = []; for (const [d, i, j] of pr) { if (E.length >= 58 || d > 340) break; if (deg[i] < 3 && deg[j] < 3) { E.push([i, j]); deg[i]++; deg[j]++; } } return E; })();
+  const deg = Array(S4N).fill(0), E = []; for (const [d, i, j] of pr) { if (E.length >= 48 || d > 300) break; if (deg[i] < 3 && deg[j] < 3) { E.push([i, j]); deg[i]++; deg[j]++; } } return E; })();
 const s4Has = (i, j) => S4ED.some(([a, b]) => (a === i && b === j) || (a === j && b === i));
 // L0 改连的几条：[边序号, 新的另一端]
-const S4REW = [5, 13, 22, 31].filter(e => e < S4ED.length).map(e => { const [i, j] = S4ED[e]; let best = -1, bd = 1e9;
+const S4REW = [3, 9, 16, 24, 31].filter(e => e < S4ED.length).map(e => { const [i, j] = S4ED[e]; let best = -1, bd = 1e9;
   for (let k = 0; k < S4N; k++) if (k !== i && k !== j && !s4Has(i, k)) { const d = s4D(i, k); if (d < bd) { bd = d; best = k; } } return [e, best]; });
 
 // 旋转：绕 Y 转 a，再绕 X 转 b
@@ -212,7 +212,7 @@ function s4Char(c, tau, L) {
   const xs = [1500, 1470, 1400, 1560, 1640, 1560, 1470, 1590, 1560, 1480]; let x = xs[0];
   for (let k = 1; k < xs.length; k++) x = lerp(x, xs[k], sm(t(k) - .25, t(k) + .3, tau, easeIO));
   let o = { x, y: 862, h: 520, pose: 'lecture', mood: L.mood || 'normal', look: -.3, facing: -1, tilt: 0 };
-  if (!ln(1)) { o.gesture = tau < s4At(0, .6) ? .4 : .6 + .4 * Math.sin(twos(tau) * 2); }
+  if (!ln(1)) { if (tau < s4At(0, .58)) o.gesture = .4; else { o.pose = 'point'; o.look = -.8; } }
   if (ln(1) && !ln(2)) { const f = (tau - t(1)); if (f < s4At(1, .5) - t(1)) { o.pose = 'hide'; o.mood = 'flustered'; o.look = -.6; } else { o.pose = 'point'; o.mood = 'normal'; o.look = -.8; } }
   if (ln(2) && !ln(3)) { if (tau < s4At(2, .62)) { o.pose = 'cross'; o.mood = 'pout'; } else { o.pose = 'point'; o.mood = 'smug'; o.look = -.7; } }
   if (ln(3) && !ln(4)) { o.pose = 'sit'; o.y = 712; o.mood = tau < s4At(3, .3) ? 'normal' : 'sleepy'; o.tilt = .12 * sm(s4At(3, .45), s4At(3, .75), tau); }
@@ -284,7 +284,7 @@ function s4Scene(c, tau, L) {
   // ---- 连线 ----
   const baseA = S.lines * (1 - sm(s4T(9) + .2, s4T(9) + 1, tau));
   const drawIn = i => sm(s4T(0) - .6 + (i % 15) * .1, s4T(0) + .3 + (i % 15) * .1, tau);
-  const rewT = k => s4At(0, .6 + k * .07);
+  const rewT = k => s4At(0, .42 + k * .08);
   if (baseA > 0) S4ED.forEach(([i, j], e) => {
     const rw = S4REW.findIndex(r => r[0] === e);
     if (rw < 0) { s4Line(c, PJ[i], PJ[j], { p: drawIn(e), al: baseA, seed: 4900 + e }); return; }
@@ -294,8 +294,10 @@ function s4Scene(c, tau, L) {
     const r = sm(tb, tb + .35, tau, easeOut), m = s4L(a, b, .5);
     if (r < 1) { s4Line(c, a, [...s4L(a, m, 1 - r), a[2]], { al: baseA, seed: 4950 + e }); s4Line(c, [...s4L(b, m, 1 - r), b[2]], b, { al: baseA, seed: 4960 + e }); }
     // 新连到另一颗星
-    const g = sm(tb + .3, tb + .8, tau, easeIO); s4Line(c, a, nb, { p: g, al: baseA, seed: 4970 + e });
-    if (g > 0 && g < 1) { const q = s4L(a, nb, g); s4Star(c, q[0], q[1], 4, S4C.white, .5); }
+    const g = sm(tb + .3, tb + .8, tau, easeIO), hot = 1 - sm(tb + 1, tb + 2.2, tau);
+    s4Line(c, a, nb, { p: g, al: baseA, seed: 4970 + e, col: mix(S4C.white, S4C.gold, hot), w: hot > 0 ? 2.5 + 2 * hot : null });
+    if (g > 0 && g < 1) { const q = s4L(a, nb, g); s4Star(c, q[0], q[1], 5, S4C.gold, .8); }
+    if (r > 0 && r < .6) sparkle(c, m[0], m[1], 14 * (1 - r / .6), { color: S4C.white });
   });
 
   // ---- L1：错题 → 红叉 → 星星一颗颗亮成金色 ----
@@ -355,7 +357,7 @@ function s4Scene(c, tau, L) {
 
   // L1 红叉落在那颗星上
   if (X && tau > s4At(1, .55) && tau < s4T(2) + .5) { const a = 1 - sm(s4T(2), s4T(2) + .5, tau); c.save(); c.globalAlpha *= a; cross(c, X[0] + 34, X[1] - 30, 36, { color: S4C.red, p: sm(s4At(1, .55), s4At(1, .6), tau), w: 6, seed: 5200 }); c.restore(); }
-  if (tau > s4At(0, .62) && tau < s4T(1) + .4) fade(c, 1 - sm(s4T(1), s4T(1) + .4, tau), () => s4Txt(c, '学习 = 重新布线', 150, 860, tau, s4At(0, .66), { size: 44 }));
+  if (tau > s4At(0, .5) && tau < s4T(1) + .4) fade(c, 1 - sm(s4T(1), s4T(1) + .4, tau), () => s4Txt(c, '学习 = 重新布线', 150, 860, tau, s4At(0, .5), { size: 44 }));
 
   // ---- L4 的「歇」：闭眼、走走 ✓，手机 ✗ ----
   if (orbA > 0) { const m20 = orbP(th0 + S4K90 + (TAU - S4K90) * .5); if (m20) { c.save(); c.globalAlpha *= orbA;
