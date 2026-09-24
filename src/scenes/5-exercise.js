@@ -437,7 +437,7 @@ function s5LiftShot(c, tau, Ln) {
   const px = 960 + noise1(twos(tau) * 5, 11) * 2.5, py = 990, ch = 640, cut = py - ch * .3, leg = noise1(twos(tau) * 13, 12) * 4;
   const co = { x: px, y: py, h: ch, pose: 'lift', mood: 'sad', mouth: Ln.mouth || 0, blink: blinkAt(tau, 3), t: tau };
   c.save(); c.beginPath(); c.rect(0, cut, W, H); c.clip(); c.translate(leg, 0); drawPatchouliChibi(c, co); c.restore();
-  c.save(); c.beginPath(); c.rect(0, -400, W, cut + 400); c.clip(); var hp = drawPatchouliChibi(c, co); c.restore();
+  c.save(); c.beginPath(); c.rect(0, -400, W, cut + 400); c.clip(); const hp = drawPatchouliChibi(c, co); c.restore();
   const hands = hp.hands.slice().sort((a, b) => a[0] - b[0]), head = hp.head;
   // 杠铃：先压下来（第 1 秒内），然后一抖一抖
   const drop = key(u, [[0, -26], [.9, -26], [1.15, 14], [1.4, 0]]), wig = Math.sin(u * 17) * 3 + noise1(twos(tau) * 6, 21) * 4;
@@ -606,7 +606,7 @@ function s5G6(c, tau) {
         zh(c, '任何活动', 1640, 815, { size: 36, align: 'center', color: P.green });
       });
       const tc = s5At(5, '都比', -.1);
-      if (tau > tc) s5Words(c, [['任何活动', P.green], [' ＞ ', P.moon], ['一直坐着', P.red]], 1285, 300, { size: 64, p: writeP(tau, tc, '任何活动 ＞ 一直坐着', .06) });
+      if (tau > tc) s5Words(c, [['任何活动', P.green], [' ＞ ', P.moon], ['一直坐着', P.red]], 1285, 350, { size: 72, p: writeP(tau, tc, '任何活动 ＞ 一直坐着', .06) });
       pop(c, 1310, 640, s5Pop(tau, tc + .3), () => zh(c, '＞', 1310, 680, { size: 130, align: 'center', color: P.moon, outline: P.ink, ow: 6 }));
     });
   });
