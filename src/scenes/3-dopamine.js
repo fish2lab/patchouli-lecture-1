@@ -32,30 +32,24 @@ function s3Key(t, K) { if (t <= K[0][0]) return K[0][1];
 
 // ===================== 2D：La Linea 地面线，一笔画出书堆 + 趴着的学生 + 头上一团乱线 =====================
 const S3C = (() => {
-  const cx = 690, books = [[272, 44, 0], [236, 38, 14], [258, 48, -10], [214, 36, 8], [246, 42, -6], [208, 34, 12]];
-  let y = S3GY; const tops = books.map(([w, h, dx]) => { const b = y; y -= h; return { l: cx + dx - w / 2, r: cx + dx + w / 2, b, t: y }; });
-  const top = y, pts = [], kind = [];
-  const add = (p, k = 0) => { pts.push(p); kind.push(k); };
-  tops.forEach(b => { add([b.l, b.b]); add([b.l, b.t]); });
-  const T = tops.at(-1);
-  // 趴着的学生：背（一道弓）→ 头（一圈）→ 胳膊搭在书上
-  spline([[T.l + 20, top], [T.l + 34, top - 30], [T.l + 70, top - 58], [T.l + 112, top - 58], [T.l + 138, top - 44]], 5).forEach(p => add(p));
-  const hc = [T.l + 162, top - 40], hr = 24;
-  for (let k = 0; k <= 10; k++) { const a = Math.PI * (1.15 + .35 * k / 10); add([hc[0] + Math.cos(a) * hr, hc[1] + Math.sin(a) * hr]); }
-  // 乱线：从头顶冒出去，缠几圈，再回到头顶
-  const r = rng(303), tg = [];
-  for (let i = 0; i <= 96; i++) { const a = i * .43 + noise1(i * .2, 5) * .6, gx = hc[0] - 8 + 20 * Math.sin(i * .06), gy = top - 150 + 12 * Math.cos(i * .05), rr = 1 + .28 * noise1(i * .3, 9);
-    tg.push([gx + 62 * Math.cos(a) * rr, gy + 30 * Math.sin(a) * rr]); }
-  const head = [hc[0], hc[1] - hr];
-  spline([head, [head[0] - 4, head[1] - 30], tg[0]], 5).forEach(p => add(p, 1)); spline(tg, 5).forEach(p => add(p, 1)); spline([tg.at(-1), [head[0] + 8, head[1] - 34], head], 5).forEach(p => add(p, 1));
-  for (let k = 0; k <= 16; k++) { const a = Math.PI * (1.5 + 1.0 * k / 16); add([hc[0] + Math.cos(a) * hr, hc[1] + Math.sin(a) * hr]); }
-  spline([[hc[0] + 18, hc[1] + 16], [T.r - 14, top - 8], [T.r, top]], 5).forEach(p => add(p));
-  tops.slice().reverse().forEach(b => { add([b.r, b.t]); add([b.r, b.b]); });
-  // 摊平时每个点对应地面上的位置（按弧长均匀铺开）
+  const pts = [], kind = [], add = (p, k = 0) => { pts.push(p); kind.push(k); }, G = S3GY;
+  // 一摞书（五本，左边错开）
+  [[580, G], [580, G - 34], [592, G - 34], [592, G - 64], [574, G - 64], [574, G - 96], [586, G - 96], [586, G - 124], [596, G - 124], [596, G - 152], [626, G - 152]].forEach(p => add(p));
+  // 胳膊搭在书上，头趴在胳膊上；头顶冒出一团乱线
+  spline([[626, G - 152], [636, G - 166], [668, G - 170]], 4).forEach(p => add(p));
+  const hc = [704, G - 206], hr = 46, arc = (a0, a1, n) => { for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n; add([hc[0] + Math.cos(a) * hr, hc[1] + Math.sin(a) * hr]); } };
+  arc(Math.PI * .66, Math.PI * 1.45, 14);
+  const head = pts.at(-1).slice(), tg = [];
+  for (let i = 0; i <= 120; i++) { const a = i * .47, r = 1 + .35 * noise1(i * .21, 7);
+    tg.push([hc[0] - 4 + (52 * Math.cos(a) + 22 * Math.cos(a * 2.3 + 1)) * r + 10 * Math.sin(i * .05), hc[1] - 150 + (26 * Math.sin(a * 1.1) + 13 * Math.sin(a * 3.1)) * r]); }
+  spline([head, [head[0] - 6, head[1] - 34], tg[0]], 5).forEach(p => add(p, 1)); spline(tg, 5).forEach(p => add(p, 1)); spline([tg.at(-1), [head[0] + 10, head[1] - 40], head], 5).forEach(p => add(p, 1));
+  arc(Math.PI * 1.45, Math.PI * 1.86, 8);
+  // 驼着的背，一路弯到地上
+  spline([pts.at(-1), [792, G - 238], [850, G - 196], [884, G - 120], [896, G - 40], [900, G]], 5).forEach(p => add(p));
   const acc = [0]; for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-  const x0 = tops[0].l, x1 = tops[0].r, flat = acc.map(a => [lerp(x0, x1, a / acc.at(-1)), S3GY]);
+  const x0 = pts[0][0], x1 = pts.at(-1)[0], flat = acc.map(a => [lerp(x0, x1, a / acc.at(-1)), S3GY]);
   const tIdx = kind.map((k, i) => k ? i : -1).filter(i => i >= 0);
-  return { pts, kind, flat, x0, x1, top, head, tA: tIdx[0], tB: tIdx.at(-1) };
+  return { pts, kind, flat, x0, x1, head, tA: tIdx[0], tB: tIdx.at(-1) };
 })();
 // 2D 线：tau 时刻地面线（含书堆轮廓）的点
 function s3Line2D(tau) {
@@ -71,7 +65,7 @@ function s3Line2D(tau) {
     if (C.kind[i]) { const j = (i - C.tA) / (C.tB - C.tA); m = sm(T0 + 2.2 + j * .9, T0 + 2.3 + j * .9, tau) * (1 - sm(T1 + .5 + (1 - j) * .6, T1 + .6 + (1 - j) * .6, tau)); }
     else { const h = (S3GY - p[1]) / 260; m = sm(T0 + .2 + h * 1.1, T0 + .55 + h * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack)); }
     if (C.kind[i]) { // 乱线的点在没画出来 / 解开后缩回头顶
-      const hi = C.pts.indexOf(C.head), hm = sm(T0 + .2 + (S3GY - C.head[1]) / 260 * 1.1, T0 + .55 + (S3GY - C.head[1]) / 260 * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack));
+      const hm = sm(T0 + .2 + (S3GY - C.head[1]) / 260 * 1.1, T0 + .55 + (S3GY - C.head[1]) / 260 * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack));
       const hp = [lerp(C.flat[C.tA][0], C.head[0], hm), lerp(yG, C.head[1], hm)]; out.push([lerp(hp[0], p[0], m), lerp(hp[1], p[1], m)]); }
     else out.push([lerp(f[0], p[0], m), lerp(f[1], p[1], m)]);
   });
@@ -92,7 +86,7 @@ function s3Lift(s, e) {
   return -e.d * (1 - easeSine((s - e.xe) / (e.xr - e.xe)));
 }
 const S3PH = k => 3150 + 430 * k, S3PA = k => 200 + 90 * k, S3FOG = [170, 260, 350, 440, 530];
-const S3ST = { s0: 8950, w: 230, r: 110, n: 7 };
+const S3ST = { s0: 8950, w: 165, r: 112, n: 7 }, S3SEND = S3ST.s0 + S3ST.n * S3ST.w + 260;   // 台阶；线轨到台阶顶再往前一点就收笔
 const s3Tk = k => s3T(3) + 1.25 + k * .95;              // 第 k 个手机峰：小车到峰顶的时刻
 const s3Step = i => i === 0 ? s3T(7) + 2.3 : s3T(8) + .3 + (i - 1) * .85;   // 第 i 级台阶落脚（0..6）
 // 这一刻线轨的形状
@@ -126,7 +120,7 @@ const s3W = (s, sh, tau) => [s3X(s), -s3V(s, sh, tau), s];
 const S3CAR = (() => { const T = s3T, K = [[0, 520], [T(2) + .5, 520], [T(2) + 2.05, 1450, easeOut], [T(2) + 2.35, 1500, s3Lin], [T(2) + 3.0, 1950, easeIn], [T(2) + 5.2, 2180, s3Lin], [T(2) + 7.2, 2900, easeSine]];
   K.push([T(3) + .3, 2920, easeIO]);
   for (let k = 0; k < 4; k++) { const tk = s3Tk(k); K.push([tk, S3PH(k), easeOut], [tk + .45, S3PH(k) + 150, easeIn]); }
-  K.push([T(4) + 1.6, 4950, easeOut], [T(5) + 3.8, 5100, s3Lin], [T(5) + 4.75, 5750, easeOut], [T(5) + 5.1, 5790, s3Lin], [T(5) + 5.9, 6230, easeIn], [T(6) + 1.0, 6500, s3Lin], [T(6) + 3.0, 7560, easeIO], [T(6) + 5.8, 8620, s3Lin], [T(7) + 1.0, 8880, easeOut]);
+  K.push([T(4) + 1.6, 4870, easeOut], [T(4) + 3.0, 4890, s3Lin], [T(5) + .4, 4890], [T(5) + 3.8, 5100, s3Lin], [T(5) + 4.75, 5750, easeOut], [T(5) + 5.1, 5790, s3Lin], [T(5) + 5.9, 6230, easeIn], [T(6) + 1.0, 6500, s3Lin], [T(6) + 3.0, 7560, easeIO], [T(6) + 5.8, 8620, s3Lin], [T(7) + 1.0, 8880, easeOut]);
   return K; })();
 const s3CarS = tau => s3Key(tau, S3CAR);
 
@@ -138,16 +132,19 @@ const S3CAMK = (() => { const T = s3T; return [
   [T(2) + 1.0, [900, 240, 220, .85, 520, 820]],
   [T(2) + 2.4, [900, 260, 240, .9, 560, 700]],
   [T(2) + 4.0, [950, 300, 260, .85, 560, 800]],
-  [T(3), [1150, 460, 320, .7, 520, 800]],
-  [T(4) + .6, [1250, 600, 320, .45, 600, 820]],
-  [T(5) + 1.0, [1150, 420, 320, .7, 520, 800]],
-  [T(5) + 4.4, [980, 300, 260, .9, 560, 820]],
-  [T(5) + 5.4, [980, 320, 260, .85, 560, 700]],
+  [T(2) + 6.4, [950, 300, 260, .85, 560, 800]],
+  [T(3) + .5, [1250, 1150, 450, .3, 560, 840]],
+  [T(4) + .9, [1500, 1350, 550, .12, 700, 860]],
+  [T(5) + .7, [1150, 420, 320, .7, 520, 820]],
+  [T(5) + 3.7, [1150, 420, 320, .7, 520, 820]],
+  [T(5) + 4.4, [2200, 380, 650, .2, 760, 470]],
+  [T(5) + 5.1, [2200, 380, 650, .2, 760, 470]],
+  [T(5) + 5.9, [1000, 300, 260, .85, 560, 760]],
   [T(6) + 1.2, [1150, 420, 320, .8, 520, 800]],
   [T(7) + .4, [1150, 420, 320, .8, 520, 800]],
   [T(7) + 1.8, [1000, 300, 160, .85, 600, 820]],
   [T(9), [1000, 300, 160, .85, 600, 820]],
-  [T(9) + 1.2, [1500, 200, 700, .7, 1100, 700]],
+  [T(9) + 1.4, [1450, 420, 650, .6, 1150, 620]],
 ]; })();
 function s3LookCam(pos, tgt, f = S3F) { const dx = tgt[0] - pos[0], dy = tgt[1] - pos[1], dz = tgt[2] - pos[2], yaw = Math.atan2(dx, dz), dzr = dx * Math.sin(yaw) + dz * Math.cos(yaw);
   return { x: pos[0], y: pos[1], z: pos[2], yaw, pitch: Math.atan2(dy, dzr), f }; }
@@ -184,7 +181,7 @@ function s3Cam(tau, sh) {
   return { ...chase, y: lerp(c0.y, chase.y, e), pitch: lerp(c0.pitch, chase.pitch, e), yaw: lerp(c0.yaw, chase.yaw, e) };
 }
 // 屏幕点 (sx, S3GY) 在起始镜头里对应的地面世界点（缩放恰好为 k）
-function s3Uns3Pj(sx, k) { const c0 = s3Cam0(), dz = c0.f / k, dx1 = (sx - CX) / c0.f * dz, dz1 = dz / Math.cos(c0.pitch), cy = Math.cos(c0.yaw), sy = Math.sin(c0.yaw);
+function s3Unproj(sx, k) { const c0 = s3Cam0(), dz = c0.f / k, dx1 = (sx - CX) / c0.f * dz, dz1 = dz / Math.cos(c0.pitch), cy = Math.cos(c0.yaw), sy = Math.sin(c0.yaw);
   return [c0.x + dx1 * cy + dz1 * sy, 0, c0.z - dx1 * sy + dz1 * cy]; }
 // ---------- 3D 画具 ----------
 function s3Seg(c, a, b, w, color, al = 1) { if (!a || !b) return; c.globalAlpha = al; c.strokeStyle = color; c.lineWidth = w; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
@@ -200,7 +197,7 @@ function s3Floor(c, cam, al) {
 // 线轨：采样、帘子（到基线的竖线 / 低谷的浅红）、线本身（近粗远细）
 function s3Samples(tau, sh, cam, s1 = 99999) {
   const out = [], a = cam.z / S3K - 400;
-  for (let s = a; s < Math.min(a + 9000, s1); s += s < a + 1800 ? 6 : s < a + 4000 ? 12 : 24) { const w = s3W(s, sh, tau); out.push({ s, w, p: s3Pj(w, cam), q: s3Pj([w[0], 0, s], cam) }); }
+  for (let s = a; s < Math.min(a + 9000, s1, S3SEND); s += s < a + 1800 ? 6 : s < a + 4000 ? 12 : 24) { const w = s3W(s, sh, tau); out.push({ s, w, p: s3Pj(w, cam), q: s3Pj([w[0], 0, s], cam) }); }
   return out;
 }
 function s3Curtain(c, S, al, grey = 0) {
@@ -224,16 +221,20 @@ function s3Track(c, S, tau, o = {}) {
   for (let i = 1; i < S.length; i++) { const A = S[i - 1], B = S[i]; if (!A.p || !B.p) continue;
     const j = k => noise1(i * .35 + tk, 3) * .9; const w = clamp(6 * B.p[2], 1.2, 11);
     let col = S3INK; if (grey) { const g = grey(B.s); if (g > 0) col = mix(S3INK, P.g1, g); }
-    s3Seg(c, [A.p[0] + j(), A.p[1] + j()], [B.p[0] + j(), B.p[1] + j()], w, col, al); }
+    s3Seg(c, [A.p[0] + j(), A.p[1] + j()], [B.p[0] + j(), B.p[1] + j()], w, col, al * clamp((S3SEND - B.s) / 120, 0, 1)); }
   c.restore();
 }
 // 雾面（快乐门槛）：高 h 的一张半透明水平面
-function s3Fog(c, cam, h, z0, z1, al) {
-  if (al <= 0) return; const pts = []; z0 = Math.max(z0, cam.z / S3K + 80); if (z1 <= z0) return;
-  const xm = s3X((z0 + z1) / 2);
-  for (const [x, z] of [[xm - 700, z0], [xm + 700, z0], [xm + 700, z1], [xm - 700, z1]]) { const p = s3Pj([x, -h, z], cam); if (!p) return; pts.push(p); }
-  c.save(); c.globalAlpha = al * .62; c.fillStyle = '#f6f2ea'; c.fill(polyPath(pts)); grain(c, polyPath(pts), .06);
-  c.globalAlpha = al * .5; c.strokeStyle = mix(P.red, P.paper, .3); c.lineWidth = 1.5; c.setLineDash([10, 8]); c.stroke(polyPath(pts)); c.restore();
+function s3Fog(c, cam, h, z0, z1, al, tau) {
+  if (al <= 0) return; z0 = Math.max(z0, cam.z / S3K + 80); if (z1 <= z0) return;
+  const xm = s3X((z0 + z1) / 2), X0 = xm - 420, X1 = xm + 420, pts = [];
+  for (const [x, z] of [[X0, z0], [X1, z0], [X1, z1], [X0, z1]]) { const p = s3Pj([x, -h, z], cam); if (!p) return; pts.push(p); }
+  const path = polyPath(pts);
+  c.save(); c.globalAlpha = al * .55; c.fillStyle = '#f7f3ec'; c.fill(path); grain(c, path, .05);
+  // 雾面上的横纹（透视里一条条收拢），边缘红虚线
+  c.globalAlpha = al * .35; c.strokeStyle = P.g2; c.lineWidth = 1;
+  for (let z = Math.ceil(z0 / 120) * 120; z < z1; z += 120) { const a = s3Pj([X0, -h, z], cam), b = s3Pj([X1, -h, z], cam); if (a && b) { c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); } }
+  c.globalAlpha = al * .7; c.strokeStyle = mix(P.red, P.paper, .25); c.lineWidth = 2; c.setLineDash([12, 9]); c.stroke(path); c.restore();
   return pts;
 }
 // 单线小图（phone 手机 / book 课本 / bowl 饭碗 / tv 电视 / msg 消息 / dish 大餐），画在屏幕点 p，缩放 k
@@ -242,7 +243,7 @@ function s3Glyph(c, kind, x, y, k, tau, o = {}) {
   c.save(); c.translate(x, y); c.rotate(rot); c.scale(k, k); const L = { w: 4.5, color, t: tau, amp: .8 };
   c.globalAlpha *= al;
   if (kind === 'phone') { rline(c, rectPts(-26, -46, 52, 92, 9), { ...L, close: true, seed: 341 }); rline(c, [[-8, -16], [-8, 16], [16, 0], [-8, -16]], { ...L, w: 3.5, seed: 342 }); rline(c, [[-6, 36], [6, 36]], { ...L, w: 3, seed: 343 }); }
-  if (kind === 'book') { rline(c, [[-70, 6], [-36, -8], [0, 4], [36, -8], [70, 6], [70, 14], [36, 0], [0, 12], [-36, 0], [-70, 14], [-70, 6]], { ...L, seed: 344 }); rline(c, [[0, 4], [0, 12]], { ...L, w: 3, seed: 345 }); }
+  if (kind === 'book') { rline(c, rectPts(-36, -100, 72, 100, 4), { ...L, close: true, seed: 344 }); rline(c, [[-24, -100], [-24, 0]], { ...L, w: 3, seed: 345 }); rline(c, rectPts(-10, -78, 34, 20, 2), { ...L, w: 2.5, close: true, seed: 346 }); }
   if (kind === 'bowl') { rline(c, [[-46, -6], [46, -6], [36, 24], [18, 34], [-18, 34], [-36, 24], [-46, -6]], { ...L, seed: 346 }); rline(c, [[-38, -6], [-26, -24], [0, -30], [26, -24], [38, -6]], { ...L, w: 3.5, seed: 347, smooth: true }); rline(c, [[18, -40], [58, -70]], { ...L, w: 3, seed: 348 }); rline(c, [[26, -34], [64, -58]], { ...L, w: 3, seed: 349 }); }
   if (kind === 'tv') { rline(c, rectPts(-50, -34, 100, 68, 8), { ...L, close: true, seed: 350 }); rline(c, [[-18, -60], [0, -36], [22, -64]], { ...L, w: 3.5, seed: 351 }); rline(c, [[-12, -12], [-12, 12], [12, 0], [-12, -12]], { ...L, w: 3, seed: 352 }); }
   if (kind === 'msg') { rline(c, [[-44, -30], [44, -30], [44, 18], [-6, 18], [-24, 36], [-20, 18], [-44, 18], [-44, -30]], { ...L, seed: 353 }); for (let i = -1; i <= 1; i++) { c.fillStyle = color; c.beginPath(); c.arc(i * 20, -6, 4.5, 0, TAU); c.fill(); } }
@@ -256,7 +257,7 @@ function s3Spark(c, x, y, r, al = 1, rot = 0) { if (r < 1 || al <= 0) return; cu
 function s3Burst(c, x, y, tau, t0, n = 7, spread = 1, al = 1, seed = 1) {
   const u = tau - t0; if (u < 0 || u > 1.6) return;
   for (let j = 0; j < n; j++) { const vx = (hash(j, seed) - .5) * 360 * spread, vy = -(260 + hash(j, seed + 1) * 260) * spread, px = x + vx * u, py = y + vy * u + 520 * u * u, a = al * (1 - sm(.9, 1.6, u));
-    s3Spark(c, px, py, 7 + hash(j, seed + 2) * 7, a, u * 6 * (hash(j, seed + 3) - .5)); }
+    s3Spark(c, px, py, (11 + hash(j, seed + 2) * 12) * Math.max(.6, spread), a, u * 6 * (hash(j, seed + 3) - .5)); }
 }
 // 小纸车：一只圆底的深灰纸盆，月牙徽记，两只轮子；后面插两面小旗「想要」「动力」
 function s3Cart(c, tau, flags, back) {
@@ -348,15 +349,12 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
     if (fogA > 0) {
       const under = S.filter(A => -A.w[1] < fogH), over = S.map(A => (-A.w[1] >= fogH - 2 ? A : { ...A, p: null }));
       s3Track(c, S, tau, { al: lineA });
-      const fp = s3Fog(c, cam, fogH, 3000, 5200, fogA);
+      const fp = s3Fog(c, cam, fogH, 2950, 5700, fogA, tau);
       s3Track(c, over, tau, { al: lineA });
-      if (fp) { zh(c, '快乐门槛', fp[0][0] + 30, fp[0][1] - 14, { size: 34, color: mix(P.red, P.ink, .2), p: writeP(tau, T(3) + 2.7, '快乐门槛', .09), al: fogA }); }
+      const lp = s3Pj([s3X(4300) - 420, -fogH, 4300], cam); if (fp && lp) { zh(c, '快乐门槛', lp[0] - 60, lp[1] - 18, { size: 34, color: mix(P.red, P.ink, .2), p: writeP(tau, T(3) + 2.7, '快乐门槛', .09), al: fogA }); }
     } else s3Track(c, S, tau, { al: lineA, grey: stGrey });
     // 基线
     if (tau > T(1) + 4.2 && tau < T(3)) { const p = s3Pj([s3X(1150) - 420, 0, 1150], cam); if (p) zh(c, '基线', p[0], p[1] - 16, { size: 38, color: P.ink2, p: writeP(tau, T(1) + 4.4, '基线', .15), al: 1 - sm(T(2) + 5.5, T(3), tau) }); }
-    // L2：峰顶「爽！」
-    const pk = s3Pj(s3W(1450, sh, tau), cam);
-    if (pk && tau < T(3)) { const k = sm(T(2) + 1.95, T(2) + 2.2, tau, easeOutBack) * (1 - sm(T(2) + 3.4, T(2) + 3.8, tau)); if (k > 0) { s3Spark(c, pk[0] + 60, pk[1] - 90, 46 * k, 1, .2); zh(c, '爽！', pk[0] + 120, pk[1] - 70, { size: 56, color: P.ink, al: k }); } }
     // 低谷
     if (tau < T(3)) { const p = s3Pj([s3X(2150), 150, 2150], cam); if (p) zh(c, '低谷', p[0] - 40, p[1], { size: 40, color: mix(P.red, P.ink, .25), p: writeP(tau, T(2) + 3.3, '低谷', .15), al: 1 - sm(T(2) + 6.4, T(3), tau) }); }
     // L3：手机，峰顶小火花
@@ -364,18 +362,16 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
     for (let k = 0; k < 4; k++) { const tk = s3Tk(k), p = s3Pj(s3W(S3PH(k), sh, tau), cam); if (p) { const a = win(tk - .05, tk + .8, tau, .15); if (a > 0) s3Spark(c, p[0], p[1] - 40 * p[2], 22 * p[2] * a, a); } }
     // L4：课本几乎不动；和门槛之间的距离
     if (tau > T(4) && tau < T(5) + .6) { const al = sm(T(4) + .6, T(4) + 1.0, tau) * (1 - sm(T(5), T(5) + .5, tau)), p = s3Pj(s3W(4950, sh, tau), cam);
-      if (p) { s3Glyph(c, 'book', p[0], p[1] - 16 * p[2], p[2] * 1.2, tau, { al });
-        const q = s3Pj([s3X(4950), -fogH, 4950], cam); if (q) { rline(c, [[p[0], p[1] - 30 * p[2]], [q[0], q[1]]], { w: 2.5, color: P.ink2, dash: [8, 10], p: sm(T(4) + 2.6, T(4) + 3.2, tau), seed: 380, al });
-          zh(c, '……', (p[0] + q[0]) / 2 + 24, (p[1] + q[1]) / 2, { size: 44, color: P.ink2, p: writeP(tau, T(4) + 3.1, '……', .2), al }); } } }
+      if (p) { s3Glyph(c, 'book', p[0], p[1], Math.min(p[2] * 1.2 * S3K, 1.1), tau, { al, rot: Math.sin(tau * 3) * .02 });
+        const q = s3Pj([s3X(4950), -fogH, 4950], cam); if (q) { rline(c, [[p[0], p[1] - 110 * Math.min(p[2] * 1.2 * S3K, 1.1)], [q[0], q[1]]], { w: 2.5, color: P.ink2, dash: [8, 10], p: sm(T(4) + 2.6, T(4) + 3.2, tau), seed: 380, al });
+          zh(c, '……', (p[0] + q[0]) / 2 + 28, (p[1] + q[1]) / 2, { size: 60, color: P.ink2, p: writeP(tau, T(4) + 3.1, '……', .2), al }); } } }
     // L5：三样东西叠到一个峰上
     const stackK = [T(5) + 1.5, T(5) + 2.3, T(5) + 3.2];
     ['bowl', 'tv', 'msg'].forEach((kd, i) => { const t0 = stackK[i], k = sm(t0, t0 + .35, tau, easeOutBack); if (k <= .001) return;
       const fall = T(6) + .8 + i * .5, fu = clamp((tau - fall) / 1.2, 0, 1); if (fu >= 1) return;
-      const w = s3W(5750, sh, tau), p = s3Pj([w[0] + (i - 1) * 40, w[1] - 90 - i * 110 + fu * fu * 900, 5750], cam); if (!p) return;
+      const w = s3W(5750, sh, tau), p = s3Pj([w[0], w[1] - 120 - i * 105 + fu * fu * 900, 5750 + 170 + i * 25], cam); if (!p) return;
       const sh2 = sh.trem * Math.sin(tau * 60 + i) * .4;
-      s3Glyph(c, kd, p[0] + (1 - k) * (i - 1) * 300 + sh2, p[1] - (1 - k) * 200, p[2] * 1.5 * S3K * Math.min(1, k), tau, { al: 1 - fu, rot: (i - 1) * .1 + fu * (i - 1) * 2 }); });
-    if (pk && tau > T(5) && tau < T(6)) {}
-    { const p = s3Pj(s3W(5750, sh, tau), cam), k = sm(T(5) + 4.6, T(5) + 4.9, tau, easeOutBack) * (1 - sm(T(5) + 5.6, T(5) + 6.0, tau)); if (p && k > 0) s3Spark(c, p[0] - 90 * p[2], p[1] - 150 * p[2], 70 * p[2] * k, 1, .3); }
+      s3Glyph(c, kd, p[0] + (1 - k) * (i - 1) * 300 + sh2, p[1] - (1 - k) * 200, Math.min(p[2] * 1.5 * S3K, 1.25) * Math.min(1, k), tau, { al: 1 - fu, rot: (i - 1) * .1 + fu * (i - 1) * 2 }); });
     // L6：丘陵上的小火花
     for (let k = 0; k < 3; k++) { const s = 7800 + 380 * k, tt = s3Key(s, [[0, 0], [1, 1]]), p = s3Pj(s3W(s, sh, tau), cam);
       const tp = S3CAR.findIndex(r => r[1] >= s); if (!p || tp < 1) continue; const a0 = S3CAR[tp - 1], a1 = S3CAR[tp], tc = a0[0] + (a1[0] - a0[0]) * clamp((s - a0[1]) / (a1[1] - a0[1]), 0, 1);
@@ -385,46 +381,55 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
     zh(c, '对策二', 130, 200, { size: 48, color: P.ink, p: writeP(tau, T(7) + .2, '对策二', .12), al: 1 - outro });
     // 台阶上的火花（留在台阶上，L9 变灰时熄灭）
     for (let i = 0; i < S3ST.n; i++) { const t0 = s3Step(i); if (tau < t0) continue; const { s0, w, r } = S3ST, s = s0 + (i + .5) * w, p = s3Pj([s3X(s), -(i + 1) * r, s], cam); if (!p) continue;
-      s3Burst(c, p[0] - 40 * p[2], p[1], tau, t0, 8, p[2], 1, 390 + i);
-      const keep = (1 - grey) * (1 - outro); for (let j = 0; j < 3; j++) s3Spark(c, p[0] + (hash(j, i) - .5) * 120 * p[2], p[1] - 6 - hash(j, i + 7) * 10, 8 * p[2] * sm(t0 + .5, t0 + .9, tau), keep); }
+      s3Burst(c, p[0] - 40 * p[2], p[1] - 20, tau, t0, 11, p[2] * 1.2, 1, 390 + i);
+      const keep = (1 - grey) * (1 - outro); for (let j = 0; j < 4; j++) s3Spark(c, p[0] + (hash(j, i) - .5) * 260 * p[2], p[1] - 8 - hash(j, i + 7) * 14, (9 + hash(j, i + 3) * 6) * p[2] * sm(t0 + .5, t0 + .9, tau), keep, hash(j, i + 5) * 3); }
     // 台阶顶：大餐；目光虚线
-    { const { s0, w, r, n } = S3ST, s = s0 + n * w + 140, p = s3Pj([s3X(s), -n * r, s], cam), k = sm(T(9) + .2, T(9) + .6, tau, easeOutBack);
-      if (p && k > 0) { s3Glyph(c, 'dish', p[0], p[1], p[2] * 1.3 * k, tau, { al: 1 - outro });
-        const hp = s3Pj(s3StairPos(tau).map((v, j) => j === 1 ? v - 440 : v), cam);
-        if (hp) rline(c, [[hp[0] + 30, hp[1]], [p[0] - 30 * p[2], p[1] - 60 * p[2]]], { w: 2.5, color: P.ink2, dash: [4, 12], p: sm(T(9) + .8, T(9) + 1.5, tau), seed: 395, al: 1 - sm(end - .6, end - .1, tau) });
+    { const { s0, w, r, n } = S3ST, s = s0 + n * w + 110, p = s3Pj([s3X(s), -n * r, s], cam), k = sm(T(9) + .2, T(9) + .6, tau, easeOutBack);
+      if (p && k > 0) { s3Glyph(c, 'dish', p[0], p[1], p[2] * 1.5 * S3K * k, tau, { al: 1 - outro });
         zh(c, '硬熬', 820, 720, { size: 44, color: P.g2, p: writeP(tau, T(9) + 2.4, '硬熬', .15), al: 1 - sm(end - .6, end - .1, tau) }); } }
     // ---------------- 帕秋莉 ----------------
     const cs = s3CartScreen(tau, sh, cam), flags = [sm(T(1) + 1.9, T(1) + 2.3, tau, easeOutBack), sm(T(1) + 2.7, T(1) + 3.1, tau, easeOutBack)];
-    const cartIn = sm(T(1) + 1.8, T(1) + 2.3, tau, easeOutBack);
-    const gestureV = .6 + .4 * Math.sin(tau * 1.3);
-    const drawPat = (x, y, h, extra = {}) => drawPatchouli(c, { x, y, h, pose: act.pose, mood, look: act.look, tilt: act.tilt || 0, mouth: L.mouth, blink, facing: -1, t: tau, gesture: gestureV, ...extra });
-    const cartSeat = cs ? [cs.p[0] + Math.sin(cs.ang) * 60 * cs.k, cs.p[1] - Math.cos(cs.ang) * 60 * cs.k] : null;
-    if (cs && cartIn > 0) { c.save(); c.translate(cs.p[0], cs.p[1]); c.rotate(cs.ang); c.scale(cs.k * cartIn, cs.k * cartIn); c.translate(0, -28); s3Cart(c, tau, flags, true); c.restore(); }
-    // 地面上（3D 打开之后仍站在地面上：世界坐标里的一点）
-    const wp = s3Uns3Pj(1480, 1);
-    if (act.at === 'ground' || act.at === 'hop' || (act.at === 'cart' && tau < T(1) + 4.0)) {
-      let p = proj(wp, cam);
-      if (act.at === 'hop' && cartSeat && p) { const u = sm(act.t0, act.t0 + .7, tau, s3Lin); p = [lerp(p[0], cartSeat[0], easeIO(u)), lerp(p[1], cartSeat[1] + 30 * cs.k, easeIO(u)) - Math.sin(Math.PI * u) * 180, lerp(p[2], cs.k, u)]; }
-      if (p) { c.save(); c.translate(p[0], p[1] + jump); c.rotate(wob); drawPat(0, 0, clamp(520 * p[2], 300, 600)); c.restore(); }
+    const cartIn = sm(T(1) + 1.8, T(1) + 2.3, tau, easeOutBack), gestureV = .6 + .4 * Math.sin(tau * 1.3);
+    // place：在 (x, y) 转 rot 画她，返回屏幕坐标的锚点
+    const place = (x, y, rot, h, extra = {}) => { c.save(); c.translate(x, y); c.rotate(rot);
+      const A = drawPatchouli(c, { x: 0, y: 0, h, pose: act.pose, mood, look: act.look, tilt: act.tilt || 0, mouth: L.mouth, blink, facing: -1, t: tau, gesture: gestureV, ...extra }); c.restore();
+      const co = Math.cos(rot), si = Math.sin(rot), f = q => [x + q[0] * co - q[1] * si, y + q[0] * si + q[1] * co]; return { head: f(A.head), tip: f(A.tip), h }; };
+    // 车里站脚的点：车的局部 (0, -40)
+    const cartFoot = cs ? [cs.p[0] + Math.sin(cs.ang) * 40 * cs.k, cs.p[1] - Math.cos(cs.ang) * 40 * cs.k] : null;
+    const drawCart = back => { if (cs && cartIn > 0) { c.save(); c.translate(cs.p[0], cs.p[1]); c.rotate(cs.ang); c.scale(cs.k * cartIn, cs.k * cartIn); c.translate(0, -28); s3Cart(c, tau, flags, back); c.restore(); } };
+    drawCart(true);
+    let PA = null;
+    if (act.at === 'ground' || act.at === 'hop') {
+      let p = proj(s3Unproj(1480, 1), cam);
+      if (act.at === 'hop' && cartFoot && p) { const u = sm(act.t0, act.t0 + .7, tau, s3Lin); p = [lerp(p[0], cartFoot[0], easeIO(u)), lerp(p[1], cartFoot[1], easeIO(u)) - Math.sin(Math.PI * u) * 200, lerp(p[2], cs.k, u)]; }
+      if (p) PA = place(p[0], p[1] + jump, wob, 520 * p[2]);
     } else if (act.at === 'cart' && cs) {
-      const h = clamp(520 * cs.k, 460, 560);
-      c.save(); c.translate(cs.p[0], cs.p[1]); c.rotate(cs.ang * .8 + wob); c.translate(0, -30 * cs.k + jump);
-      if (act.pose === 'sit') drawPat(0, -40 * cs.k, h); else drawPat(0, -20 * cs.k, h);
-      c.restore();
+      const fp = cartFoot, sit = act.pose === 'sit' ? -24 * cs.k : 0;
+      PA = place(fp[0], fp[1] + jump + sit, cs.ang * .45 + wob, 520 * cs.k);
     } else if (act.at === 'stair') {
-      const sp = s3StairPos(tau), p = s3Pj(sp, cam);
-      if (p) { c.save(); c.translate(p[0], p[1] + jump); c.rotate(wob); drawPat(0, 0, clamp(520 * p[2], 440, 560), { facing: 1 }); c.restore(); }
+      const p = s3Pj(s3StairPos(tau), cam); if (p) PA = place(p[0], p[1] + jump, wob, 520 * p[2], { facing: 1 });
     }
-    if (cs && cartIn > 0) { c.save(); c.translate(cs.p[0], cs.p[1]); c.rotate(cs.ang); c.scale(cs.k * cartIn, cs.k * cartIn); c.translate(0, -28); s3Cart(c, tau, flags, false); c.restore(); }
-    // 「我正在变强」
-    if (tau > T(8) && tau < T(9) + .6) { const sp = s3StairPos(tau), p = s3Pj([sp[0], sp[1] - 560, sp[2]], cam), k = sm(T(8) + .25, T(8) + .55, tau, easeOutBack) * (1 - sm(T(9) + .1, T(9) + .5, tau));
-      if (p && k > 0) pop(c, p[0] - 200, p[1], k, () => { const bw = zhWidth(c, '我正在变强', 44) + 56; cutPaper(c, [...rectPts(p[0] - 200 - bw / 2, p[1] - 40, bw, 76, 18)], '#f7f3ea', { seed: 398, step: 16 });
-        rline(c, [[p[0] - 140, p[1] + 36], [p[0] - 70, p[1] + 90]], { w: 3, color: P.ink2, seed: 399 });
-        zh(c, '我正在变强', p[0] - 200, p[1] + 14, { size: 44, align: 'center', color: P.ink, p: writeP(tau, T(8) + .4, '我正在变强', .1) }); }); }
+    drawCart(false);
+    // L2：峰顶「爽！」——贴着她冒出来
+    if (PA && tau > T(2) + 1.8 && tau < T(2) + 3.9) { const k = sm(T(2) + 1.95, T(2) + 2.2, tau, easeOutBack) * (1 - sm(T(2) + 3.3, T(2) + 3.8, tau)), x = PA.head[0] + 190, y = PA.head[1] - 150;
+      if (k > 0) { s3Spark(c, x, y, 52 * k, 1, .2 + tau * .5); zh(c, '爽！', x + 60, y + 24, { size: 64, color: P.ink, al: k }); } }
+    // L5：超高峰上的大火花
+    if (PA && tau > T(5) + 4.4 && tau < T(5) + 6.0) { const k = sm(T(5) + 4.55, T(5) + 4.8, tau, easeOutBack) * (1 - sm(T(5) + 5.3, T(5) + 5.7, tau)); if (k > 0) { s3Spark(c, PA.head[0] + 120 * PA.h / 520, PA.head[1] - 140 * PA.h / 520, 40 * k, 1, tau); s3Spark(c, PA.head[0] - 110 * PA.h / 520, PA.head[1] - 120 * PA.h / 520, 26 * k, 1, -tau); } }
+    // 「我正在变强」：她头顶左上的纸条气泡
+    if (PA && tau > T(8) && tau < T(9) + .6) { const k = sm(T(8) + .25, T(8) + .55, tau, easeOutBack) * (1 - sm(T(9) + .1, T(9) + .5, tau)), bx = PA.head[0] - 330, by = PA.head[1] - 150;
+      if (k > 0) pop(c, bx, by, k, () => { const bw = zhWidth(c, '我正在变强', 46) + 60; cutPaper(c, rectPts(bx - bw / 2, by - 44, bw, 82, 18), '#f7f3ea', { seed: 398, step: 16 });
+        cutPaper(c, [[bx + bw / 2 - 70, by + 30], [bx + bw / 2 - 30, by + 30], [PA.head[0] - 70, PA.head[1] - 60]], '#f7f3ea', { seed: 399, step: 10, shadow: false });
+        zh(c, '我正在变强', bx, by + 14, { size: 46, align: 'center', color: P.ink, p: writeP(tau, T(8) + .4, '我正在变强', .1) }); }); }
+    // L9：目光虚线——只盯着大餐
+    if (PA && tau > T(9) + .7) { const { s0, w, r, n } = S3ST, p = s3Pj([s3X(s0 + n * w + 110), -n * r, s0 + n * w + 110], cam);
+      if (p) rline(c, [[PA.head[0] + 50, PA.head[1] - 10], [p[0] - 40 * p[2], p[1] - 70 * p[2]]], { w: 3, color: P.ink2, dash: [3, 14], p: sm(T(9) + .8, T(9) + 1.5, tau), seed: 395, al: 1 - sm(end - .6, end - .1, tau) }); }
     // ---------------- 出场：夜色降临，火花升起布满夜空 ----------------
     if (tau > end - .4) {
       const u = sm(end - .4, S3DUR - .25, tau, s3Lin), night = sm(end - .4, end + 1.0, tau);
-      c.save(); c.globalAlpha = night; c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06); c.restore();
+      // 夜色像墨一样从上往下洇开（下沿是一道起伏的边）
+      const edge = lerp(-60, H + 120, easeIO(night)), np = [[0, -10], [W, -10]];
+      for (let x = W; x >= 0; x -= 40) np.push([x, edge + Math.sin(x / 170 + tau * 2) * 34 + noise1(x / 90, 4) * 26]);
+      c.save(); c.fillStyle = NIGHT_BG; c.fill(polyPath(np)); grain(c, polyPath(np), .06); c.restore();
       const { s0, w, r, n } = S3ST;
       HANDOFF_SPARKS.forEach(([x, y, rr], k) => { const i = k % n, s = s0 + (i + .5) * w, p0 = s3Pj([s3X(s) + (hash(k, 7) - .5) * 160, -(i + 1) * r, s], cam) || [CX, H];
         const d = clamp((u - hash(k, 8) * .35) / .65, 0, 1), e = easeIO(d), px = lerp(p0[0], x, e) + Math.sin(d * Math.PI) * (hash(k, 9) - .5) * 200, py = lerp(p0[1], y, e) - Math.sin(d * Math.PI) * 120;
