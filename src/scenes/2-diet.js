@@ -38,10 +38,10 @@ const S2END = { y: 830, zoom: 2.2 };             // 出场：镜头压向桌布�
 function s2cam(t) {
   const e0 = s2E(0), e2 = s2E(2), e7 = s2E(7), e10 = s2E(10), e11 = s2E(11);
   const K = [[0, [720, 500, 2]], [.3, [720, 500, 2]], [1.6, [960, 540, 1]],
-    [e0 + .05, [960, 540, 1]], [e0 + 1, [2880, 540, 1]],
-    [e2 + .05, [2880, 540, 1]], [e2 + 1, [4800, 540, 1]],
-    [e7 + .05, [4800, 540, 1]], [e7 + 1.05, [6720, 540, 1]],
-    [e10 + .05, [6720, 540, 1]], [e10 + 1, [8640, 540, 1]],
+    [e0 + .05, [960, 540, 1]], [e0 + .52, [1920, 560, .86]], [e0 + 1, [2880, 540, 1]],
+    [e2 + .05, [2880, 540, 1]], [e2 + .52, [3840, 560, .86]], [e2 + 1, [4800, 540, 1]],
+    [e7 + .05, [4800, 540, 1]], [e7 + .55, [5760, 560, .86]], [e7 + 1.05, [6720, 540, 1]],
+    [e10 + .05, [6720, 540, 1]], [e10 + .52, [7680, 560, .86]], [e10 + 1, [8640, 540, 1]],
     [e11 + .3, [8640, 540, 1]], [S2DUR - .8, [8640, S2END.y, S2END.zoom]]];
   const [x, y, z] = key(t, K); return { x, y, z };
 }
@@ -143,16 +143,16 @@ function s2slip(c, C, x, y, w, hh, text, o = {}) {
 }
 // 老鼠（俯视）：蛋形身子、两只粉耳朵、线尾巴。fat 1..1.6，sleep 闭眼
 function s2mouse(c, C, x, y, a, o = {}) {
-  const { fat = 1, sleep = false, t = 0, run = 0 } = o, body = [];
+  const { fat = 1, sleep = false, t = 0, run = 0 } = o, body = [], M = 1.35;
   for (let i = 0; i < 28; i++) { const th = i / 28 * TAU, cx = Math.cos(th); body.push([cx * 36 * (1 + (fat - 1) * .45), Math.sin(th) * 21 * fat * (1 - .42 * Math.pow(Math.max(0, cx), 1.6))]); }
-  const wag = Math.sin(twos(t) * (run ? 30 : 5)) * (run ? 10 : 4), tail = s2tf([[-34 * fat, 0], [-56, 6 + wag * .4], [-74, -4 - wag], [-92, 6 + wag]], x, y, a);
+  const wag = Math.sin(twos(t) * (run ? 30 : 5)) * (run ? 10 : 4), tail = s2tf([[-34 * fat, 0], [-56, 6 + wag * .4], [-74, -4 - wag], [-92, 6 + wag]], x, y, a, M);
   const k = s2k(C, 0); c.save(); c.strokeStyle = S2C.gut; c.lineWidth = 2.6 * k; c.lineCap = 'round'; c.stroke(polyPath(s2P(C, spline(tail, 4)), false)); c.restore();
-  s2prism(c, C, s2tf(body, x, y, a), 12 * fat, P.cap, { seed: 2040 + (x | 0) % 7, step: 8, side: mix(P.cap, P.g2, .45) });
-  const zt = 12 * fat;
-  for (const s of [-1, 1]) { const e = s2tf([[10 - (fat - 1) * 6, s * 18 * fat]], x, y, a)[0]; s2prism(c, C, circPts(e[0], e[1], 9, 14), 2, P.cap, { z0: zt, seed: 2045 + s, step: 5, sh: .15 });
-    const [ex, ey] = s2p(C, e[0], e[1], zt + 2); c.fillStyle = P.blush; c.beginPath(); c.arc(ex, ey, 5 * k, 0, TAU); c.fill(); }
-  const n = s2p(C, ...s2tf([[36 * (1 + (fat - 1) * .45), 0]], x, y, a)[0], zt); c.fillStyle = P.blush; c.beginPath(); c.arc(n[0], n[1], 3.4 * k, 0, TAU); c.fill();
-  for (const s of [-1, 1]) { const e = s2p(C, ...s2tf([[22, s * 8]], x, y, a)[0], zt); c.fillStyle = P.ink; c.strokeStyle = P.ink; c.lineWidth = 1.6 * k;
+  s2prism(c, C, s2tf(body, x, y, a, M), 14 * fat, P.cap, { seed: 2040 + (x | 0) % 7, step: 8, side: mix(P.cap, P.g2, .45) });
+  const zt = 14 * fat;
+  for (const s of [-1, 1]) { const e = s2tf([[10 - (fat - 1) * 6, s * 18 * fat]], x, y, a, M)[0]; s2prism(c, C, circPts(e[0], e[1], 9 * M, 14), 2, P.cap, { z0: zt, seed: 2045 + s, step: 5, sh: .15 });
+    const [ex, ey] = s2p(C, e[0], e[1], zt + 2); c.fillStyle = P.blush; c.beginPath(); c.arc(ex, ey, 5 * M * k, 0, TAU); c.fill(); }
+  const n = s2p(C, ...s2tf([[36 * (1 + (fat - 1) * .45), 0]], x, y, a, M)[0], zt); c.fillStyle = P.blush; c.beginPath(); c.arc(n[0], n[1], 3.4 * k, 0, TAU); c.fill();
+  for (const s of [-1, 1]) { const e = s2p(C, ...s2tf([[22, s * 8]], x, y, a, M)[0], zt); c.fillStyle = P.ink; c.strokeStyle = P.ink; c.lineWidth = 1.6 * k;
     if (sleep) { c.beginPath(); c.arc(e[0], e[1] - 1.5 * k, 3 * k, .2, Math.PI - .2); c.stroke(); } else { c.beginPath(); c.arc(e[0], e[1], 2.6 * k, 0, TAU); c.fill(); } }
 }
 // 纸箱鼠笼：牛皮纸盒（壁厚、内壁明暗、地板上铁丝的影子）。inner(C) 画里面的东西
@@ -192,8 +192,8 @@ function s2bowl(c, C, x, y, r = 24, o = {}) { const { al = 1, z0 = 0 } = o; if (
     c.strokeStyle = alpha(P.purple, .6); c.lineWidth = 1.6 * k; c.beginPath(); c.arc(sx, sy, r * .88 * k, 0, TAU); c.stroke(); });
 }
 // 纸飞机（俯视）
-function s2plane(c, C, x, y, a, z0) { const pts = s2tf([[46, 0], [-30, -26], [-18, 0], [-30, 26]], x, y, a);
-  s2prism(c, C, pts, 4, P.cap, { z0, seed: 2080, step: 8, sh: .22 }); const f0 = s2p(C, ...s2tf([[46, 0]], x, y, a)[0], z0 + 4), f1 = s2p(C, ...s2tf([[-18, 0]], x, y, a)[0], z0 + 4);
+function s2plane(c, C, x, y, a, z0) { const pts = s2tf([[46, 0], [-30, -26], [-18, 0], [-30, 26]], x, y, a, 1.7);
+  s2prism(c, C, pts, 4, P.stripe, { z0, seed: 2080, step: 8, sh: .22 }); const f0 = s2p(C, ...s2tf([[46, 0]], x, y, a, 1.7)[0], z0 + 4), f1 = s2p(C, ...s2tf([[-18, 0]], x, y, a, 1.7)[0], z0 + 4);
   c.strokeStyle = alpha(P.g2, .8); c.lineWidth = 1.5; c.beginPath(); c.moveTo(...f0); c.lineTo(...f1); c.stroke(); }
 // 外卖袋（牛皮纸袋，折口 + 订书钉 + 印了只鸡腿）
 function s2bag(c, C, x, y, a, z0 = 0) {
@@ -208,7 +208,7 @@ function s2cross(c, C, x, y, s, z0, t0, t) { const u = clamp((t - t0) / .17, 0, 
   for (const a of [.78, -.78]) s2prism(c, C, s2tf(rectPts(-s / 2, -s * .09, s, s * .18, 2), x, y, a), 2, P.ink, { z0: zz, seed: 2095 + (a > 0 ? 1 : 0), step: 8, sh: .25, gr: .05 }); }
 // 杯子：kind water | tea | coffee | milktea | yogurt
 function s2cup(c, C, x, y, kind, o = {}) {
-  const { s = 1, al = 1, z0 = 0 } = o; if (al <= 0 || s <= .01) return; const r = { water: 34, tea: 30, coffee: 33, milktea: 50, yogurt: 44 }[kind] * s, hh = { water: 54, tea: 26, coffee: 46, milktea: 120, yogurt: 56 }[kind] * s;
+  const { s = 1, al = 1, z0 = 0 } = o; if (al <= 0 || s <= .01) return; const r = { water: 34, tea: 30, coffee: 33, milktea: 50, yogurt: 44 }[kind] * s, hh = { water: 54, tea: 26, coffee: 46, milktea: 84, yogurt: 56 }[kind] * s;
   c.save(); c.globalAlpha *= al;
   if (kind === 'tea') s2prism(c, C, circPts(x, y, 46 * s, 36), 4, P.cap, { z0, seed: 2100, step: 10, side: mix(P.cap, P.g2, .4) });
   const z1 = kind === 'tea' ? z0 + 4 : z0;
@@ -220,7 +220,7 @@ function s2cup(c, C, x, y, kind, o = {}) {
   const zt = z1 + hh, [sx, sy] = s2p(C, x, y, zt), k = s2k(C, zt);
   if (kind === 'tea' || kind === 'coffee') { c.fillStyle = kind === 'tea' ? S2C.tea : S2C.coffee; c.beginPath(); c.arc(sx, sy, r * .8 * k, 0, TAU); c.fill(); c.strokeStyle = alpha('#ffffff', .35); c.lineWidth = 2 * k; c.beginPath(); c.arc(sx - 3 * k, sy - 3 * k, r * .45 * k, Math.PI, Math.PI * 1.5); c.stroke(); }
   if (kind === 'milktea') { c.fillStyle = S2C.milktea; c.beginPath(); c.arc(sx, sy, r * .86 * k, 0, TAU); c.fill(); c.fillStyle = P.ink2; for (let i = 0; i < 9; i++) { const a = i * 2.4, rr = (i % 3 + 1) * .24 * r * k; c.beginPath(); c.arc(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr, 5 * k * s, 0, TAU); c.fill(); }
-    vellum(c, circPts(sx, sy, r * .95 * k, 36), { seed: 2104, shadow: false }); s2prism(c, C, circPts(x + 12 * s, y - 10 * s, 8 * s, 14), 80 * s, P.purple, { z0: zt, seed: 2105, step: 5, sh: .2 }); }
+    vellum(c, circPts(sx, sy, r * .95 * k, 36), { seed: 2104, shadow: false }); s2prism(c, C, circPts(x + 12 * s, y - 10 * s, 9 * s, 14), 60 * s, P.purple, { z0: zt, seed: 2105, step: 5, sh: .2 }); }
   if (kind === 'yogurt') { c.fillStyle = mix(P.g1, '#ffffff', .4); c.beginPath(); c.arc(sx, sy, r * .9 * k, 0, TAU); c.fill(); c.strokeStyle = alpha(P.g2, .6); c.lineWidth = 1.2 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(sx, sy, r * (.3 + i * .12) * k, 0, TAU); c.stroke(); }
     zh(c, '无糖', sx, sy + 9 * k, { size: 26 * k, align: 'center', color: P.ink2 }); }
   c.restore();
@@ -430,10 +430,10 @@ function s2mealOff(i, j, t) {
   let d = (hash(i * 3 + j, 71) - .5) * 3.4 * (i || j !== 1 ? 1 : .7);
   const scatter = sm(s2T(6) + .5 + i * .1, s2T(6) + .8 + i * .1, t, easeOutBack), align = sm(st, st + .3, t, easeOutBack);
   let v = d * scatter * (1 - align);
-  if (i === 4) { const px = s2planeX(t), hit = px > S2H(S2MEAL[j]) + 40; if (hit && t < g + 1.6) v += [1.4, -1.1, 1.7][j] * (1 - sm(g + 1.3, g + 1.55, t, easeOutBack)); }
+  if (i === 4) { const px = s2planeX(t), hit = px > S2H(S2MEAL[j]) + 40; if (hit && t < g + 1.95) v += [1.4, -1.1, 1.7][j] * (1 - sm(g + 1.6, g + 1.9, t, easeOutBack)); }
   return v;
 }
-function s2planeX(t) { const g = s2at(6, '倒时差'); return lerp(-150, 1900, clamp((t - g + .1) / .9, 0, 1)); }
+function s2planeX(t) { const g = s2at(6, '倒时差'); return lerp(-150, 1900, clamp((t - g + .1) / 1.3, 0, 1)); }
 function s2stC(c, C, t) {
   const ox = S2OX[2], a = s2at, t3 = s2T(3), t6 = s2T(6), t7 = s2T(7), sg = a(7, '一勺糖'), js = a(7, '就算');
   const u = sm(t3 - .45, t3 + .9, t, x => x);
@@ -445,7 +445,7 @@ function s2stC(c, C, t) {
     if (u >= 1) s2covers(c, C, ox, y, t, { m: sm(a(3, '起床后') - .1, a(3, '起床后') + .35, t, easeOut), e: sm(a(4, '睡前') - .1, a(4, '睡前') + .35, t, easeOut), eo: i === 0 ? -520 * gone : 0, eal: i === 0 ? 1 - gone : 1 });
     // 三顿饭（碗）
     const mt = a(4, '不再进食');
-    S2MEAL.forEach((h, j) => { if (t < mt + j * .14) return; const d = s2mealOff(i, j, t), z = s2drop(t, mt + j * .14, 180), hit = i === 4 && s2planeX(t) > S2H(h) + 40 && t < a(6, '倒时差') + 1.55;
+    S2MEAL.forEach((h, j) => { if (t < mt + j * .14) return; const d = s2mealOff(i, j, t), z = s2drop(t, mt + j * .14, 180), hit = i === 4 && s2planeX(t) > S2H(h) + 40 && t < a(6, '倒时差') + 1.9;
       s2bowl(c, C, ox + S2H(h + d), y + 58 + (hit ? [22, -18, 16][j] : 0), 26, { z0: z }); });
   }
   // 太阳、月亮贴纸（贴在第一天那条上）
