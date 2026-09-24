@@ -25,7 +25,7 @@ function s5W(i, word, off = 0) { const l = S5LINES[i], n = [...l[2]].length, v =
 const S5OUT = { fold: S5END + .05, flat: S5END + .75, tilt0: S5END + .55, tilt1: S5END + 1.75, hand: S5END + 1.8 };
 
 // ===================== 颜色 =====================
-const S5KC = mix(P.g3, P.ink2, .35), S5KB = mix(S5KC, P.ink, .28);            // 纸小人（剪影）
+const S5KC = mix(P.g3, P.ink2, .35), S5KB = mix(S5KC, P.ink, .28), S5SHIRT = mix(P.g2, P.g3, .35);            // 纸小人（剪影）
 const S5GR = mix(P.green, P.paper, .08), S5GRD = mix(P.green, P.ink, .25);       // 本页唯一的强调色：绿
 const S5BLK = mix(P.ink, P.ink2, .35), S5WH = '#f2ede4', S5GOLD = mix(P.moon, P.g3, .25), S5RED = mix(P.red, P.ink, .2);
 const S5WATER = mix(P.g1, P.blue, .22);
@@ -40,7 +40,7 @@ function s5P(V, X, Y, h = 0) { const x = X - V.cx, d = Y - V.cy, cp = Math.cos(V
 // 镜头用「对准哪里」来写：[书页上的 X, Y, 离页高度 hc, 推近倍数]，这一点落在画面正中略上
 function s5View(tau) {
   const tilt = sm(.2, 1.9, tau, easeIO) * (1 - sm(S5OUT.tilt0, S5OUT.tilt1, tau, easeIO));
-  const A = [960, 640, 120, 1.02, 0], R = [1470, 800, 250, 1.28, 0], Lf = [540, 700, 150, 1.3, 20], Wd = [790, 780, 120, 1.26, 50], J = [1420, 850, 290, 1.45, 0], Lf2 = [680, 800, 120, 1.24, 20], E = [1000, 790, 140, 1.08, 40];
+  const A = [960, 640, 120, 1.02, 0], R = [1470, 800, 250, 1.28, 0], Lf = [540, 700, 150, 1.3, 20], Wd = [790, 780, 120, 1.26, 50], J = [1420, 850, 330, 1.52, 10], Lf2 = [680, 800, 120, 1.24, 20], E = [1000, 790, 140, 1.08, 40];
   const K = [[0, A], [1.9, A], [2.7, R], [s5T(1) - .1, R], [s5T(1) + .7, Lf], [s5T(2) + .1, Lf], [s5T(2) + .8, Wd], [s5E(3) - .1, Wd], [s5E(3) + .5, J],
     [s5E(4) - .1, J], [s5T(5) + .5, Lf2], [s5T(7) - .7, Lf2], [s5T(7) + .2, E], [S5OUT.fold, E], [S5OUT.tilt1, A]];
   const [X, Y, hc, z0, yo] = key(tau, K), V = { p: -.88 * tilt, cx: CX + (X - CX) * tilt, cy: S5CY, zm: lerp(1, z0, tilt), tilt, dy: 0 };
@@ -127,7 +127,7 @@ function s5Kid(g, o = {}) {
       const pF = [cr[0] + Math.cos(ph) * 12, cr[1] + Math.sin(ph) * 12], pB = [cr[0] - Math.cos(ph) * 12, cr[1] - Math.sin(ph) * 12];
       LF = s5IK(hip, pF, TH, SH, -1); LB = s5IK(hip, pB, TH, SH, -1); AF = s5IK(sh, bar, UA, FA, 1); AB = s5IK(sh, [bar[0] - 4, bar[1] + 2], UA, FA, 1); break; }
     case 'swim': {
-      hip = [-34, -30]; sh = [12, -36]; head = [34, -42];
+      hip = [-34, -20]; sh = [12, -25]; head = [36, -32];
       LF = [hip, [-62, -29 + 4 * Math.sin(ph * 2)], [-88, -30 + 7 * Math.sin(ph * 2 + 1)]]; LB = [hip, [-62, -31 - 4 * Math.sin(ph * 2)], [-88, -32 - 7 * Math.sin(ph * 2 + 1)]];
       const arc = a => { const e = [sh[0] + Math.cos(a) * 22, sh[1] + Math.sin(a) * 22]; return [sh, e, [e[0] + Math.cos(a - .25) * 22, e[1] + Math.sin(a - .25) * 22]]; };
       AF = arc(-ph); AB = arc(-ph + Math.PI);
@@ -137,7 +137,7 @@ function s5Kid(g, o = {}) {
       break; }
     case 'ball': { const b = Math.abs(Math.sin(ph)), by = -10 - 50 * b; hip = [0, -58 - 3 * b]; lean = .15; body();
       LF = leg(hip, .25 + .15 * s, -.5); LB = leg(hip, -.25 + .15 * s, -.3); AB = arm(sh, -.5, .9); AF = s5IK(sh, [30, Math.min(-40, by - 13)], UA, FA, 1);
-      post = () => { s5Circ(g, 30, by, 11, P.g2, seed + 60); rline(g, [[19, by], [41, by]], { w: 1.3, color: P.ink2, seed: seed + 61, amp: .2 }); rline(g, [[30, by - 11], [30, by + 11]], { w: 1.3, color: P.ink2, seed: seed + 62, amp: .2 }); }; break; }
+      post = () => { s5Circ(g, 30, by, 11, P.g1, seed + 60); rline(g, [[20, by - 5], [30, by - 1], [40, by - 5]], { w: 1.3, color: P.ink2, seed: seed + 61, amp: .2, smooth: true }); rline(g, [[26, by - 11], [28, by], [26, by + 11]], { w: 1.3, color: P.ink2, seed: seed + 62, amp: .2, smooth: true }); }; break; }
     case 'sit': hip = [0, -40]; lean = .32 + .04 * Math.sin(ph); nod = .25; body();
       LF = leg(hip, Math.PI / 2 - .05, -Math.PI / 2 + .1); LB = leg([hip[0] - 3, hip[1]], Math.PI / 2 - .12, -Math.PI / 2 + .12);
       AF = s5IK(sh, [44, -58], UA, FA, 1); AB = s5IK(sh, [38, -57], UA, FA, 1); break;
@@ -148,18 +148,24 @@ function s5Kid(g, o = {}) {
       post = () => { const hp = AF[2]; cutPaper(g, [[hp[0] - 2, hp[1] - 12], [hp[0] + 11, hp[1] - 12], [hp[0] + 9, hp[1] + 6], [hp[0], hp[1] + 6]], S5WH, { seed: seed + 70, step: 4, blur: 2, sx: 1, sy: 1 }); }; break;
     default: hip = [0, -62]; body(); LF = leg(hip, .05, 0); LB = leg(hip, -.05, 0); AF = arm(sh, .1, .12); AB = arm(sh, -.1, .12);
   }
+  g.save(); if (kind === 'swim') { g.beginPath(); g.rect(-300, -400, 600, 400); g.clip(); }
   if (pre) pre();
   const limb = (Lm, w, col, sd) => { s5Cap(g, Lm[0], Lm[1], w, col, sd); s5Cap(g, Lm[1], Lm[2], w * .9, col, sd + 1); };
-  limb(AB, 8, S5KB, seed + 10); limb(LB, 10, S5KB, seed + 12);
-  s5Cap(g, hip, sh, 24, S5KC, seed + 14); s5Cap(g, [hip[0] - 3, hip[1] + 2], [hip[0] + 3, hip[1] + 2], 22, S5KC, seed + 15);
+  const arm2 = (Am, col, sd) => { s5Cap(g, Am[0], Am[1], 9, col === S5KC ? S5SHIRT : mix(S5SHIRT, P.ink, .2), sd); s5Cap(g, Am[1], Am[2], 7, col, sd + 1); };
+  arm2(AB, S5KB, seed + 10); limb(LB, 10, S5KB, seed + 12);
   limb(LF, 10, S5KC, seed + 16);
+  // 躯干：一片上衣（肩窄、腰略宽的梯形），比四肢浅一级
+  { const dx = sh[0] - hip[0], dy = sh[1] - hip[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l, ux = dx / l, uy = dy / l;
+    cutPaper(g, [[hip[0] + nx * 11 - ux * 4, hip[1] + ny * 11 - uy * 4], [hip[0] - nx * 11 - ux * 4, hip[1] - ny * 11 - uy * 4], [sh[0] - nx * 9, sh[1] - ny * 9], [sh[0] - nx * 5 + ux * 5, sh[1] - ny * 5 + uy * 5], [sh[0] + nx * 5 + ux * 5, sh[1] + ny * 5 + uy * 5], [sh[0] + nx * 9, sh[1] + ny * 9]],
+      S5SHIRT, { seed: seed + 14, step: 6, blur: 2, sx: 1, sy: 1.4, grain: .05, edge: false }); }
   // 头 + 发型
   const hx = head[0], hy = head[1];
   if (hair === 1) { s5Cap(g, [hx - 12, hy - 6], [hx - 19, hy + 16], 8, S5KC, seed + 20); s5Circ(g, hx - 13, hy - 9, 5, S5KB, seed + 24); }
   if (hair === 3) s5Circ(g, hx - 7, hy - 15, 7, S5KC, seed + 21);
-  s5Circ(g, hx, hy, 16, S5KC, seed + 22);
+  s5Circ(g, hx, hy, 17, S5KC, seed + 22);
   if (hair === 2) s5Cap(g, [hx + 4, hy - 12], [hx + 22, hy - 10], 6, S5KB, seed + 23);
-  limb(AF, 8, S5KC, seed + 18);
+  arm2(AF, S5KC, seed + 18);
+  g.restore();
   if (post) post();
   return { head, hand: AF[2] };
 }
@@ -267,7 +273,7 @@ function s5Lifter(g, tau, L, st) {
 function s5Stamina(g, tau, gone) {
   for (const x of [-150, 150]) s5Cap(g, [x, 0], [x, -250], 6, P.g2, 830 + x);
   cutPaper(g, rectPts(-156, -262, 312, 16, 2), P.paper2, { seed: 833, step: 12, blur: 2, sx: 1, sy: 1.5 });
-  zh(g, '体力', -150, -276, { size: 30, color: P.ink2 });
+  zh(g, '体力', 150, -276, { size: 30, color: P.ink2, align: 'right' });
   for (let i = 0; i < 10; i++) { if (gone(i)) continue; const x = -130 + i * 28, sw = .04 * Math.sin(twos(tau) * 2 + i);
     g.save(); g.translate(x, -248); g.rotate(sw); cutPaper(g, rectPts(-10, 0, 20, 30, 2), S5GR, { seed: 840 + i, step: 6, blur: 2, sx: 1, sy: 1.5 });
     rline(g, [[-9, 2], [9, 2]], { w: 1, color: alpha(P.paper, .8), seed: 850 + i, dash: [2, 3], amp: .1 }); g.restore(); }
@@ -288,7 +294,7 @@ const S5BRAIN = [[-122, -8], [-130, -40], [-118, -72], [-92, -94], [-55, -106], 
 const S5CEREB = [[-100, 12], [-72, 14], [-52, 26], [-56, 48], [-80, 56], [-104, 48], [-116, 30]].map(([x, y]) => [x, y - 262]);
 const S5LIGHT = [[-80, -310], [-30, -345], [30, -335], [85, -305], [95, -262]];
 function s5Brain(g, tau, lit) {
-  cutPaper(g, [[-9, 0], [9, 0], [2, -200], [-26, -200]], P.g2, { seed: 860, step: 10 });
+  cutPaper(g, [[-16, 0], [16, 0], [5, -8], [4, -210], [-10, -210], [-5, -8]], P.g2, { seed: 860, step: 10 });
   cutPaper(g, S5CEREB, mix(P.blush, P.g2, .45), { seed: 861, step: 8, blur: 3, sx: 1.5, sy: 2.5 });
   for (let k = 0; k < 3; k++) rline(g, [[-108, -236 + k * 9], [-84, -232 + k * 9], [-60, -230 + k * 9]], { w: 1.4, color: alpha(P.ink2, .45), seed: 862 + k, smooth: true, amp: .3 });
   cutPaper(g, S5BRAIN, mix(P.blush, P.paper2, .5), { seed: 863, step: 12, blur: 3, sx: 1.5, sy: 2.5 });
