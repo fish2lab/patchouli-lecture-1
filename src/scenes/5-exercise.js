@@ -129,10 +129,11 @@ function s5Swimmer(c, x, y, s, t) {
   s5Kid(c, 0, 0, 1, { t, dir: -1, aF: [ph, 0], aB: [ph + Math.PI, 0], lF: [.22 * Math.sin(ph * 3), 0], lB: [-.22 * Math.sin(ph * 3), 0], shirt: P.red, pants: P.red, cap: P.blue, seed: 11, face: 'joy' });
   c.restore();
   // 水面：盖住下半身
-  const wave = []; for (let k = 0; k <= 24; k++) { const xx = -85 + k * 170 / 24; wave.push([xx, 2 + Math.sin(xx * .09 + t * 5) * 4]); }
-  wave.push([85, 34], [-85, 34]);
-  rshape(c, wave, { fill: alpha(P.blue, .55), stroke: false, t, seed: 13 });
-  rline(c, wave.slice(0, 25), { w: 4, color: P.blue, t, seed: 14 });
+  const wave = []; for (let k = 0; k <= 24; k++) { const xx = -80 + k * 160 / 24; wave.push([xx, 2 + Math.sin(xx * .09 + t * 5) * 4]); }
+  const band = [...wave, [80, 18], [60, 26], [-60, 26], [-80, 18]];
+  rshape(c, band, { fill: alpha(P.sky, .75), stroke: false, t, seed: 13, smooth: true });
+  rline(c, wave, { w: 4, color: P.blue, t, seed: 14 });
+  for (const xx of [-50, 10, 55]) rline(c, [[xx - 10, 14], [xx, 11], [xx + 10, 14]], { w: 2.5, color: alpha(S5WHITE, .9), t, seed: 15 + xx, smooth: true });
   for (let k = 0; k < 4; k++) { const u = (t * 1.6 + k / 4) % 1; s5Dot(c, 60 + Math.cos(k * 2) * 18 * u, -8 - Math.sin(u * Math.PI) * 22, 3.2 * (1 - u) + 1, P.sky, { stroke: P.blue, w: 1.5 }); }
   c.restore();
 }
@@ -257,7 +258,7 @@ function s5StatPanel(c, x, y, w, h, tau, t0) {
   drawMoonIcon(c, x + 46, y + 56, 20, P.moon);
   zh(c, '帕秋莉 · 状态', x + 80, y + 72, { size: 42, color: P.paper });
   const rows = [['魔力', 10, P.purple], ['体力', 10 - Math.floor(9 * clamp((tau - t0 - .7) / 1.5, 0, 1)), null]];
-  const bx = x + 150, cw = (w - 250) / 10;
+  const bx = x + 150, cw = (w - 262) / 10;
   rows.forEach(([lab, n, col], r) => {
     const ry = y + 120 + r * 82;
     zh(c, lab, x + 40, ry + 38, { size: 40, color: P.paper });
@@ -408,7 +409,7 @@ function s5Speed(c, cx, cy, tau, r0) {
   c.save();
   for (let k = 0; k < 80; k++) { const a = k / 80 * TAU + (hash(k, tk) - .5) * .06, r1 = r0 + hash(k + 99, tk) * 120, r2 = 1400, hw = 2 + hash(k, 3) * 7;
     const ca = Math.cos(a), sa = Math.sin(a);
-    c.fillStyle = alpha(P.paper, .07 + hash(k, 5) * .12); c.beginPath(); c.moveTo(cx + ca * r1, cy + sa * r1);
+    c.fillStyle = alpha(P.ink, .06 + hash(k, 5) * .14); c.beginPath(); c.moveTo(cx + ca * r1, cy + sa * r1);
     c.lineTo(cx + ca * r2 - sa * hw * 6, cy + sa * r2 + ca * hw * 6); c.lineTo(cx + ca * r2 + sa * hw * 6, cy + sa * r2 - ca * hw * 6); c.fill(); }
   c.restore();
 }
@@ -416,13 +417,12 @@ function s5Speed(c, cx, cy, tau, r0) {
 function s5Shiver(c, x, y, r, tau, seed) {
   const j = noise1(twos(tau) * 9, seed) * 3;
   for (const sg of [-1, 1]) for (let k = 0; k < 2; k++) { const rr = r + k * 14, q = []; for (let i = 0; i <= 6; i++) { const a = (sg > 0 ? 0 : Math.PI) + (i / 6 - .5) * .9; q.push([x + Math.cos(a) * rr + sg * j, y + Math.sin(a) * rr]); }
-    rline(c, q, { w: 3.5, color: P.paper, t: tau, seed: seed + k + sg * 3, smooth: true }); }
+    rline(c, q, { w: 3.5, color: P.ink2, t: tau, seed: seed + k + sg * 3, smooth: true }); }
 }
 function s5LiftShot(c, tau, Ln) {
   const [f0, f1] = S5SHOT, u = tau - f0, len = f1 - f0;
-  libraryBg(c, tau, { dim: .5, seed: 7 });
-  const g = c.createRadialGradient(960, 520, 80, 960, 520, 1000); g.addColorStop(0, alpha(P.night3, .9)); g.addColorStop(1, alpha(P.night, .95)); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  s5Speed(c, 960, 500, tau, 470);
+  const g = c.createRadialGradient(960, 520, 80, 960, 520, 1100); g.addColorStop(0, mix(P.paper, P.hair, .12)); g.addColorStop(.55, mix(P.paper, P.hair, .4)); g.addColorStop(1, mix(P.hair, P.night3, .45)); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  s5Speed(c, 960, 500, tau, 520);
   // 镜头：从帕秋莉的脸拉开，再慢慢推近；全程轻微震动，第 1 秒杠铃压下来时震得最厉害
   const zoom = key(u, [[0, 1.45], [1.0, 1.0], [len, 1.07]]), fy = key(u, [[0, 470], [1.0, 540], [len, 520]]);
   const jolt = 2 + 7 * win(.9, 1.5, u, .15);
@@ -465,10 +465,10 @@ function s5LiftShot(c, tau, Ln) {
   c.restore();
   // 「姆Q……」大字：一个字一个字砸下来，然后跟着发抖
   const chars = ['姆', 'Q', '…', '…'], size = 150;
-  let xx = 960 - 300;
+  let xx = 960 - 360;
   chars.forEach((chr, k) => {
     const t0 = .35 + k * .18, kk = s5Pop(tau - f0, t0, .35);
-    const cw = chr === '…' ? size * .75 : size * .95, jx = noise1(twos(tau) * 11, 500 + k) * 5, jy = noise1(twos(tau) * 11, 520 + k) * 5;
+    const cw = chr === '…' ? size * 1.0 : size * .95, jx = noise1(twos(tau) * 11, 500 + k) * 5, jy = noise1(twos(tau) * 11, 520 + k) * 5;
     if (kk > 0) pop(c, xx + cw / 2, 180, kk, () => zh(c, chr, xx + cw / 2 + jx, 225 + jy + (k > 1 ? -10 : 0), { size, align: 'center', color: mix(P.hair, '#ffffff', .35), outline: P.ink, ow: 18 }));
     xx += cw;
   });
@@ -507,9 +507,9 @@ function s5G2(c, tau) {
   const tLit = s5At(1, '打球', .7);
   fade(c, a, () => {
     const lit = sm(tLit + .3, tLit + .7, tau);
-    pop(c, 1560, 330, s5Pop(tau, t0 + .1, .5), () => { s5Brain(c, 1560, 330 + Math.sin(tau * 2) * 4, 96, tau, lit);
-      zh(c, '大脑', 1560, 478, { size: 36, align: 'center', color: P.ink2 }); });
-    const ty = s5At(1, '有氧'); if (tau > ty) zh(c, '有氧', 1060, 362, { size: 88, align: 'center', color: P.green, p: writeP(tau, ty, '有氧', .12) });
+    const ty = s5At(1, '有氧'), mvb = sm(ty - .35, ty + .15, tau), bx = lerp(1285, 1560, mvb), by = lerp(470, 330, mvb), br = lerp(150, 96, mvb);
+    pop(c, bx, by, s5Pop(tau, t0 + .1, .5), () => { s5Brain(c, bx, by + Math.sin(tau * 2) * 4, br, tau, lit);
+      zh(c, '大脑', bx, by + br + 52, { size: lerp(48, 36, mvb), align: 'center', color: P.ink2 }); }); if (tau > ty) zh(c, '有氧', 1060, 362, { size: 88, align: 'center', color: P.green, p: writeP(tau, ty, '有氧', .12) });
     if (tau > tLit) arrow(c, [1170, 330], [1420, 330], { w: 7, color: P.moon, p: sm(tLit, tLit + .4, tau), head: 26, t: tau, seed: 501 });
     // 小人一排，底下的括号把它们连到「有氧」
     const tb = s5At(1, '快走', -.2);
@@ -551,7 +551,7 @@ function s5G3(c, tau) {
     const mv = sm(t4, t4 + .5, tau), tx = lerp(1285, 1000, mv), ty = lerp(580, 575, mv), sz = lerp(76, 52, mv);
     if (tau > tGrow) { const k = 1 + .12 * Math.sin(clamp((tau - tGrow - 1.3) / .3, 0, 1) * Math.PI);
       pop(c, tx, ty - 20, k, () => s5Words(c, [['每周 ', P.ink], [`${n}`, n >= 150 ? P.green : P.ink], [' 分钟', P.ink]], tx, ty, { size: sz }));
-      if (mv > 0) fade(c, mv, () => { rshape(c, rectPts(tx - 220, ty - 150, 96, 48, 12), { fill: P.green, stroke: P.ink, w: 3, t: tau, seed: 521 }); zh(c, '有氧', tx - 172, ty - 114, { size: 34, align: 'center', color: S5WHITE }); }); }
+      if (mv > 0) fade(c, mv, () => { rshape(c, rectPts(tx - 48, 490, 96, 46, 12), { fill: P.green, stroke: P.ink, w: 3, t: tau, seed: 521 }); zh(c, '有氧', tx, 525, { size: 34, align: 'center', color: S5WHITE }); }); }
     const tDay = s5At(2, '一天', .2);
     if (tau > tDay) { const x2 = lerp(1285, 1000, mv), y2 = lerp(700, 660, mv), s2 = lerp(56, 42, mv);
       s5Words(c, [['≈ 每天 ', P.ink2], ['20 分钟', P.orange]], x2, y2, { size: s2, p: writeP(tau, tDay, '≈ 每天 20 分钟', .05) });
@@ -560,8 +560,8 @@ function s5G3(c, tau) {
     // L4：力量 × 2 天 + WHO 2020
     if (tau > td[0]) {
       const kk = s5Pop(tau, td[0] + .5, .45);
-      pop(c, 1560, 560, kk, () => { s5Dumbbell(c, 1400, 560 + Math.sin(tau * 5) * 3, 1.1, -.2, tau, P.orange);
-        s5Words(c, [['力量 ', P.ink], ['× 2 天', P.orange]], 1600, 580, { size: 60 }); zh(c, '每周', 1600, 650, { size: 36, align: 'center', color: P.ink2 }); });
+      pop(c, 1560, 560, kk, () => { s5Dumbbell(c, 1360, 560 + Math.sin(tau * 5) * 3, 1.1, -.2, tau, P.orange);
+        s5Words(c, [['力量 ', P.ink], ['× 2 天', P.orange]], 1620, 580, { size: 60 }); zh(c, '每周两天以上', 1620, 650, { size: 36, align: 'center', color: P.ink2 }); });
     }
     const tw = t4 + .2; if (tau > tw) fade(c, sm(tw, tw + .3, tau), () => { rline(c, [[1650, 770], [1810, 770]], { w: 2, color: P.faint, t: tau, seed: 541 }); zh(c, 'WHO 2020', 1810, 808, { size: 32, align: 'right', color: P.ink2 }); });
   });
@@ -573,7 +573,7 @@ function s5Sitter(c, x, gy, s, tau, stand, face) {
   const hip = [lerp(sitHip[0], upHip[0], k), lerp(sitHip[1], upHip[1], k) - hop];
   const book = (cc, h) => { cc.save(); cc.translate(h[0] + 4, h[1] - 4); cc.rotate(-.5); rshape(cc, rectPts(-4, -16, 26, 20, 3), { fill: P.blue, stroke: P.ink, w: 3, t: tau, seed: 551 }); cc.restore(); };
   s5Kid(c, hip[0], hip[1], s, { t: tau, lean: lerp(-.04, 0, k), lF: [lerp(1.45, -.05, k), lerp(-1.45, 0, k)], lB: [lerp(1.35, .05, k), lerp(-1.35, 0, k)],
-    aF: [lerp(.9, Math.PI - .3, k), lerp(.9, .2, k)], aB: [lerp(.7, Math.PI + .3, k), lerp(.8, -.2, k)], shirt: P.teal, face, seed: 21, prop: k < .3 ? book : null });
+    aF: [lerp(.9, Math.PI - 1.1, k), lerp(.9, .75, k)], aB: [lerp(.7, Math.PI + 1.1, k), lerp(.8, -.75, k)], shirt: P.teal, face, seed: 21, prop: k < .3 ? book : null });
 }
 // L6：椅子被划掉；任何活动 > 一直坐着
 function s5G6(c, tau) {
@@ -595,7 +595,7 @@ function s5G6(c, tau) {
       pop(c, 1600, 660, s5Pop(tau, ta, .45), () => {
         s5Walker(c, 1480, 760, 1.05, tau);
         const st = Math.sin(tau * 3) * .15;
-        s5Kid(c, 1620, 760 - 48 * 1.05, 1.05, { t: tau, lean: st, aF: [Math.PI - .35, .1], aB: [Math.PI + .35, -.1], shirt: P.pink, face: 'happy', seed: 31 });
+        s5Kid(c, 1620, 760 - 48 * 1.05, 1.05, { t: tau, lean: st, aF: [Math.PI - 1.1, .75], aB: [Math.PI + 1.1, -.75], shirt: P.pink, face: 'happy', seed: 31 });
         // 爬楼梯
         rline(c, [[1690, 760], [1690, 730], [1730, 730], [1730, 700], [1770, 700], [1770, 670], [1810, 670], [1810, 760]], { w: 4, t: tau, seed: 561 });
         const g2 = s5Gait(tau, 1.2, .5, 1, .5, .6); s5Kid(c, 1752, 700 - 50 * .9, .9, { t: tau, ...g2, lean: .15, shirt: P.orange, face: 'joy', seed: 41 });
@@ -644,7 +644,7 @@ function s5G7(c, tau) {
           if (laps > 0) { const kl = s5Pop(tau, tk + laps * 1.3, .3); pop(c, cx + 60, 330, kl, () => zh(c, `×${laps}`, cx + 60, 344, { size: 40, align: 'center', color: P.green })); }
         } else {   // 伸懒腰
           const st = Math.sin(u * 2.4), up = sm(0, .4, u);
-          s5Kid(c, cx, gy - 48 * 1.15, 1.15, { t: tau, lean: st * .12, aF: [lerp(.3, Math.PI - .3, up), .1], aB: [lerp(-.3, Math.PI + .3, up), -.1], shirt: P.teal, face: 'happy', seed: 21 });
+          s5Kid(c, cx, gy - 48 * 1.15, 1.15, { t: tau, lean: st * .12, aF: [lerp(.3, Math.PI - 1.05 + .1 * st, up), lerp(.1, .75, up)], aB: [lerp(-.3, Math.PI + 1.05 + .1 * st, up), lerp(-.1, -.75, up)], shirt: P.teal, face: 'happy', seed: 21 });
           for (let j = 0; j < 3; j++) sparkle(c, cx + Math.cos(j * 2.1 + u) * 70, 470 + Math.sin(j * 2.1 + u) * 30, 10 + 5 * Math.sin(u * 5 + j), { color: P.moon });
           rline(c, [[cx - 60, 420], [cx - 75, 400]], { w: 3, color: P.ink2, t: tau, seed: 601, al: up }); rline(c, [[cx + 60, 420], [cx + 75, 400]], { w: 3, color: P.ink2, t: tau, seed: 602, al: up });
         }
@@ -663,24 +663,24 @@ function s5G8(c, tau) {
     });
     const tb = s5At(7, '你们', -.1);
     pop(c, 1600, 420, s5Pop(tau, tb), () => {
-      rshape(c, rectPts(1400, 240, 400, 360, 18), { fill: mix(P.paper, P.green, .08), stroke: P.ink, w: 4, t: tau, seed: 612 });
+      rshape(c, rectPts(1410, 240, 400, 360, 18), { fill: mix(P.paper, P.green, .08), stroke: P.ink, w: 4, t: tau, seed: 612 });
       const j = Math.abs(Math.sin(tau * 5)) * 12;
-      s5Kid(c, 1600, 480 - j, 1.3, { t: tau, aF: [Math.PI - .5, .3], aB: [Math.PI + .5, -.3], lF: [-.2, 0], lB: [.2, 0], shirt: P.orange, face: 'joy', seed: 51 });
-      zh(c, '你们：', 1600, 570, { size: 44, align: 'center', color: P.ink2 });
+      s5Kid(c, 1615, 470 - j, 1.3, { t: tau, aF: [Math.PI - 1.15, .8], aB: [Math.PI + 1.15, -.8], lF: [-.2, 0], lB: [.2, 0], shirt: P.orange, face: 'joy', seed: 51 });
+      zh(c, '你们：', 1428, 570, { size: 44, color: P.ink2 });
     });
     zh(c, 'VS', 1285, 440, { size: 56, align: 'center', color: P.moon, outline: P.ink, ow: 6, al: sm(tb, tb + .3, tau) });
     const ts = s5At(7, '没有', .1), ks = tau < ts ? 0 : lerp(1.8, 1, easeOutBack(clamp((tau - ts) / .3, 0, 1)));
-    if (ks > 0) pop(c, 1600, 400, ks, () => { c.save(); c.translate(1600, 400); c.rotate(-.14);
-      rline(c, rectPts(-150, -52, 300, 96, 16), { w: 7, color: P.red, close: true, t: tau, seed: 621 });
-      zh(c, '没有借口！', 0, 20, { size: 56, align: 'center', color: P.red }); c.restore(); });
+    if (ks > 0) pop(c, 1672, 552, ks, () => { c.save(); c.translate(1672, 552); c.rotate(-.12);
+      rline(c, rectPts(-132, -46, 264, 84, 14), { w: 7, color: P.red, close: true, t: tau, seed: 621 });
+      zh(c, '没有借口！', 0, 16, { size: 48, align: 'center', color: P.red }); c.restore(); });
     // 小结三条
-    const items = [['每周有氧 150′', 0], ['每周力量 2 天', 1], ['每小时起来动', 2]];
+    const items = [['有氧 150′/周', 0], ['力量 2 天/周', 1], ['每小时动一动', 2]];
     items.forEach(([txt, k]) => {
-      const tk = ts + .6 + k * .35, kk = s5Pop(tau, tk, .4), x = 790 + k * 350;
-      pop(c, x + 160, 710, kk, () => {
-        rshape(c, rectPts(x, 670, 330, 84, 20), { fill: S5WHITE, stroke: P.ink, w: 3.5, t: tau, seed: 631 + k });
+      const tk = ts + .6 + k * .35, kk = s5Pop(tau, tk, .4), x = 760 + k * 355;
+      pop(c, x + 170, 710, kk, () => {
+        rshape(c, rectPts(x, 670, 340, 84, 20), { fill: S5WHITE, stroke: P.ink, w: 3.5, t: tau, seed: 631 + k });
         if (k === 0) s5Shoe(c, x + 50, 730, .7, tau); else if (k === 1) s5Dumbbell(c, x + 48, 712, .6, -.2, tau, P.orange); else s5Hourglass(c, x + 46, 712, 60, .5, tau);
-        zh(c, txt, x + 96, 726, { size: 36 });
+        zh(c, txt, x + 98, 725, { size: 34 });
       });
     });
   });
