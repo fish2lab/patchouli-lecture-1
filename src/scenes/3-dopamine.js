@@ -333,7 +333,7 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
   fn(c, tau, L) {
     const T = s3T, end = S3END, T1 = s3T(1);
     if (tau < .2) { handoffThread(c); return; }
-    if (tau > S3DUR - .25) { handoffSparks(c); return; }
+    if (tau > S3DUR - .5) { handoffSparks(c); return; }
     c.fillStyle = P.paper; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .12);
     pageHeader(c, '第三页 · 动力', tau, .5, { x: 110, y: 96 });
     const act = s3Act(tau), mood = act.mood || L.mood || 'normal', blink = blinkAt(tau, 3), since = tau - act.t0;
@@ -416,8 +416,8 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
       if (act.at === 'hop' && cartFoot && p) { const u = sm(act.t0, act.t0 + .7, tau, s3Lin); p = [lerp(p[0], cartFoot[0], easeIO(u)), lerp(p[1], cartFoot[1], easeIO(u)) - Math.sin(Math.PI * u) * 200, lerp(p[2], cs.k, u)]; }
       if (p) PA = place(p[0], p[1] + jump, wob, 520 * p[2]);
     } else if (act.at === 'cart' && cs) {
-      const fp = cartFoot, sit = act.pose === 'sit' ? -24 * cs.k : 0;
-      PA = place(fp[0], fp[1] + jump + sit, cs.ang * .45 + wob, 520 * cs.k);
+      const fp = cartFoot, sit = act.pose === 'sit' ? -24 : 0;
+      PA = place(fp[0], fp[1] + (jump + sit) * cs.k, cs.ang * .45 + wob, 520 * cs.k);
     } else if (act.at === 'stair') {
       const p = s3Pj(s3StairPos(tau), cam); if (p) PA = place(p[0], p[1] + jump, wob, 520 * p[2], { facing: 1 });
     }
@@ -437,10 +437,10 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
       if (p) rline(c, [[PA.head[0] + 50, PA.head[1] - 10], [p[0] - 40 * p[2], p[1] - 70 * p[2]]], { w: 3, color: P.ink2, dash: [3, 14], p: sm(T(9) + .8, T(9) + 1.5, tau), seed: 395, al: 1 - sm(end - .6, end - .1, tau) }); }
     // ---------------- 出场：夜色降临，火花升起布满夜空 ----------------
     if (tau > end - .4) {
-      const u = sm(end - .4, S3DUR - .25, tau, s3Lin), night = sm(end - .4, end + 1.0, tau);
+      const u = sm(end - .4, S3DUR - .5, tau, s3Lin), night = sm(end - .4, end + 1.0, tau);
       // 夜色像墨一样从上往下洇开（下沿是一道起伏的边）
       const edge = lerp(-60, H + 120, easeIO(night)), np = [[0, -10], [W, -10]];
-      for (let x = W; x >= 0; x -= 40) np.push([x, edge + Math.sin(x / 170 + tau * 2) * 34 + noise1(x / 90, 4) * 26]);
+      for (let x = W; x >= 0; x -= 12) np.push([x, edge + Math.sin(x / 210 + tau * 2) * 30 + noise1(x / 140, 4) * 22]);
       c.save(); c.fillStyle = NIGHT_BG; c.fill(polyPath(np)); grain(c, polyPath(np), .06); c.restore();
       const { s0, w, r, n } = S3ST;
       HANDOFF_SPARKS.forEach(([x, y, rr], k) => { const i = k % n, s = s0 + (i + .5) * w, p0 = s3Pj([s3X(s) + (hash(k, 7) - .5) * 160, -(i + 1) * r, s], cam) || [CX, H];
