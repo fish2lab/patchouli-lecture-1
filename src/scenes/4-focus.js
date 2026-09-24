@@ -320,7 +320,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         const flagN = [0, 2, 6, 8];
         const flags = flagN.map((n, k) => ({ n, k: sm(s[3] + .8 + k * .18, s[3] + 1.2 + k * .18, tau, x => x) }));
         // L3：白天/夜里两块底
-        const dayK = sm(s[3], s[3] + .5, tau), nightK = sm(s[3] + 1.6, s[3] + 2.1, tau);
+        const dayK = sm(s[3], s[3] + .5, tau), nightK = sm(s[3] + 1.25, s[3] + 1.75, tau);
         if (dayK > 0) fade(c, netA, () => {
           c.save(); c.beginPath(); c.rect(740, 110, 535 * dayK, 700); c.clip();
           rshape(c, rectPts(740, 110, 535, 700, 18), { fill: mix(P.paper, P.sky, .5), stroke: P.paperEdge, w: 4, seed: 131, t: tau });
@@ -335,7 +335,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           rshape(c, rectPts(1295, 110, 535, 700, 18), { fill: P.night2, stroke: P.night3, w: 4, seed: 151, t: tau });
           for (let k = 0; k < 16; k++) sparkle(c, 1320 + hash(k, 3) * 490, 130 + hash(k, 5) * 560, 4 + 3 * Math.sin(tau * 3 + k), { color: alpha(P.moon, .7) });
           drawMoonIcon(c, 1780, 168, 30, P.moon, -.3);
-          zh(c, '睡觉：接线', 1330, 188, { size: 48, color: P.paper, p: writeP(tau, s[3] + 2, '睡觉：接线') });
+          zh(c, '睡觉：接线', 1330, 188, { size: 48, color: P.paper, p: writeP(tau, s[3] + 1.6, '睡觉：接线') });
           // 床和睡着的小人
           const bx = 1420, by = 740;
           rshape(c, rectPts(bx, by, 330, 46, 10), { fill: P.shelf2, w: 4, seed: 152, t: tau });
@@ -349,7 +349,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           const fk = 1 - sm(s[3] + 2.9, s[3] + 3.3, tau);
           const nEdges = S4E.filter(([a, b]) => !((a === 2 && b === 5) || (a === 3 && b === 7))).map(([a, b]) => ({ a, b }));
           [[0, 2], [2, 6], [6, 8]].forEach(([a, b], k) => nEdges.push({ a, b, p: sm(s[3] + 3.0 + k * .25, s[3] + 3.6 + k * .25, tau), col: P.moon, w: 11, bend: .05, pulse: true }));
-          s4Net(c, tau, { box: [1355, 270, 420, 330], r: 16, dark: true, app: () => sm(s[3] + 1.9, s[3] + 2.3, tau, x => x), edges: nEdges,
+          s4Net(c, tau, { box: [1355, 270, 420, 330], r: 16, dark: true, app: () => sm(s[3] + 1.6, s[3] + 2.0, tau, x => x), edges: nEdges,
             flags: flagN.map(n => ({ n, k: fk })), glow: i => flagN.includes(i) ? sm(s[3] + 3.4, s[3] + 3.9, tau) * .8 : 0 });
           c.restore();
         });
@@ -408,9 +408,9 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
       // ---------- L4 90 + 20 ----------
       const b4 = 1 - sm(s[5] - .15, s[5] + .15, tau);
       if (tau > s[4] - .1 && b4 > 0) fade(c, b4, () => {
-        s4Head(c, tau, '学 90 分钟，歇 20 分钟', s[4] + .2, s[5] + .2);
+        s4Head(c, tau, '学 90 分钟，歇 20 分钟', s[4], s[5] + .2);
         const x0 = 800, xm = 1600, x1 = 1780, y0 = 290, bh = 92;
-        const bp = sm(s[4] + .4, s[4] + 1.7, tau, easeOut), gp = sm(s[4] + 1.9, s[4] + 2.6, tau, easeOut);
+        const bp = sm(s[4] + .25, s[4] + 1.6, tau, easeOut), gp = sm(s[4] + 1.9, s[4] + 2.6, tau, easeOut);
         if (bp > 0) { rshape(c, rectPts(x0, y0, (xm - x0) * bp, bh, 14), { fill: P.blue, w: 4.5, t: tau, seed: 201 });
           for (let k = 1; k < 9; k++) if (x0 + k * 89 < x0 + (xm - x0) * bp - 10) rline(c, [[x0 + k * 89, y0 + bh - 18], [x0 + k * 89, y0 + bh - 4]], { w: 3, color: alpha('#fff', .6), t: tau, seed: 202 + k });
           zh(c, '学', (x0 + xm) / 2, y0 + 66, { size: 64, align: 'center', color: '#fff', al: sm(s[4] + .9, s[4] + 1.2, tau) });
