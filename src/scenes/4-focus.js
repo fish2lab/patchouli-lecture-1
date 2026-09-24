@@ -467,5 +467,8 @@ scene({ order: 4, key: 'focus', title: '专注', dur: S4DUR, lines: S4LINES, noF
     const cw = Math.cos(f * Math.PI);
     if (cw > 0) { c.save(); c.translate(gx, 0); c.scale(cw, 1); c.translate(-gx, 0); c.beginPath(); c.rect(gx, 0, W, H); c.clip(); drawSheet(); c.restore();
       c.save(); c.globalAlpha *= .35 * (1 - cw); c.fillStyle = '#000'; c.fillRect(gx, ty, (tx + W * sx - gx) * cw, H * sy); c.restore(); }
-    else turnPage(c, f);
+    else { // 翻过书脊：背面就是左边那页空白书页（裁出来画 spread），落平时正好和 handoffBook 对上
+      const e = -cw, fw = (gx - tx) * e, lift = Math.sin(f * Math.PI) * 30, hh = H * sy, pts = polyPath([[gx, ty], [gx - fw, ty - lift], [gx - fw, ty + hh + lift], [gx, ty + hh]]);
+      c.save(); c.shadowColor = 'rgba(30,20,10,.35)'; c.shadowBlur = 30 * (1 - e * e); c.shadowOffsetY = 10; c.fillStyle = BOOK.page; c.fill(pts); c.restore();
+      c.save(); c.clip(pts); spread(c, tau); c.fillStyle = `rgba(60,40,20,${.22 * (1 - e)})`; c.fill(pts); c.restore(); }
   } });
