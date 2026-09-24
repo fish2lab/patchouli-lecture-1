@@ -86,7 +86,13 @@ scene({ order: 0, key: 'opening', title: '开场', dur: seqEnd(S0LINES) + 1.2, l
   fn(c, tau, L) {
     const t1 = s0T(1), t2 = s0T(2), t3 = s0T(3), t4 = s0T(4), t5 = s0T(5), t6 = s0T(6), t7 = s0T(7), end = seqEnd(S0LINES);
     const R = BOOK.R, Lp = BOOK.L, edge = R.y + R.h;
-    if (tau < S0H.open0) { desk(c); s0Cover(c, tau, CX - 10, BOOK.w / 2 + 20); return; }
+    // 开头：镜头从斜上方看桌上合着的书，随着金墨写出标题慢慢转到正上方（立体感）
+    if (tau < S0H.open0) { const pit = lerp(-.9, 0, sm(0, S0H.open0 - .5, tau, easeIO)), z = lerp(.92, 1, sm(0, S0H.open0, tau, easeIO)), cw = BOOK.w / 2 + 20;
+      const x0 = lerp(CX - cw / 2, CX - 10, sm(S0H.open0 - .6, S0H.open0, tau, easeIO));
+      c.fillStyle = WOOD; c.fillRect(0, 0, W, H);
+      c.save(); c.translate(CX, CY); c.scale(z, z); c.translate(-CX, -CY);
+      tiltPlane(c, b => { desk(b); s0Cover(b, tau, x0, cw); }, { pitch: pit, cy: CY });
+      c.restore(); return; }
     spread(c, tau);
     // 封面翻开：盖在左页上的封面从右往左翻过去
     const oc = sm(S0H.open0, S0H.open1, tau, easeIO);

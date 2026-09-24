@@ -163,8 +163,24 @@ function chapterTag(c, tau, text, o = {}) {
   zh(c, text, 70, 84, { size: 40, color: P.paper });
   c.restore();
 }
+// crescentPts：月牙轮廓（外圆减去偏移的内圆），rot 旋转
+function crescentPts(x, y, r, rot = 0, n = 96) {
+  const ix = r * .45, iy = -r * .3, ir = r * .85, out = [], inn = [];
+  for (let i = 0; i < n; i++) { const a = i / n * TAU, px = Math.cos(a) * r, py = Math.sin(a) * r; if (Math.hypot(px - ix, py - iy) > ir) out.push(a); }
+  // 外弧：找到不在内圆里的连续一段（从一个断点开始）
+  let s0 = 0; for (let i = 0; i < out.length; i++) { const d = (out[(i + 1) % out.length] - out[i] + TAU) % TAU; if (d > TAU / n * 1.5) { s0 = (i + 1) % out.length; break; } }
+  const arc = out.slice(s0).concat(out.slice(0, s0)), a0 = arc[0], a1 = arc[arc.length - 1];
+  const P1 = [Math.cos(a1) * r, Math.sin(a1) * r], P0 = [Math.cos(a0) * r, Math.sin(a0) * r];
+  let b0 = Math.atan2(P1[1] - iy, P1[0] - ix), b1 = Math.atan2(P0[1] - iy, P0[0] - ix); while (b1 < b0) b1 += TAU;
+  // 内弧从 P1 回到 P0，走在外圆内部的那一边
+  const mid = (b0 + b1) / 2, inside = Math.hypot(ix + Math.cos(mid) * ir, iy + Math.sin(mid) * ir) < r;
+  if (!inside) { b1 -= TAU; }
+  const pts = arc.map(a => [Math.cos(a) * r, Math.sin(a) * r]);
+  for (let i = 1; i < 40; i++) { const b = lerp(b0, b1, i / 40); pts.push([ix + Math.cos(b) * ir, iy + Math.sin(b) * ir]); }
+  const cr = Math.cos(rot), sr = Math.sin(rot); return pts.map(([u, v]) => [x + u * cr - v * sr, y + u * sr + v * cr]);
+}
 // drawMoonIcon：月牙（帕秋莉帽子上的那个）。rot 旋转
-function drawMoonIcon(c, x, y, r, color = P.moon, rot = 0) { c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.clip(); const p = new Path2D(); p.arc(0, 0, r, 0, TAU); p.moveTo(r * .45 + r * .85, -r * .3); p.arc(r * .45, -r * .3, r * .85, 0, TAU); c.fillStyle = color; c.fill(p, 'evenodd'); c.restore(); }
+function drawMoonIcon(c, x, y, r, color = P.moon, rot = 0) { if (r <= .5) return; c.save(); c.fillStyle = color; c.fill(polyPath(crescentPts(x, y, r, rot))); c.restore(); }
 // magicCircle：旋转的魔法阵（帕秋莉施法、转场）。o = { color, al, spin }
 function magicCircle(c, x, y, r, t, o = {}) {
   const { color = P.moon, al = 1, spin = .3 } = o; if (r <= 1) return;
@@ -353,3 +369,17 @@ function handoffSparks(c) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grai
   for (const [x, y, r] of HANDOFF_SPARKS) { c.fillStyle = alpha(P.moon, .9); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); } }
 // 专注 → 运动、运动 → 总结：空白的魔导书跨页（spread）
 function handoffBook(c, t = 0) { spread(c, t); }
+// tiltPlane：把 fn 画的整幅画面当成一张平放的纸，绕水平轴俯仰 pitch 弧度后按透视画出来（远处变窄变扁）。
+// 用于「斜看桌上的书」一类镜头。o = { pitch, cx, cy 旋转轴所在的屏幕点, f 焦距, strip 条带高度 }
+const TILT_BUF = document.createElement('canvas');
+function tiltPlane(c, fn, o = {}) {
+  const { pitch = 0, cx = CX, cy = CY, f = 1400, strip = 4 } = o;
+  if (Math.abs(pitch) < .002) { fn(c); return; }
+  const sc = c.getTransform().a || 1; if (TILT_BUF.width !== W * sc) { TILT_BUF.width = W * sc; TILT_BUF.height = H * sc; }
+  const b = TILT_BUF.getContext('2d'); b.setTransform(sc, 0, 0, sc, 0, 0); b.clearRect(0, 0, W, H); fn(b);
+  const cp = Math.cos(pitch), sp = Math.sin(pitch), map = y => { const d = y - cy, z = d * sp, k = f / (f + z); return [cy + d * cp * k, k]; };
+  c.save(); c.imageSmoothingQuality = 'high';
+  for (let y = 0; y < H; y += strip) { const [y0, k0] = map(y), [y1] = map(Math.min(H, y + strip)); if (y1 <= y0) continue;
+    const w = W * k0; c.drawImage(TILT_BUF, 0, y * sc, W * sc, strip * sc, cx - cx * k0, y0, w, y1 - y0 + .6); }
+  c.restore();
+}
