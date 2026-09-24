@@ -73,7 +73,7 @@ const s1Pal = (k, nk) => mix(S1PAL[k][0], S1PAL[k][1], nk);
 // s1Clock：此刻转盘指向几点（连续值，39 = 次日 15 点）
 function s1Clock(tau) {
   const b = S1B;
-  return key(tau, [[0, 3.6], [b.notch, 3.6], [b.notch + .2, 4.6], [b.light - .15, 4.6], [b.light + .45, 5.7],
+  return key(tau, [[0, 3.4], [b.notch, 3.4], [b.notch + .16, 4.7], [b.light - .15, 4.7], [b.light + .45, 5.7],
     [b.sun0, 5.7], [b.wake, 7.2], [b.spin0, 7.9], [b.spin1, 23.2], [b.yank, 23.45], [b.yank + .42, 13],
     [b.back, 13], [b.back + 1.15, 23.7], [b.pm - .1, 23.7], [b.pm + 1.0, 39],
     [b.trial, 39], [b.trial + .45, 37.4], [b.trial + 1.0, 40.1], [b.trial + 1.5, 38.6],
@@ -361,6 +361,8 @@ function s1Pointer(c, tau, st) {
   const tipW = s1Map([S1SKY.x, S1SKY.y - S1SKY.ring - 4], S1Z.sky, st.cam), tipY = lerp(S1TOP, tipW[1], k), x = tipW[0];
   s1Thread(c, x, S1TOP - 10, x, tipY - 26);
   cutPaper(c, [[x - 12, tipY - 30], [x + 12, tipY - 30], [x, tipY]], '#b08a45', { seed: 720, step: 5, blur: 4, sy: 3, grain: 0 });
+  // 转盘被拨一格：指针边上冒一个「咔」
+  const nk = s1Pop(tau, S1B.notch, .25) * (1 - sm(S1B.notch + .6, S1B.notch + .8, tau)); if (nk > .01) zh(c, '咔', x + 34, tipY - 4, { size: 40 * nk, color: mix(P.moon, '#ffffff', .3), al: nk });
 }
 // L10 帕秋莉躺在「6–8 小时」这块吊牌上（x, 吊牌上沿 y）；s1SignLoad：她跳上去时吊牌往下一沉再弹两下
 const S1BED = [1560, 386];
@@ -532,7 +534,7 @@ function s1Box(c, tau, L, full = true) {
     for (let k = 0; k < 9; k++) { const u = ((hash(k, 71) + tau * .08) % 1) * beamA, q = [lerp(sunS[0], tgt[0], u), lerp(sunS[1], tgt[1], u) + Math.sin(tau * 2 + k) * 14 * zz];
       c.fillStyle = alpha('#fff4d6', .7 * Math.sin(u * Math.PI) * (cut && u > cut[0] ? cut[1] : 1)); c.beginPath(); c.arc(q[0], q[1], 2.5 * zz, 0, TAU); c.fill(); }
   }
-  if (st.kid === 'phone' && tau > b.phone + .1 && tau < t(9) + .4) {   // 手机的光：伸向帕秋莉的眼睛那边——不，照向天空里的「生物钟」指针
+  if (st.kid === 'phone' && tau > b.phone + .1 && tau < t(9) + .4) {   // 手机的光：一路照到天上的「生物钟」指针（等于告诉它现在是白天），调暗调暖后变细变琥珀色
     const k = sm(b.phone + .1, b.phone + .45, tau) * (1 - sm(t(9), t(9) + .3, tau)), dim = sm(b.dim, b.dim + .4, tau), warm = sm(b.warm, b.warm + .5, tau);
     const tip = s1Map([S1SKY.x, S1SKY.y - S1SKY.ring + 30], S1Z.sky, cam);
     s1Strip(c, [kwS[0] - 8, kwS[1] - 8], tip, { p: k * (1 - .45 * sm(b.back, b.back + .8, tau)), w0: 10, w1: lerp(60, 34, dim), col: mix(S1C.phone, S1C.amber, warm), al: lerp(.8, .45, dim), seed: 470 });
