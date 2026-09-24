@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>帕秋莉 角色样张</title>
+<style>
+@font-face { font-family: WenKai; src: url(fonts/LXGWWenKai-Regular.ttf); font-display: block; }
+html, body { margin: 0; background: #120d1f; color: #e9e0f5; font: 15px/1.4 WenKai, KaiTi, serif; }
+canvas { display: block; margin: 0 auto 16px; max-width: 100%; background: #000; }
+#nav { padding: 8px 16px; } #nav a { color: #e9b949; margin-right: 12px; }
+</style>
+</head>
+<body>
+<!-- 开发用样张页：?sheet=poses|faces|chibi|anim|stage|zoom（默认全部），?t=秒 固定时间（不传则动画播放），?mood=、?h= 调试 -->
+<div id="nav">样张：<a href="?sheet=poses">全身姿势</a><a href="?sheet=faces">表情</a><a href="?sheet=chibi">Q 版</a><a href="?sheet=anim">说话+眨眼</a><a href="?sheet=stage">讲台</a><a href="?sheet=zoom">头部特写</a><a href="?">全部</a></div>
+<div id="wrap"></div>
+<script src="src/core.js"></script>
+<script src="src/kit.js"></script>
+<script src="src/character/patchouli.js"></script>
+<script>
+// core.js 的 Q 是 URL 参数
+const CH_SHEETS = {
+  // 全身 6 个姿势
+  poses: { w: 1920, h: 1080, draw(c, t) {
+    chBg(c, 1920, 1080);
+    const poses = ['lecture', 'point', 'read', 'cheer', 'tired', 'shrug'], moods = ['normal', 'smug', 'normal', 'smile', 'sleepy', 'annoyed'];
+    poses.forEach((p, i) => { const x = 170 + i * 316; drawPatchouli(c, { x, y: 1010, h: 760, pose: p, mood: moods[i], t: t + i * .7, blink: blinkAt(t, i + 1), mouth: i === 0 ? mouthAt(t % 3, { t0: 0, t1: 3, text: '第一页睡眠所有调理' }) : 0 });
+      zh(c, p, x, 1060, { size: 34, align: 'center', color: P.paper }); });
+  } },
+  // 7 种表情头部特写（闭嘴）+ 说话口型
+  faces: { w: 1920, h: 1080, draw(c, t) {
+    chBg(c, 1920, 1080);
+    const moods = ['normal', 'smile', 'smug', 'surprised', 'sleepy', 'annoyed', 'sad'];
+    moods.forEach((m, i) => { const x = 140 + i * 272;
+      c.save(); c.beginPath(); c.rect(x - 130, 20, 260, 500); c.clip(); drawPatchouli(c, { x, y: 1480, h: 1800, mood: m, t, gesture: 0 }); c.restore();
+      zh(c, m, x, 510, { size: 30, align: 'center', color: P.paper });
+      c.save(); c.beginPath(); c.rect(x - 130, 540, 260, 480); c.clip(); drawPatchouli(c, { x, y: 1980, h: 1800, mood: m, t, mouth: .75, gesture: 0 }); c.restore();
+      zh(c, m + ' 说话', x, 1050, { size: 30, align: 'center', color: P.paper }); });
+  } },
+  // Q 版 6 个姿势
+  chibi: { w: 1920, h: 1080, draw(c, t) {
+    chBg(c, 1920, 1080);
+    const poses = [['stand', 'normal'], ['run', 'smile'], ['sit', 'smile'], ['lift', 'annoyed'], ['flat', 'sad'], ['lie', 'sleepy']];
+    poses.forEach(([p, m], i) => { const x = i < 4 ? 220 + i * 440 : 520 + (i - 4) * 820, y = i < 4 ? 480 : 980;
+      rline(c, [[x - 260, y], [x + 260, y]], { w: 2, color: P.faint });
+      const r = drawPatchouliChibi(c, { x, y, h: 300, pose: p, mood: m, t, blink: p === 'lie' ? 1 : blinkAt(t, i + 3), mouth: p === 'run' ? .4 + .3 * Math.sin(t * 9) : 0 });
+      if (p === 'lift') { rline(c, [[r.hands[0][0] - 90, r.hands[0][1]], [r.hands[1][0] + 90, r.hands[1][1]]], { w: 12, color: P.gray }); }
+      for (const hd of r.hands) { c.fillStyle = P.green; c.beginPath(); c.arc(hd[0], hd[1], 6, 0, TAU); c.fill(); }
+      c.fillStyle = P.red; c.beginPath(); c.arc(r.head[0], r.head[1], 6, 0, TAU); c.fill();
+      zh(c, p, x, y + 44, { size: 30, align: 'center', color: P.paper }); });
+  } },
+  // 说话 + 眨眼的小动画（讲台尺寸，放大到半身）
+  anim: { w: 960, h: 720, draw(c, t) {
+    chBg(c, 960, 720);
+    const lines = seq(.3, ['我是帕秋莉，今天来讲调理身体。', ['正因为是反面教材，我最清楚。', { mood: 'smug' }]]), cur = lineAt(lines, t % 7);
+    drawPatchouli(c, { x: 480, y: 1500, h: 1600, pose: 'lecture', mood: (cur && cur.o.mood) || 'normal', mouth: mouthAt(t % 7, cur), blink: blinkAt(t), t, gesture: .3 + .7 * sm(0, 1, (t % 7) - .3) });
+    if (cur) zh(c, cur.text, 480, 690, { size: 34, align: 'center', color: P.paper });
+  } },
+  // 讲台布局（和片子一样的位置、大小）
+  stage: { w: 1920, h: 1080, draw(c, t) {
+    libraryBg(c, t); board(c, STAGE.board.x, STAGE.board.y, STAGE.board.w, STAGE.board.h, { t, title: '睡眠' });
+    stageChar(c, t, { mood: 'normal', mouth: mouthAt(t % 3, { t0: 0, t1: 3, text: '第一页睡眠所有调理' }) });
+  } },
+  // 头部特写
+  zoom: { w: 1200, h: 900, draw(c, t) {
+    chBg(c, 1200, 900);
+    const md = Q.get('mood') || 'normal';
+    drawPatchouli(c, { x: 330, y: 2750, h: 3300, mood: md, t, gesture: 0, blink: 0, mouth: +(Q.get('mouth') || 0) });
+    drawPatchouli(c, { x: 900, y: 2750, h: 3300, mood: 'smile', t, gesture: 0, mouth: .8 });
+  } },
+};
+function chBg(c, w, h) { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, P.night2); g.addColorStop(1, P.night3); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+const chSel = Q.get('sheet'), chFixed = Q.has('t') ? +Q.get('t') : null, chList = chSel ? [chSel] : Object.keys(CH_SHEETS);
+const chCvs = chList.map(k => { const cv = document.createElement('canvas'), S = CH_SHEETS[k]; cv.width = S.w; cv.height = S.h; cv.id = 'sheet-' + k; cv.style.width = Math.min(S.w, 1400) + 'px'; document.getElementById('wrap').appendChild(cv); return [cv.getContext('2d'), S]; });
+function chDraw(t) { let ms = 0; for (const [c, S] of chCvs) { const t0 = performance.now(); c.save(); S.draw(c, t); c.restore(); ms = Math.max(ms, performance.now() - t0); } return ms; }
+window.__chDraw = chDraw;
+// 性能：画一次 drawPatchouli 的平均毫秒
+window.__chBench = n => { const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080; const c = cv.getContext('2d'); const t0 = performance.now(); for (let i = 0; i < n; i++) drawPatchouli(c, { t: i / 30, mouth: .5, pose: ['lecture', 'point', 'read', 'cheer', 'tired', 'shrug'][i % 6] }); const a = (performance.now() - t0) / n; const t1 = performance.now(); for (let i = 0; i < n; i++) drawPatchouliChibi(c, { x: 500, y: 800, t: i / 30, pose: ['stand', 'run', 'sit', 'lift', 'flat', 'lie'][i % 6] }); return [a, (performance.now() - t1) / n]; };
+document.fonts.load(`40px ${ZH}`, '帕秋莉').then(() => document.fonts.ready).then(start, start);
+function start() {
+  if (chFixed !== null) { chDraw(chFixed); window.__ready = true; return; }
+  const t0 = performance.now(); const loop = () => { chDraw((performance.now() - t0) / 1000); requestAnimationFrame(loop); }; loop(); window.__ready = true;
+}
+</script>
+</body>
+</html>
