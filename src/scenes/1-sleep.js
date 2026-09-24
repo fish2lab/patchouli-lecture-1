@@ -31,7 +31,7 @@ const S1B = (() => { const t = S1T, e = S1E, w = S1W; return {
   rise: [1.75, 2.0, 2.3, 2.6], found: w(0, .62), pat: 1.7,       // 远山、校园、宿舍、树依次立起；「地基」地面和草叶砸下来
   tick: w(1, .12), notch: w(1, .62), light: w(1, .86),           // 刻度环、拨一格、是光
   sun0: w(2, .05), cort: w(2, .48), wake: w(2, .8),              // 日出、皮质醇、叫醒
-  yawn: w(3, .5), glass: w(3, .72),                              // 困意、倒计时
+  yawn: w(3, .5), glass: w(3, .3),                              // 困意、倒计时
   door: w(4, .18), walk0: w(4, .3), walk1: w(4, .52), num4: w(4, .5), gag: e(4) - 1.15,
   pane: t(5) + .35, tag5: w(5, .66),
   spin0: t(6) + .15, spin1: t(6) + 1.55, num6: w(6, .2), wedge: w(6, .3),
@@ -62,7 +62,7 @@ const S1C = {
   sky: ['#efe7d3', mix('#efe7d3', P.moon, .5), mix(P.moon, P.purple, .5), s1NP(.35), s1NP(.54)],
 };
 const S1PAL = {
-  hills2: [mix(P.g1, P.paper, .3), s1NP(.64)], hills: [mix(P.g1, P.purple, .16), s1NP(.74)],
+  hills2: [mix(mix(P.g1, P.paper, .3), P.moon, .1), s1NP(.64)], hills: [mix(mix(P.g1, P.purple, .16), P.moon, .06), s1NP(.74)],
   campus: [mix(P.g2, P.g1, .45), s1NP(.82)], dorm: [mix(P.g3, P.purple, .22), s1NP(.89)],
   trees: [mix(P.g3, P.ink2, .45), mix(P.night, '#000000', .1)], ground: [mix(P.ink2, P.g3, .35), mix(P.night, '#000000', .22)],
   grass: [mix(P.ink, P.ink2, .35), mix(P.night, '#000000', .42)], glass: [mix(P.g1, P.paper, .35), s1NP(.8)],
@@ -155,7 +155,7 @@ function s1Sky(c, tau, st) {
     // 24 小时刻度环：画出比例 st.tick（L1 「生物钟」时一格格画出来）
     const ringCol = () => mix(P.ink2, '#d8ceb8', st.nk);
     if (st.tick > 0) {
-      rline(c, s1Arc(ring, ring, 12, 12 + 24 * st.tick, 96).slice(0, 97), { w: 2.2, color: alpha(P.ink2, .55), seed: 420, amp: .8 });
+      rline(c, s1Arc(ring, ring, 12, 12 + 24 * st.tick, 96).slice(0, 97), { w: 2.4, color: alpha(ringCol(), .7), seed: 420, amp: .8 });
       for (let h = 0; h < 24; h++) { if (h / 24 > st.tick) break; const hh = 12 + h, big = hh % 3 === 0, a = s1Phi(hh), p0 = s1On(a, ring - 2), p1 = s1On(a, ring + (big ? 20 : 11));
         rline(c, [p0, p1], { w: big ? 3 : 2, color: ringCol(hh), seed: 421 + h, amp: .4 });
         if (big) { const q = s1On(a, ring + 42); c.save(); c.translate(q[0], q[1]); c.rotate(a); zh(c, String(hh % 24), 0, 0, { size: 30, align: 'center', base: 'middle', color: ringCol(hh), al: clamp(st.tick * 24 - h, 0, 1) }); c.restore(); } }
@@ -172,8 +172,9 @@ function s1Sky(c, tau, st) {
       for (let k = n; k >= 0; k--) pts.push(s1On(s1Phi(lerp(23, h1, k / n)), ring - 20));
       pts.splice(n + 1, 0, s1On(a1 - .03, ring + 20), notch, s1On(a1 - .03, ring - 20));
       fade(c, st.ribA, () => { cutPaper(c, pts, P.purple, { seed: 440, step: 14, blur: 8, sy: 4 }); rline(c, s1Arc(ring, ring, 23, h1, 30).slice(0, 31), { w: 1, color: alpha('#ffffff', .25), seed: 441 });
-        for (const [hh, lab, t0] of [[29, '6', b.six], [31, '8', b.eight]]) { if (tau < t0 || st.rib < hh - 23 - .05) continue; const a = s1Phi(hh), q = s1On(a, ring + 50), k = s1Pop(tau, t0, .3);
-          c.save(); c.translate(q[0], q[1]); c.rotate(a); c.scale(k, k); zh(c, lab, 0, 0, { size: 36, align: 'center', base: 'middle', color: mix(P.purple, '#ffffff', .55) }); c.restore(); } }); }
+        for (const [hh, lab, t0] of [[29, '6h', b.six], [31, '8h', b.eight]]) { if (tau < t0 || st.rib < hh - 23 - .05) continue; const a = s1Phi(hh), q = s1On(a, ring - 52), k = s1Pop(tau, t0, .3);
+          rline(c, [s1On(a, ring - 26), s1On(a, ring + 26)], { w: 3, color: mix(P.purple, '#ffffff', .6), seed: 442 + hh });
+          c.save(); c.translate(q[0], q[1]); c.rotate(a); c.scale(k, k); zh(c, lab, 0, 0, { size: 34, align: 'center', base: 'middle', color: mix(P.purple, '#ffffff', .6) }); c.restore(); } }); }
     // 太阳（带一张小脸；被手机拽回白天时一脸困惑地转半圈）和月亮
     const [sx, sy] = [x, y - sun];
     spin(c, sx, sy, st.sunSpin, () => {
@@ -292,9 +293,9 @@ function s1Ground(c, tau, st) {
   // 走出宿舍的小人（出了门就站在地面这一层上）
   // 一辆共享单车停在门口；路灯（夜里亮）
   s1Bike(c, 1185, 822, mix(s1Pal('dorm', nk), P.ink, .45));
-  const lp = mix(s1Pal('dorm', nk), P.ink, .45); cutPaper(c, [[712, 830], [718, 600], [724, 600], [730, 830]], lp, { seed: 545, step: 20, blur: 8, sx: -3, sy: -2 });
-  cutPaper(c, [[700, 606], [742, 606], [734, 590], [708, 590]], lp, { seed: 546, step: 8, blur: 6 });
-  if (st.nk > .3) { c.fillStyle = alpha(S1C.lamp, (st.nk - .3) * 1.3 * (1 - st.dark)); c.beginPath(); c.moveTo(706, 606); c.lineTo(736, 606); c.lineTo(721, 620); c.fill(); }
+  const lp = mix(s1Pal('dorm', nk), P.ink, .45); cutPaper(c, [[1362, 834], [1368, 604], [1374, 604], [1380, 834]], lp, { seed: 545, step: 20, blur: 8, sx: -3, sy: -2 });
+  cutPaper(c, [[1350, 610], [1392, 610], [1384, 594], [1358, 594]], lp, { seed: 546, step: 8, blur: 6 });
+  if (st.nk > .3) { c.fillStyle = alpha(S1C.lamp, (st.nk - .3) * 1.3 * (1 - st.dark)); c.beginPath(); c.moveTo(1356, 610); c.lineTo(1386, 610); c.lineTo(1371, 624); c.fill(); }
 }
 function s1Bike(c, x, y, col) { const o = { w: 4, color: col, amp: .4 };
   for (const dx of [-30, 30]) rline(c, circPts(x + dx, y - 18, 17, 20), { ...o, close: true, seed: 547 + dx });
@@ -356,11 +357,14 @@ function s1Pointer(c, tau, st) {
   s1Thread(c, x, S1TOP - 10, x, tipY - 26);
   cutPaper(c, [[x - 12, tipY - 30], [x + 12, tipY - 30], [x, tipY]], '#b08a45', { seed: 720, step: 5, blur: 4, sy: 3, grain: 0 });
 }
+// L10 帕秋莉躺在「6–8 小时」这块吊牌上（x, 吊牌上沿 y）；s1SignLoad：她跳上去时吊牌往下一沉再弹两下
+const S1BED = [1560, 386];
+const s1SignLoad = (tau, t0) => tau < t0 + .3 ? 0 : 10 * sm(t0 + .3, t0 + .5, tau) + 16 * Math.exp(-(tau - t0 - .3) * 4) * Math.sin((tau - t0 - .3) * 15);
 // s1Sign：从顶檐用两根线吊下来的手写纸牌。t0 放下，t1 收起
 function s1Sign(c, tau, text, t0, t1, o = {}) {
   if (tau < t0 || tau > t1 + .5) return;
-  const { x = 1340, y = 136, size = 74, sub = null, subT = t0, seed = 730 } = o;
-  const dn = Math.min(sm(t0, t0 + .5, tau, easeOutBack), 1 - sm(t1, t1 + .45, tau, easeIn)), yy = lerp(-320, y, dn);
+  const { x = 1340, y = 136, size = 74, sub = null, subT = t0, seed = 730, load = null } = o;
+  const dn = Math.min(sm(t0, t0 + .5, tau, easeOutBack), 1 - sm(t1, t1 + .45, tau, easeIn)), yy = lerp(-320, y, dn) + (load === null ? 0 : s1SignLoad(tau, load) * (1 - sm(t1 - .2, t1, tau)));
   const sw = Math.sin((tau - t0) * 5) * .05 * Math.exp(-(tau - t0) * 1.5) + Math.sin(tau * 1.2 + seed) * .005;
   const w = Math.max(zhWidth(c, text, size), sub ? zhWidth(c, sub, 34) : 0) + 80, h = size * 1.3 + (sub ? 50 : 0);
   s1Thread(c, x - w / 2 + 26, S1TOP - 10, x - w / 2 + 26, yy + 10); s1Thread(c, x + w / 2 - 26, S1TOP - 10, x + w / 2 - 26, yy + 10);
@@ -432,7 +436,7 @@ function s1Act(tau) {
     [b.bump + .05, { pose: 'point', mood: 'smug', look: .9 }],
     [b.pm, { pose: 'lecture', look: .4 }],
     [b.trial, { pose: 'cross', look: 0 }],
-    [t(10) + .15, { pose: 'lie', mood: 'sleepy', x: 1500, y: 884, facing: 1 }],
+    [t(10) + .7, { pose: 'lie', mood: 'sleepy', x: S1BED[0], y: S1BED[1], facing: 1, bed: 1 }],
     [b.up, { pose: 'stand', mood: 'surprised', hop: 40 }],
     [b.yankR + .15, { pose: 'cross', mood: 'annoyed', look: 0 }],
     [b.day, { pose: 'lecture', look: .5 }],
@@ -440,12 +444,15 @@ function s1Act(tau) {
     [e(11) - .55, { pose: 'cross', mood: 'smug' }],
   ];
   let i = 0; for (let k = 0; k < A.length; k++) if (tau >= A[k][0]) i = k;
-  return { ...A[i][1], t0: A[i][0] };
+  const pv = i > 0 ? A[i - 1][1] : A[0][1];
+  return { ...A[i][1], t0: A[i][0], px: pv.x ?? S1PX, py: pv.y ?? S1PY };
 }
 function s1Patchouli(c, tau, L) {
   const b = S1B, a = s1Act(tau), dt = tau - a.t0;
   const rise = sm(b.pat, b.pat + .4, tau, easeOutBack) * (1 - sm(b.exit0, b.exit0 + .35, tau, easeIn)); if (rise <= .001) return null;
-  const x = a.x ?? S1PX, y = (a.y ?? S1PY) - (a.hop ? a.hop * Math.sin(Math.PI * clamp(dt / .34, 0, 1)) : 0);
+  let x = a.x ?? S1PX, y = (a.y ?? S1PY) - (a.hop ? a.hop * Math.sin(Math.PI * clamp(dt / .34, 0, 1)) : 0);
+  if (a.bed) y += s1SignLoad(tau, a.t0);
+  if ((a.px !== x || a.py !== (a.y ?? S1PY)) && dt < .42) { const u = easeIO(dt / .42); x = lerp(a.px, x, u); y = lerp(a.py, y, u) - Math.sin(u * Math.PI) * 160; }   // 跳到别处：一道弧线
   const wob = .05 * Math.exp(-dt * 9) * Math.sin(dt * 38);   // 换姿势时纸片晃一下
   let gesture = null; if (a.g) gesture = .5 + .5 * Math.sin((tau - a.t0) * 4.2);
   let r = null;
@@ -539,11 +546,12 @@ function s1Box(c, tau, L, full = true) {
   exitT(() => {
   // 顶檐上吊下来的东西
   s1Glass(c, tau, 700, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
+  s1Sign(c, tau, '生物钟', b.tick + .2, b.light - .2, { x: 1330, seed: 766 });
   s1Sign(c, tau, '皮质醇', b.cort, S1T(3) + .2, { x: 1350, seed: 760 });
   s1Sign(c, tau, '2–10 分钟', b.num4, S1T(6) - .1, { x: 1330, size: 84, seed: 761 });
   s1Sign(c, tau, '23—4 点', b.num6, S1T(7) + .4, { x: 1330, size: 84, seed: 762 });
   s1Sign(c, tau, '几点停？', b.pm + .2, S1T(10) - .1, { x: 1330, sub: '因人而异，自己试', subT: b.trial, seed: 763 });
-  s1Sign(c, tau, '6–8 小时', b.six - .2, S1T(11) + .1, { x: 1560, size: 84, seed: 764 });
+  s1Sign(c, tau, '6–8 小时', S1T(10) + .1, S1T(11) + .3, { x: S1BED[0], y: S1BED[1], size: 84, seed: 764, load: S1T(10) + .7 });
   s1Sign(c, tau, '睡觉 = 存档', b.num11, S1DUR, { x: 1330, size: 76, seed: 765 });
   s1Pointer(c, tau, st);
   });
