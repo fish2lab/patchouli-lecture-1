@@ -23,7 +23,7 @@ const S1DUR = seqEnd(S1LINES) + 1.0;
 const S1T = i => S1LINES[i][0], S1E = i => S1LINES[i][1];
 const S1POSE = ['lecture', 'point', 'lecture', 'point', 'lecture', 'lecture', 'point', 'lecture', 'lecture', 'point', 'lecture', 'lecture'];
 const S1IRIS = .6;                                   // 圆形转场时长
-const S1DIAL = { big: [1050, 515, 240], mini: [1748, 205, 76] };   // 表盘：讲台大表盘、角上小表盘 [x, y, r]
+const S1DIAL = { big: [1050, 530, 240], mini: [1748, 205, 76] };   // 表盘：讲台大表盘、角上小表盘 [x, y, r]
 const S1HX = 780;                                    // 黑板小标题左沿
 
 // ===================== 小工具 =====================
@@ -49,7 +49,7 @@ function s1Iris(c, k, x, y, under, over) {
 // s1Title：黑板左上的小标题，逐字写出、下面拉一道金线
 function s1Title(c, tau, text, a, b, o = {}) {
   const al = 1 - sm(b - .25, b, tau, easeOut); if (tau < a || al <= 0) return;
-  const { size = 54, color = P.ink } = o, x = S1HX, y = 178;
+  const { size = 54, color = P.ink } = o, x = S1HX, y = 166;
   fade(c, al, () => { zh(c, text, x, y, { size, p: writeP(tau, a, text, .08), color });
     rline(c, [[x - 10, y + 22], [x + zhWidth(c, text, size) + 18, y + 20]], { w: 4, color: P.moon, p: sm(a + .25, a + .8, tau), seed: 71, t: tau }); });
 }
@@ -169,7 +169,7 @@ function s1Dial(c, x, y, r, o = {}) {
     rline(c, [[x, y], e], { w: lw * 1.7, seed: seed + 41, t });
     rshape(c, [[e[0] + Math.cos(a) * hl * .6, e[1] + Math.sin(a) * hl * .6], [e[0] + Math.cos(a + 2.3) * hl * .5, e[1] + Math.sin(a + 2.3) * hl * .5], [e[0] + Math.cos(a - 2.3) * hl * .5, e[1] + Math.sin(a - 2.3) * hl * .5]], { fill: P.ink, w: 2, seed: seed + 42, t });
     rshape(c, circPts(x, y, r * .065, 16), { fill: P.moon, w: lw * .6, seed: seed + 43, t }); }
-  if (orb && p >= 1) { const hm = ((hand % 24) + 24) % 24, day = sm(5.3, 6.5, hm) * (1 - sm(17.6, 18.6, hm)), q = s1Pt(x, y, r * (big ? 1.24 : 1.3), hand);
+  if (orb && p >= 1) { const hm = ((hand % 24) + 24) % 24, day = sm(5.3, 6.5, hm) * (1 - sm(17.6, 18.6, hm)), q = s1Pt(x, y, r * (big ? 1.2 : 1.3), hand);
     if (day > .01) fade(c, day * orb, () => s1Sun(c, q[0], q[1], r * .13, { t, seed: seed + 50 }));
     if (day < .99) fade(c, (1 - day) * orb, () => { const g = c.createRadialGradient(q[0], q[1], 2, q[0], q[1], r * .3); g.addColorStop(0, alpha(P.moon, .5)); g.addColorStop(1, alpha(P.moon, 0)); c.fillStyle = g; c.beginPath(); c.arc(q[0], q[1], r * .3, 0, TAU); c.fill(); drawMoonIcon(c, q[0], q[1], r * .13, P.moon, -.4); }); }
 }
@@ -483,6 +483,11 @@ function s1Board(c, tau) {
   s1Title(c, tau, '考试周通宵？', T(11) + .1, END, { color: P.red });
   { const a = T(11);
     s1Pop(c, 1500, 690, s1V(tau, a + .6, END), () => { rshape(c, rectPts(1420, 640, 160, 150, 8), { fill: P.shelf2, w: 5, seed: 330, t }); rline(c, [[1432, 712], [1568, 712]], { w: 3, seed: 331, t }); rshape(c, circPts(1500, 690, 7, 10), { fill: P.moon, w: 2.5 }); s1Book(c, 1500, 632, .85, t, sm(a + .9, a + 1.4, tau)); });
+    s1Pop(c, 1560, 380, s1V(tau, a + .3, a + 3.0), () => {
+      rshape(c, circPts(1560, 330, 72, 30), { fill: P.night3, w: 5, seed: 332, t });
+      drawMoonIcon(c, 1560, 330, 34, P.moon, -.3); sparkle(c, 1520, 300, 8, { rot: t }); sparkle(c, 1600, 360, 6, { rot: -t });
+      zh(c, '熬通宵', 1560, 456, { size: 44, align: 'center', color: P.ink });
+      cross(c, 1560, 330, 130, { p: sm(a + .9, a + 1.3, tau), t }); });
     const words = ['单词', '公式', '定理', '年代', '语法'], hd = [930, 596], src = [1500, 580];
     if (tau < END) words.forEach((wd, k) => { const t0 = a + 1.3 + k * .42, u = clamp((tau - t0) / 1.0, 0, 1); if (u <= 0 || u >= 1) return;
       const q = s1Bez(src, [1230 - k * 20, 420 + k * 12], hd, easeIO(u)); zh(c, wd, q[0], q[1], { size: lerp(42, 22, u * u), align: 'center', color: P.purple, al: Math.min(1, u * 5, (1 - u) * 5), outline: P.paper, ow: 6 }); sparkle(c, q[0] + 30, q[1] - 20, 8, { al: 1 - u, rot: t * 3 }); });
