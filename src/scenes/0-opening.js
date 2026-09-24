@@ -1,9 +1,9 @@
 'use strict';
 // 第 0 段：开场。
-//   片头（满屏，0–6 秒）：尘光 → 魔导书转着飞近 → 封面月牙亮起 → 书打开 → 金色魔法阵 → 标题逐字写出 → 书页飞成讲台的魔导书页。
+//   片头（满屏，0–6.4 秒）：尘光 → 魔导书转着飞近 → 封面月牙亮起 → 书打开 → 金色魔法阵 → 标题逐字写出 → 书页飞成讲台的魔导书页。
 //   讲台：魔法阵里登场、红魔馆剪影、名字签、RPG 角色面板（槽一格格掉光）、「反面教材」印章、五页书签目录、宿舍三图标。
 // 顶层名字一律带本段前缀 S0 / s0。本文件的 s0Icon 也给第 6 段（总结）翻页时用。
-const S0LINES = seq(6.0, [
+const S0LINES = seq(6.4, [
   '这里是红魔馆地下，大图书馆。',
   '我是帕秋莉·诺蕾姬，住在这里的魔法使。',
   ['常年不出门，睡得乱七八糟，还有哮喘。', { mood: 'sleepy', hold: .6 }],
@@ -13,7 +13,7 @@ const S0LINES = seq(6.0, [
   ['专门写给熬夜、久坐、天天点外卖的大学生。', { mood: 'smile', hold: .6 }],
 ]);
 // 片头节拍（秒）
-const S0HEAD = { fly0: .25, fly1: 1.75, glow: 1.75, open0: 2.15, open1: 2.85, circ: 2.6, sub: 3.0, big1: 3.45, big2: 4.0, out0: 5.15, out1: 6.0 };
+const S0HEAD = { fly0: .25, fly1: 1.75, glow: 1.75, open0: 2.15, open1: 2.85, circ: 2.6, sub: 3.0, big1: 3.45, big2: 4.0, out0: 5.5, out1: 6.4 };
 // 片头魔导书：书页尺寸（本地坐标），打开后放大到 S0BOOK.k
 const S0BOOK = { pw: 400, ph: 520, k0: 1.05, k: 1.55 };
 // 五页目录：图标名、标题、书签颜色
@@ -59,7 +59,7 @@ function s0Icon(c, name, x, y, s, t = null, seed = 1) {
     c.fillStyle = g; c.fillRect(x - s * 1.6, y - s * 1.6, s * 3.2, s * 3.2);
     rshape(c, rectPts(x - s * .5, y - s * .9, s, s * 1.8, s * .14), { fill: P.ink, stroke: P.ink, ...o });
     rshape(c, rectPts(x - s * .4, y - s * .75, s * .8, s * 1.45, 4), { fill: mix(P.sky, '#ffffff', .45), stroke: false, ...o });
-    zh(c, '02:00', x, y - s * .2, { size: s * .36, align: 'center', color: P.ink });
+    zh(c, '2:00', x, y - s * .22, { size: s * .3, align: 'center', color: P.ink });
     for (let k = 0; k < 3; k++) rline(c, [[x - s * .28, y + s * (.1 + k * .18)], [x + s * (.28 - k * .12), y + s * (.1 + k * .18)]], { ...o, w: w * .6, color: P.blue, seed: seed + 3 + k });
     drawMoonIcon(c, x + s * .85, y - s * .85, s * .28, P.moon, -.4);
   } else if (name === 'chair') {
@@ -82,6 +82,23 @@ function s0Icon(c, name, x, y, s, t = null, seed = 1) {
 }
 
 // ===================== 片头 =====================
+// 分段上色的逐字书写：segs = [[文字, 颜色], ...]，整体居中于 x，p 是整句的书写进度
+function s0Rich(c, segs, x, y, size, p) {
+  const all = segs.map(q => q[0]).join(''), n = Math.floor([...all].length * clamp(p, 0, 1) + 1e-6);
+  let cx = x - zhWidth(c, all, size) / 2, used = 0;
+  for (const [txt, col] of segs) { const m = [...txt].length, k = clamp(n - used, 0, m);
+    if (k > 0) zh(c, [...txt].slice(0, k).join(''), cx, y, { size, color: col, outline: P.paper, ow: 10 });
+    cx += zhWidth(c, txt, size); used += m; }
+}
+// 页面花饰：四角卷草 + 书签丝带（本地坐标，书页 0..pw）
+function s0PageDeco(c, tau, side) {
+  const { pw, ph } = S0BOOK;
+  for (const [x0, y0, sx, sy] of [[side < 0 ? -pw + 26 : 26, -ph / 2 + 26, 1, 1], [side < 0 ? -26 : pw - 26, -ph / 2 + 26, -1, 1], [side < 0 ? -pw + 26 : 26, ph / 2 - 26, 1, -1], [side < 0 ? -26 : pw - 26, ph / 2 - 26, -1, -1]]) {
+    rline(c, [[x0, y0 + sy * 60], [x0, y0], [x0 + sx * 60, y0]], { w: 3, color: P.moon, seed: 90 + x0, t: tau });
+    rline(c, [[x0 + sx * 12, y0 + sy * 40], [x0 + sx * 22, y0 + sy * 20], [x0 + sx * 40, y0 + sy * 12]], { w: 2, color: P.gold, smooth: true, seed: 95 + x0, t: tau });
+    sparkle(c, x0 + sx * 24, y0 + sy * 24, 7, { color: P.gold });
+  }
+}
 // 片头的魔导书飞行轨迹：返回 { x, y, k, rot }
 function s0BookPose(tau) {
   const T = S0HEAD, f = sm(T.fly0, T.fly1, tau, easeOut), u = 1 - f;
@@ -101,12 +118,14 @@ function s0Book(c, tau, uo, glow) {
   rshape(c, rectPts(0, -ph / 2, pw + 6, ph + 4, 6), { fill: P.paper2, stroke: P.paperEdge, w: 3, seed: 42, t: T });
   for (let k = 0; k < 5; k++) rline(c, [[pw + 1 - k * 1.5, -ph / 2 + 8 + k * 3], [pw + 1 - k * 1.5, ph / 2 - 6]], { w: 1.5, color: P.paperEdge, seed: 43 + k });
   rshape(c, rectPts(0, -ph / 2, pw, ph, 6), { fill: P.paper, stroke: P.paperEdge, w: 3, seed: 44, t: T });
+  if (uo > .5) fade(c, sm(.6, 1, uo), () => s0PageDeco(c, tau, 1));
   // 左页（打开后可见）
   const sx = Math.cos(uo * Math.PI);
   if (sx < 0) {
     c.save(); c.scale(sx, 1);
     rshape(c, rectPts(-6, -ph / 2 - 12, pw + 20, ph + 24, 14), { fill: leather2, stroke: P.ink, w: 5, seed: 45, t: T });
     rshape(c, rectPts(0, -ph / 2, pw, ph, 6), { fill: P.paper, stroke: P.paperEdge, w: 3, seed: 46, t: T });
+    fade(c, sm(.6, 1, uo), () => s0PageDeco(c, tau, 1));
     c.restore();
   }
   // 书沟阴影
@@ -114,6 +133,8 @@ function s0Book(c, tau, uo, glow) {
     const a = sm(.5, 1, uo), g = c.createLinearGradient(-40, 0, 40, 0);
     g.addColorStop(0, alpha(P.paperEdge, 0)); g.addColorStop(.5, alpha(P.paperEdge, .75 * a)); g.addColorStop(1, alpha(P.paperEdge, 0));
     c.fillStyle = g; c.fillRect(-40, -ph / 2, 80, ph);
+    const sw = Math.sin(tau * 2.1) * 6;
+    rshape(c, [[8, ph / 2 - 30], [30, ph / 2 - 30], [34 + sw, ph / 2 + 70], [21 + sw, ph / 2 + 56], [8 + sw, ph / 2 + 70]], { fill: P.red, stroke: P.ink, w: 3, seed: 55, t: tau });
   }
   // 封面（正面，朝右时可见）
   if (sx > 0) {
@@ -128,7 +149,7 @@ function s0Book(c, tau, uo, glow) {
     rline(c, circPts(mx, my, 118), { w: 4, color: P.moon, close: true, seed: 52, t: T });
     rline(c, circPts(mx, my, 104), { w: 2, color: P.gold, close: true, seed: 53, t: T });
     drawMoonIcon(c, mx, my, 80, mix(P.gold, '#fff6d8', glow * .55), -.35);
-    zh(c, 'GRIMOIRE', mx, ph / 2 - 58, { size: 30, align: 'center', color: P.moon });
+    zh(c, '魔 导 书', mx, ph / 2 - 56, { size: 34, align: 'center', color: P.moon });
     c.restore();
   }
 }
@@ -176,9 +197,10 @@ function s0Title(c, tau) {
   }
   c.restore();
   if (burst > 0 && out <= 0) { c.save(); c.globalCompositeOperation = 'lighter';
-    const g = c.createRadialGradient(bp.x, bp.y, 20, bp.x, bp.y, 700); g.addColorStop(0, alpha(P.lamp, .55 * burst)); g.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = g; c.fillRect(0, 0, W, H);
-    for (let k = 0; k < 12; k++) { const a = k / 12 * TAU + tau * .4, L0 = 120, L1 = 520 + 160 * hash(k, 3); c.strokeStyle = alpha(P.lamp, .25 * burst); c.lineWidth = 10 + 16 * hash(k, 4);
-      c.beginPath(); c.moveTo(bp.x + Math.cos(a) * L0, bp.y + Math.sin(a) * L0 * .7); c.lineTo(bp.x + Math.cos(a) * L1, bp.y + Math.sin(a) * L1 * .7); c.stroke(); }
+    const g = c.createRadialGradient(bp.x, bp.y, 20, bp.x, bp.y, 700); g.addColorStop(0, alpha(P.lamp, .3 * burst)); g.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    for (let k = 0; k < 14; k++) { const a = k / 14 * TAU + tau * .35 + hash(k, 2) * .2, L1 = (560 + 260 * hash(k, 3)) * (.6 + .4 * burst), wd = .035 + .03 * hash(k, 4);
+      const gr = c.createRadialGradient(bp.x, bp.y, 60, bp.x, bp.y, L1); gr.addColorStop(0, alpha(P.lamp, .22 * burst)); gr.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = gr;
+      c.beginPath(); c.moveTo(bp.x, bp.y); c.lineTo(bp.x + Math.cos(a - wd) * L1, bp.y + Math.sin(a - wd) * L1 * .75); c.lineTo(bp.x + Math.cos(a + wd) * L1, bp.y + Math.sin(a + wd) * L1 * .75); c.closePath(); c.fill(); }
     c.restore(); }
   // 书页上的魔法阵和标题（屏幕坐标，跟着书一起轻轻上下浮）
   const ta = 1 - sm(T.out0, T.out0 + .35, tau);
@@ -195,8 +217,8 @@ function s0Title(c, tau) {
     const ps = writeP(tau, T.sub, sub, .045), p1 = writeP(tau, T.big1, l1, .085), p2 = writeP(tau, T.big2, l2, .085);
     zh(c, sub, mx, my - 232, { size: 52, align: 'center', color: P.purple, p: ps });
     if (ps > 0) { const wv = zhWidth(c, sub, 52) / 2 + 30; rline(c, [[mx - wv, my - 205], [mx + wv, my - 205]], { w: 3, color: P.moon, p: sm(T.sub + .2, T.sub + .7, tau), seed: 64, t: tau }); }
-    zh(c, l1, mx, my - 30, { size: 112, align: 'center', color: P.ink, p: p1, outline: P.paper, ow: 10 });
-    zh(c, l2, mx, my + 128, { size: 112, align: 'center', color: P.ink, p: p2, outline: P.paper, ow: 10 });
+    s0Rich(c, [['我是', P.ink], ['帕秋莉', P.purple], ['，', P.ink]], mx, my - 30, 112, p1);
+    s0Rich(c, [['我来教你', P.ink], ['调理身体', P.red], ['！', P.ink]], mx, my + 128, 112, p2);
     const fw = zhWidth(c, l2, 112) / 2;
     rline(c, [[mx - fw, my + 168], [mx - fw * .3, my + 180], [mx + fw * .4, my + 162], [mx + fw + 20, my + 176]], { w: 6, color: P.red, p: sm(T.big2 + .85, T.big2 + 1.2, tau), smooth: true, seed: 65, t: tau });
     // 笔尖的光点
@@ -356,7 +378,7 @@ function s0Stage(c, tau, L) {
         rshape(c, [[x, y - 60], [x + 30, y - 5], [x + 32, y + 22], [x, y + 44], [x - 32, y + 22], [x - 30, y - 5]], { fill: P.sky, stroke: P.ink, w: 4, seed: 501, smooth: true, t: tau });
         rline(c, [[x - 14, y + 6], [x - 12, y + 24]], { w: 5, color: '#ffffff', seed: 502 }); });
       for (let q = 0; q < 3; q++) { const kq = easeOutBack(clamp((u4 - .9 - q * .25) / .3, 0, 1)); if (kq <= 0) continue;
-        const qx = 1560 + q * 70, qy = 60 + Math.sin(tau * 4 + q) * 6 - q * 8;
+        const qx = 1520 + q * 72, qy = 200 + Math.sin(tau * 4 + q) * 6 - q * 12;
         pop(c, qx, qy, kq, () => zh(c, '？', qx, qy + 20, { size: 64 + q * 8, align: 'center', color: P.red, outline: P.paper, ow: 8 })); }
     }
     // L5：「反面教材」印章
@@ -387,6 +409,11 @@ function s0Stage(c, tau, L) {
     zh(c, head, 1285, 160, { size: 56, align: 'center', color: P.ink, p: writeP(u, .05, head, .06) });
     rline(c, [[1285 - 200, 182], [1285 + 200, 182]], { w: 4, color: P.moon, p: sm(.4, .8, u), seed: 601, t: tau });
     const idx = [12, 15, 18, 21, 24], up = sm(t[6] - .1, t[6] + .4, tau);
+    // 「一共五页」：先弹出五个虚线空位，念到哪页，哪页的书签落进去
+    idx.forEach((ci, i) => { const kg = easeOutBack(clamp((u - (7 + i * .5) * CH) / .3, 0, 1)), a = 1 - sm(ci * CH - .1, ci * CH + .2, u), bxp = 855 + i * 215;
+      if (kg > 0 && a > 0) pop(c, bxp, 380, kg * lerp(1, .82, up), () => { c.save(); c.globalAlpha *= a;
+        rline(c, [[bxp - 88, 210], [bxp + 88, 210], [bxp + 88, 550], [bxp, 506], [bxp - 88, 550]], { w: 4, color: P.faint, close: true, dash: [14, 12], seed: 590 + i, t: tau });
+        zh(c, String(i + 1), bxp, 400, { size: 72, align: 'center', color: P.faint }); c.restore(); }); });
     idx.forEach((ci, i) => {
       const k = easeOutBack(clamp((u - ci * CH + .12) / .4, 0, 1)), bxp = 855 + i * 215;
       c.save(); c.translate(bxp, 210); c.scale(lerp(1, .82, up), lerp(1, .82, up)); c.translate(-bxp, -210);
