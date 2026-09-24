@@ -367,10 +367,10 @@ function s2Day(c, tau, L) {
       for (const hh of [7, 12, 18, 21, 24]) zh(c, hh + ':00', s2hx(hh), y + h + 58, { size: 32, align: 'center', color: P.ink2 });
     });
     // 起床 / 睡觉
-    pop(c, s2hx(7), 262, s2pop(tau, tS), () => s2Sun(c, s2hx(7), 262, 22, tau));
-    zh(c, '起床', s2hx(7) + 44, 276, { size: 40, p: writeP(tau, tS + .1, '起床', .1) });
-    pop(c, s2hx(24), 262, s2pop(tau, tM), () => drawMoonIcon(c, s2hx(24), 262, 26, P.moon, -.3));
-    zh(c, '睡觉', s2hx(24) - 36, 276, { align: 'right', size: 40, p: writeP(tau, tM + .1, '睡觉', .1) });
+    pop(c, s2hx(7), 238, s2pop(tau, tS), () => s2Sun(c, s2hx(7), 238, 22, tau));
+    zh(c, '起床', s2hx(7) + 44, 252, { size: 40, p: writeP(tau, tS + .1, '起床', .1) });
+    pop(c, s2hx(24), 238, s2pop(tau, tM), () => drawMoonIcon(c, s2hx(24), 238, 26, P.moon, -.3));
+    zh(c, '睡觉', s2hx(24) - 36, 252, { align: 'right', size: 40, p: writeP(tau, tM + .1, '睡觉', .1) });
     // 早上 1h 先不吃
     if (tau > tG) { s2Bracket(c, s2hx(7), s2hx(8), 408, { t: tau, p: sm(tG, tG + .3, tau) }); zh(c, '先不吃 1h', s2hx(7) - 6, 392, { size: 40, p: writeP(tau, tG + .1, '先不吃 1h', .08) }); }
     if (tau > tw + .3) zh(c, '吃饭时间', s2hx(14.5), y + 50, { size: 46, align: 'center', color: '#fff', p: writeP(tau, tw + .35, '吃饭时间', .09), outline: mix(P.green, P.ink, .4), ow: 6 });
@@ -394,10 +394,10 @@ function s2Day(c, tau, L) {
     if (tau > tb0) {
       const u = clamp((tau - tb0) / .6, 0, 1), v = tau - tl, bx = lerp(2080, s2hx(25), easeOut(u)), by = lerp(60, y, u * u);
       const sq = v > 0 ? 1 - .18 * Math.sin(v * 18) * Math.exp(-v * 7) : 1;
-      s2Bag(c, bx, by - 2, 1.02, tau, (1 - u) * 1.6, sq);
+      s2Bag(c, bx + 6, by - 2, .95, tau, (1 - u) * 1.6, sq);
       if (v > 0) { zh(c, '凌晨 1:00', s2hx(25) - 16, 612, { size: 36, align: 'right', color: P.red, p: writeP(tau, tl, '凌晨 1:00', .06) });
         if (v < .5) for (let k = 0; k < 6; k++) { const a2 = Math.PI + k / 5 * Math.PI; sparkle(c, s2hx(25) + Math.cos(a2) * (50 + v * 120), y - 8 + Math.sin(a2) * (10 + v * 60), 10 * (1 - v * 2), { color: P.paperEdge }); } }
-      if (tau > tx) cross(c, s2hx(25) - 10, y - 70, 150, { p: sm(tx, tx + .3, tau, s2lin), t: tau });
+      if (tau > tx) cross(c, s2hx(25) - 10, y - 70, 150, { p: sm(tx, tx + .3, tau, s2lin), t: tau, al: .85 });
     }
   });
 }
@@ -497,26 +497,26 @@ function s2Spoon(c, x, y, s, tilt, t, pour) {   // (x, y) 勺子头中心；pour
 }
 function s2Drinks(c, tau) {
   const a = S2T(7), b = S2T(8) - .02; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .22, b, tau, easeIn), base = 470;
+  const out = 1 - sm(b - .22, b, tau, easeIn), base = 500;
   const items = [[870, s2ch(7, 0), s2ch(7, 1.5), '白水', s2Glass], [1085, s2ch(7, 3), s2ch(7, 4), '茶', s2Tea], [1305, s2ch(7, 5), s2ch(7, 10), '黑咖啡', s2Mug]];
   const tN = s2ch(7, 12), tS = s2ch(7, 18), tX = s2ch(7, 21);
   fade(c, out, () => {
     items.forEach(([x, t0, tc, label, draw], k) => {
-      pop(c, x, base - 70, s2pop(tau, t0), () => draw(c, x, base, 1, tau));
+      pop(c, x, base - 80, s2pop(tau, t0), () => draw(c, x, base, 1.15, tau));
       zh(c, label, x, base + 70, { size: 40, align: 'center', p: writeP(tau, t0 + .1, label, .08) });
-      pop(c, x + 62, base - 170, s2pop(tau, tc + .2), () => check(c, x + 62, base - 170, 60, { t: tau }));
+      pop(c, x + 72, base - 196, s2pop(tau, tc + .2), () => check(c, x + 72, base - 196, 64, { t: tau }));
     });
-    if (tau > tN) { s2Bracket(c, 800, 1380, base + 100, { t: tau, p: sm(tN, tN + .4, tau), color: mix(P.green, P.ink, .2) });
+    if (tau > tN) { s2Bracket(c, 790, 1390, base + 100, { t: tau, p: sm(tN, tN + .4, tau), color: mix(P.green, P.ink, .2) });
       zh(c, '不算“开饭”', 1090, base + 180, { size: 52, align: 'center', color: mix(P.green, P.ink, .3), p: writeP(tau, tN + .2, '不算“开饭”', .08) }); }
     rline(c, [[1490, 250], [1490, 700]], { w: 3, color: P.paperEdge, dash: [12, 10], seed: 5, t: tau, p: sm(tS - .3, tS + .2, tau) });
     const ks = s2pop(tau, tS), pour = sm(tS + .35, tS + .75, tau), tilt = -.85 * pour;
-    pop(c, 1640, base - 70, ks, () => s2Mug(c, 1640, base, .9, tau));
-    pop(c, 1640, 250, ks, () => s2Spoon(c, 1640, 238, .85, tilt, tau, sm(tS + .6, tX, tau)));
+    pop(c, 1640, base - 70, ks, () => s2Mug(c, 1640, base, 1, tau));
+    pop(c, 1640, 262, ks, () => s2Spoon(c, 1640, 250, .85, tilt, tau, sm(tS + .6, tX, tau)));
     if (pour > .9) for (let k = 0; k < 12; k++) { const t0 = tS + .6 + k * .06, u = clamp((tau - t0) / .35, 0, 1);
-      if (tau > t0 && u < 1) rshape(c, rectPts(1612 + (hash(k, 2) - .5) * 18 - 4, lerp(272, 352, u * u) - 4, 8, 8, 1), { fill: '#fff', stroke: P.ink2, w: 1.5, seed: k }); }
+      if (tau > t0 && u < 1) rshape(c, rectPts(1612 + (hash(k, 2) - .5) * 18 - 4, lerp(285, 366, u * u) - 4, 8, 8, 1), { fill: '#fff', stroke: P.ink2, w: 1.5, seed: k }); }
     zh(c, '+ 一勺糖', 1640, base + 70, { size: 40, align: 'center', p: writeP(tau, tS + .1, '+ 一勺糖', .07) });
-    if (tau > tX) { cross(c, 1650, 350, 170, { p: sm(tX, tX + .3, tau, s2lin), t: tau });
-      zh(c, '就算开饭！', 1660, base + 180, { size: 48, align: 'center', color: P.red, p: writeP(tau, tX + .2, '就算开饭！', .07) }); }
+    if (tau > tX) { cross(c, 1645, 405, 170, { p: sm(tX, tX + .3, tau, s2lin), t: tau });
+      zh(c, '就算开饭！', 1640, base + 180, { size: 48, align: 'center', color: P.red, p: writeP(tau, tX + .2, '就算开饭！', .07) }); }
   });
 }
 
