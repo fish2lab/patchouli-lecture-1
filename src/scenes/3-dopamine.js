@@ -61,7 +61,7 @@ function s3Line2D(tau) {
   for (let x = -20; x < C.x0; x += 16) out.push([x, wave(x, yG)]);
   const hd = [lerp(C.flat[C.tA][0], C.head[0], 0), 0];
   C.pts.forEach((p, i) => {
-    const f = [C.flat[i][0], yG]; let m;
+    const f = [C.flat[i][0], wave(C.flat[i][0], yG)]; let m;
     if (C.kind[i]) { const j = (i - C.tA) / (C.tB - C.tA); m = sm(T0 + 2.2 + j * .9, T0 + 2.3 + j * .9, tau) * (1 - sm(T1 + .5 + (1 - j) * .6, T1 + .6 + (1 - j) * .6, tau)); }
     else { const h = (S3GY - p[1]) / 260; m = sm(T0 + .2 + h * 1.1, T0 + .55 + h * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack)); }
     if (C.kind[i]) { // 乱线的点在没画出来 / 解开后缩回头顶
@@ -95,7 +95,7 @@ function s3Shape(tau) {
   // L2：一个峰 + 基线以下的低谷
   ev.push(s3Ev(1450, 520 * sm(T(2) + .15, T(2) + 1.0, tau, easeOutBack), 300 * sm(T(2) + 2.0, T(2) + 2.6, tau, easeOutElastic), { up: 520, dn: 330, flat: 480, back: 650 }));
   // L3：手机，一峰比一峰高
-  for (let k = 0; k < 4; k++) { const tk = s3Tk(k); ev.push(s3Ev(S3PH(k), S3PA(k) * sm(tk - .9, tk - .45, tau, easeOutBack), (70 + 15 * k) * sm(tk + .1, tk + .5, tau, easeOutElastic), { up: 200, dn: 130, flat: 30, back: 70 })); }
+  for (let k = 0; k < 4; k++) { const tk = s3Tk(k); ev.push(s3Ev(S3PH(k), S3PA(k) * sm(tk - 1.4, tk - .9, tau, easeOutBack), (70 + 15 * k) * sm(tk + .1, tk + .5, tau, easeOutElastic), { up: 200, dn: 130, flat: 30, back: 70 })); }
   // L4：课本，几乎是平的
   ev.push(s3Ev(4950, 26 * sm(T(4) + 1.4, T(4) + 1.9, tau, easeOutElastic), 0, { up: 90, dn: 90, flat: 1, back: 1 }));
   // L5：叠加，超高峰、超深坑
@@ -331,7 +331,7 @@ function s3CartScreen(tau, sh, cam) {
 
 scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, noFlip: true,
   fn(c, tau, L) {
-    const T = s3T, end = S3END;
+    const T = s3T, end = S3END, T1 = s3T(1);
     if (tau < .2) { handoffThread(c); return; }
     if (tau > S3DUR - .25) { handoffSparks(c); return; }
     c.fillStyle = P.paper; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .12);
@@ -345,7 +345,12 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
       fade(c, a2, () => rline(c, s3Line2D(tau), { w: 5, color: col, t: tau, amp: .8, seed: 301 }));
       if (!is3D) {
         const up = sm(.9, 1.4, tau, easeOutBack), tug = act.tug ? 18 * sm(T(1) + .5, T(1) + .6, tau) + 22 * sm(T(1) + .95, T(1) + 1.05, tau) : 0;
-        popup(c, S3GY, up, () => { c.save(); c.translate(1480 + tug, S3GY); c.rotate(wob); drawPatchouli(c, { x: 0, y: 0, h: 520, pose: act.pose, mood, look: act.look, tilt: act.tilt || 0, mouth: L.mouth, blink, facing: -1, t: tau, gesture: .6 + .4 * Math.sin(tau * 1.3) }); c.restore(); });
+        let tip = null;
+        popup(c, S3GY, up, () => { c.save(); c.translate(1480 + tug, S3GY); c.rotate(wob); const A = drawPatchouli(c, { x: 0, y: 0, h: 520, pose: act.pose, mood, look: act.look, tilt: act.tilt || 0, mouth: L.mouth, blink, facing: -1, t: tau, gesture: .6 + .4 * Math.sin(tau * 1.3) }); c.restore(); tip = [1480 + tug + A.tip[0], S3GY + A.tip[1]]; });
+        // 她揪住乱线的线头往回拽：头顶到她指尖一根绷着的线，乱线一圈圈解开
+        if (tip && tau > T1 + .12 && tau < T1 + 1.45) { const hd = S3C.head, sag = 40 * (1 - sm(T1 + .4, T1 + .6, tau)) + 8 * Math.sin(tau * 20) * sm(T1 + .4, T1 + .5, tau);
+          const pts = []; for (let k = 0; k <= 16; k++) { const u = k / 16; pts.push([lerp(hd[0], tip[0], u), lerp(hd[1] - 20, tip[1], u) + Math.sin(u * Math.PI) * sag]); }
+          rline(c, pts, { w: 5, color: S3INK, t: tau, amp: .8, seed: 309, p: sm(T1 + .12, T1 + .35, tau) }); }
         return;
       }
     }
@@ -366,7 +371,7 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
       s3Track(c, S, tau, { al: lineA });
       const fp = s3Fog(c, cam, fogH, 2950, 5700, fogA, tau);
       s3Track(c, over, tau, { al: lineA });
-      const lp = s3Pj([s3X(4300) - 420, -fogH, 4300], cam); if (fp && lp) { zh(c, '快乐门槛', lp[0] - 60, lp[1] - 18, { size: 34, color: mix(P.red, P.ink, .2), p: writeP(tau, T(3) + 2.7, '快乐门槛', .09), al: fogA }); }
+      const lp = fp && [clamp((fp[0][0] + fp[3][0]) / 2, 160, 1500), (fp[0][1] + fp[3][1]) / 2]; if (fp && lp) { zh(c, '快乐门槛', lp[0] - 60, lp[1] - 22, { size: 34, color: mix(P.red, P.ink, .2), p: writeP(tau, T(3) + 2.7, '快乐门槛', .09), al: fogA }); }
     } else s3Track(c, S, tau, { al: lineA, grey: stGrey });
     // 基线
     if (tau > T(1) + 4.2 && tau < T(3)) { const p = s3Pj([s3X(1000) + 70, 0, 1000], cam); if (p) zh(c, '基线', p[0] - 10, p[1] + 58, { size: 38, color: P.ink2, p: writeP(tau, T(1) + 4.4, '基线', .15), al: 1 - sm(T(2) + 5.5, T(3), tau) }); }
