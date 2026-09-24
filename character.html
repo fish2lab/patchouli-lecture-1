@@ -60,7 +60,7 @@ const CH_SHEETS = {
     const ps = (Q.get('poses') || 'stand,lecture,cross,hide').split(','), ms = (Q.get('moods') || '').split(',');
     ps.forEach((p, i) => { const x = 1800 / ps.length * (i + .5), y = p === 'peek' ? 700 : p === 'sit' ? 780 : 960;
       rline(c, [[x - 200, y], [x + 200, y]], { w: 3, color: P.ink2, seed: i + 3 });
-      const r = drawPatchouli(c, { x: p === 'lie' ? x - 60 : x, y, h: 880, pose: p, mood: ms[i] || 'normal', t, blink: p === 'lie' ? 1 : 0, mouth: +(Q.get('mouth') || 0) }); chMarks(c, r); });
+      const r = drawPatchouli(c, { x: p === 'lie' ? x - 60 : x, y, h: +(Q.get('h') || 880), pose: p, mood: ms[i] || 'normal', t, facing: +(Q.get('facing') || 1), blink: p === 'lie' ? 1 : 0, mouth: +(Q.get('mouth') || 0) }); chMarks(c, r); });
   } },
   // 示例构图：书页上她站在页边，另一边一条墨线曲线
   stage: { w: 1920, h: 1080, draw(c, t) {

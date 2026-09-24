@@ -194,7 +194,7 @@ function pchPose(pose, g, tt) {
     case 'cross': return { book: [0, -232, .06], back: [-.2, 1.62, 'none', true], front: [.22, -1.5, 'none', true], turn: -.55, look: .9, hr: -.11 };
     case 'tired': return { lean: .035, hr: .1, nod: 1, sink: 12, shrug: -6, book: null, hang: true, back: [-.13, 0, 'tips', false], front: [-.1, 0, 'tips', false], turn: .1, look: -.2, drop: 5 };
     case 'lift': return { book: null, back: [-2.5, -.25, 'grip', true], front: [2.5, .25, 'grip', true], armsLate: true, armLen: 1.5, turn: 0, look: 0, shrug: 8, sink: 6 };
-    case 'lie': return { hatRot: .62, book: [2, -230, .02], back: [-.2, 1.62, 'tips', true], front: [.22, -1.5, 'tips', true], turn: 0, look: 0 };
+    case 'lie': return { hatRot: .5, hatShift: 30, book: [2, -230, .02], back: [-.2, 1.62, 'tips', true], front: [.22, -1.5, 'tips', true], turn: 0, look: 0 };
     default: return { book: [0, -226, .04], back: [-.06, .32, 'tips', false], front: [.06, -.3, 'tips', false], turn: .18, look: .15 };
   }
 }
@@ -337,7 +337,7 @@ function drawPatchouli(c, o = {}) {
   }
 
   // ---- 帽子 ----
-  const hat = pchPivot(head, 0, -112, .01 * Math.sin(tt * 1.2 + .5) + (ps.hatRot || 0));
+  const hat = pchTR(pchPivot(pchTR(head, ps.hatShift || 0, 0), 0, -112, .01 * Math.sin(tt * 1.2 + .5) + (ps.hatRot || 0)), 0, 0, 0, .93, 1);   // lie：帽子被地板顶歪
   paint([it(G.puff, hat, PCH_K.cap)], PCH_SH.big);
   paint(G.pleats.map(p => it(p, hat, PCH_K.capFold, false)), null, false);
   paint([it(G.frill, pchPivot(hat, 0, -112, .008 * Math.sin(tt * 1.9)), PCH_K.cap)], PCH_SH.mid);
