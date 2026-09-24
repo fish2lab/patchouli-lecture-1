@@ -94,6 +94,9 @@ function renderAt(c, t, scale = 1) {
 // mouthAt：说话时嘴的开合 0..1。按字的节奏开合，句尾 0.25 秒闭嘴
 function mouthAt(tau, cur) {
   if (!cur) return 0;
+  const v = voiceOf(cur.text);
+  if (v) { const u = tau - cur.t0, i = Math.floor(u * 30); if (u < 0 || i >= v.env.length) return 0;
+    const e = (+v.env[i] + (+v.env[i + 1] || 0) * .5) / 1.5; return clamp((e - 1) / 5, 0, 1); }
   const u = tau - cur.t0, speakDur = Math.min(cur.t1 - cur.t0 - .25, cur.text.length * .16 + .2);
   if (u > speakDur) return 0;
   const ph = twos(u) * 9.5;   // 每秒约 4.7 次开合
@@ -115,7 +118,7 @@ function mountPlayer() {
     get t() { return t; }, set t(v) { t = clamp(v, 0, FILM.DUR - 1e-3); draw(); },
     get playing() { return playing; }, toggle() { playing = !playing; if (playing) { if (t >= FILM.DUR - .05) t = 0; last = performance.now(); requestAnimationFrame(loop); AUDIO.play(t); } else AUDIO.stop(); ui.sync(); },
   });
-  function loop(now) { if (!playing) return; t += (now - last) / 1000; last = now; if (t >= FILM.DUR) { t = FILM.DUR - 1e-3; playing = false; AUDIO.stop(); } draw(); if (playing) requestAnimationFrame(loop); }
+  function loop(now) { if (!playing) return; const at = AUDIO.now(); t = at !== null ? at : t + (now - last) / 1000; last = now; if (t >= FILM.DUR) { t = FILM.DUR - 1e-3; playing = false; AUDIO.stop(); } draw(); if (playing) requestAnimationFrame(loop); }
   // 出片、抽帧的钩子（tools/*.mjs 用）
   window.__film = { W, H, FPS, get DUR() { return FILM.DUR; }, scenes: FILM.T.map(s => ({ key: s.key, title: s.title, start: s.start, dur: s.dur })),
     frame(tt, scale = 1) { if (cv.width !== W * scale) { cv.width = W * scale; cv.height = H * scale; } renderAt(c, tt, scale); return cv.toDataURL('image/png'); },
@@ -127,11 +130,12 @@ function buildBar(bar, P) {
   const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   bar.innerHTML = `<button id="pp" title="空格">▶</button><span id="tm">0:00</span>
     <div id="track"><div id="fill"></div>${FILM.T.map(s => `<i style="left:${s.start / FILM.DUR * 100}%"></i>`).join('')}</div>
-    <span id="du">${fmt(FILM.DUR)}</span><button id="snd" title="背景音乐">♪ 关</button><button id="fs" title="全屏">⛶</button>
+    <span id="du">${fmt(FILM.DUR)}</span><button id="vo" class="on" title="油库里语音">🗣 语音</button><button id="snd" class="on" title="背景音乐">♪ 音乐</button><button id="fs" title="全屏">⛶</button>
     <div id="chaps">${FILM.T.map((s, k) => `<button data-k="${k}">${s.title}</button>`).join('')}</div>`;
   const $ = s => bar.querySelector(s), track = $('#track');
   $('#pp').onclick = () => P.toggle();
-  $('#snd').onclick = e => { AUDIO.on = !AUDIO.on; e.target.textContent = AUDIO.on ? '♪ 开' : '♪ 关'; if (P.playing) AUDIO.on ? AUDIO.play(P.t) : AUDIO.stop(); };
+  const snd = (id, k) => $(id).onclick = e => { AUDIO[k] = !AUDIO[k]; e.currentTarget.classList.toggle('on', AUDIO[k]); if (P.playing) AUDIO.play(P.t); };
+  snd('#vo', 'voice'); snd('#snd', 'bgm');
   $('#fs').onclick = () => document.querySelector('.stage').requestFullscreen?.();
   bar.querySelectorAll('#chaps button').forEach(b => b.onclick = () => { P.t = FILM.T[+b.dataset.k].start; if (P.playing) AUDIO.play(P.t); });
   let drag = false;
@@ -151,11 +155,47 @@ function buildBar(bar, P) {
   } };
 }
 
-// ===================== 背景音乐（WebAudio 现场合成，默认关） =====================
-// 一段八音盒风格的循环小曲：五声音阶 + 低音。不用音频文件，出片时 tools/render.mjs 用同一份乐谱离线渲染。
-const AUDIO = { on: false, ac: null, master: null,
-  play(from) { if (!this.on) return; this.stop(); this.ac = this.ac || new AudioContext(); this.ac.resume(); this.master = this.ac.createGain(); this.master.gain.value = 1.8; this.master.connect(this.ac.destination); score(this.ac, this.master, this.ac.currentTime + .05, from, FILM.DUR); },
-  stop() { if (this.master) { try { this.master.gain.setTargetAtTime(0, this.ac.currentTime, .05); } catch (e) {} this.master = null; } } };
+// ===================== 声音：油库里语音 + 背景音乐 =====================
+// 语音来自 src/voice-data.js（tools/voice.mjs 生成，没有时静音）。背景音乐是 WebAudio 现场合成的八音盒小曲，有人声时压低。
+// 播放器和出片（tools/render.mjs 用 OfflineAudioContext）走同一个 mixAudio，听到的是一样的。
+const voiceOf = text => (typeof VOICE !== 'undefined' && VOICE[text]) || null;
+async function voiceBuffers(ac) {
+  if (ac.__voice) return ac.__voice;
+  const out = {}, b64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0)).buffer;
+  if (typeof VOICE !== 'undefined') await Promise.all(Object.entries(VOICE).map(async ([k, v]) => { try { out[k] = await ac.decodeAudioData(b64(v.mp3)); } catch (e) { console.warn('voice', k, e); } }));
+  return (ac.__voice = out);
+}
+// mixAudio：从全片第 from 秒起、在 ac 的 t0 时刻开始，排好 dur 秒的声音
+async function mixAudio(ac, out, t0, from, dur, { voice = true, bgm = true } = {}) {
+  const buf = voice ? await voiceBuffers(ac) : {}, hasVoice = voice && Object.keys(buf).length > 0;
+  // 最后过一个限幅器，AquesTalk 原声峰值就顶到 0 dB，叠上音乐容易爆音
+  const lim = ac.createDynamicsCompressor(); lim.threshold.value = -4; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = .002; lim.release.value = .12; lim.connect(out); out = lim;
+  if (bgm) { const g = ac.createGain(); g.gain.value = hasVoice ? .45 : 1; g.connect(out); score(ac, g, t0, from, from + dur); }
+  if (!hasVoice) return;
+  const vg = ac.createGain(); vg.gain.value = .35; vg.connect(out);
+  for (const s of FILM.T) for (const l of s.lines || []) {
+    const b = buf[l[2]], at = s.start + l[0]; if (!b || at + b.duration <= from || at >= from + dur) continue;
+    const src = ac.createBufferSource(); src.buffer = b; src.connect(vg); src.start(t0 + Math.max(0, at - from), Math.max(0, from - at));
+  }
+}
+const AUDIO = { voice: true, bgm: true, ac: null, master: null, t0: 0, from: 0, gen: 0,
+  get running() { return !!this.master; },
+  async play(from) { this.stop(); if (!this.voice && !this.bgm) return; const gen = ++this.gen;
+    this.ac = this.ac || new AudioContext(); await this.ac.resume(); await voiceBuffers(this.ac); if (gen !== this.gen) return;
+    this.master = this.ac.createGain(); this.master.gain.value = 1.8; this.master.connect(this.ac.destination);
+    this.t0 = this.ac.currentTime + .05; this.from = from; await mixAudio(this.ac, this.master, this.t0, from, FILM.DUR - from, this); },
+  // 声音在放时，画面跟着声音的时钟走，不会越放越错开
+  now() { return this.running ? this.from + Math.max(0, this.ac.currentTime - this.t0) : null; },
+  stop() { this.gen++; if (this.master) { const m = this.master; try { m.gain.setTargetAtTime(0, this.ac.currentTime, .03); setTimeout(() => m.disconnect(), 300); } catch (e) {} this.master = null; } } };
+// mixdownWav：离线混出 [from, from+dur) 的声音，16-bit 立体声 WAV 的 base64（出片用）
+async function mixdownWav(from, dur) {
+  const sr = 48000, oac = new OfflineAudioContext(2, Math.ceil(sr * dur), sr), g = oac.createGain(); g.gain.value = 1.8; g.connect(oac.destination);
+  await mixAudio(oac, g, 0, from, dur); const buf = await oac.startRendering(), n = buf.length, dv = new DataView(new ArrayBuffer(44 + n * 4));
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0, 'RIFF'); dv.setUint32(4, 36 + n * 4, true); ws(8, 'WAVE'); ws(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true); dv.setUint32(24, sr, true); dv.setUint32(28, sr * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, n * 4, true);
+  const L = buf.getChannelData(0), R = buf.getChannelData(1); let o = 44; for (let i = 0; i < n; i++) { dv.setInt16(o, clamp(L[i], -1, 1) * 32767, true); dv.setInt16(o + 2, clamp(R[i], -1, 1) * 32767, true); o += 4; }
+  const u = new Uint8Array(dv.buffer); let bs = ''; for (let k = 0; k < u.length; k += 32768) bs += String.fromCharCode.apply(null, u.subarray(k, k + 32768)); return btoa(bs);
+}
 function score(ac, out, t0, from = 0, dur = 300) {
   const BPM = 84, beat = 60 / BPM, bar = beat * 4;
   const scale = [0, 2, 4, 7, 9, 12, 14, 16], base = 392;   // G 五声
@@ -173,11 +213,11 @@ function score(ac, out, t0, from = 0, dur = 300) {
 }
 
 // seq：把一串台词按顺序排成 lines。item 是 '文字' 或 ['文字', { mood, who, pause 句前停顿秒, hold 句后多停秒, dur 指定时长 }]
-// 默认时长 = 字数 × 0.17 + 0.8 秒（约 6 字/秒），句间 0.25 秒。
+// 默认时长 = 字数 × 0.17 + 0.8 秒（约 6 字/秒），有油库里语音时至少盖住语音再多 0.35 秒；句间 0.25 秒。
 function seq(t0, items) {
   let t = t0; const out = [];
   for (const it of items) { const [text, o = {}] = Array.isArray(it) ? it : [it]; t += o.pause || 0;
-    const d = o.dur || ([...text].length * .17 + .8) + (o.hold || 0); out.push([t, t + d, text, o]); t += d + .25; }
+    const v = voiceOf(text), d = o.dur || Math.max([...text].length * .17 + .8, v ? v.d + .35 : 0) + (o.hold || 0); out.push([t, t + d, text, o]); t += d + .25; }
   return out;
 }
 const seqEnd = lines => lines.length ? lines.at(-1)[1] : 0;

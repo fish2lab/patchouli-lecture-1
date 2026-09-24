@@ -235,7 +235,7 @@ function s6Credits(c, tau, u) {   // u = 片尾开始后几秒
   const fy = 800;
   const fg = c.createLinearGradient(0, fy, 0, H); fg.addColorStop(0, mix(P.shelf, P.night, .45)); fg.addColorStop(1, mix(P.shelfDark, '#000000', .4)); c.fillStyle = fg; c.fillRect(0, fy, W, H - fy);
   for (let k = 0; k < 6; k++) rline(c, [[0, fy + 18 + k * k * 9], [W, fy + 18 + k * k * 9]], { w: 2, color: alpha(P.shelfDark, .8), seed: 1000 + k, t: tau });
-  const cx = CX - 20, cy = 868, lg = c.createRadialGradient(cx + 400, cy - 60, 10, cx, cy, 620);
+  const cx = CX + 120, cy = 868, lg = c.createRadialGradient(cx + 400, cy - 60, 10, cx, cy, 620);
   lg.addColorStop(0, alpha(P.lamp, .32)); lg.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = lg; c.fillRect(0, 300, W, H - 300);
   // 书堆 + 小蜡烛
   const bx = cx + 400;
@@ -265,6 +265,7 @@ function s6Credits(c, tau, u) {   // u = 片尾开始后几秒
     ['角色：', '东方 Project © 上海爱丽丝幻乐团', 452],
     ['', '本片为同人科普作品，不构成医疗建议。', 506],
     ['字体：', '霞鹜文楷（SIL OFL）', 586],
+    ['语音：', 'AquesTalk（株式会社アクエスト）', 640],
   ];
   const LX = CX - Math.max(...rows.map(q => zhWidth(c, q[1], 38))) / 2 + 60;   // 标签右对齐到这里，正文从这里起（整块大致居中）
   rows.forEach(([lab, txt, y], k) => { const a = ln(k + 1); if (a <= 0) return;

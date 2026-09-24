@@ -23,7 +23,7 @@
 
 ## 成品
 
-- **看片：** [Releases](../../releases) 里有单文件网页 `patchouli-lecture-1.html`（双击打开，不用网络；空格暂停，←/→ 跳 5 秒，下方按钮切章节，♪ 开背景音乐）和 1080p MP4。
+- **看片：** [Releases](../../releases) 里有单文件网页 `patchouli-lecture-1.html`（双击打开，不用网络；中文油库里语音 + 字幕；空格暂停，←/→ 跳 5 秒，下方按钮切章节、开关语音和音乐）和 1080p MP4。
 - **开发时直接打开** `index.html`（先 `npm run font` 下载字体到 `fonts/`）。`?scene=sleep` 只放一段，`?t=30` 从第 30 秒开始。
 
 | 段 | 讲什么 |
@@ -46,6 +46,7 @@
 npm install && npm run font
 node tools/frames.mjs --scene sleep --grid 36   # 抽一段的联系表到 out/frames/
 node tools/build.mjs                            # 单文件页面 → dist/index.html（需要 pip install fonttools brotli）
+node tools/voice.mjs                            # 改了台词后重新合成油库里语音 → src/voice-data.js（需要 ffmpeg）
 node tools/render.mjs                           # 出片 → out/patchouli-lecture-1.mp4（需要 ffmpeg）
 ```
 
@@ -53,4 +54,5 @@ node tools/render.mjs                           # 出片 → out/patchouli-lectu
 
 - 代码：MIT。
 - 字体：霞鹜文楷（SIL Open Font License，`fonts/LXGWWenKai-OFL.txt`）。
+- 语音：AquesTalk（© 株式会社アクエスト），经 [aquestalk.js](https://github.com/y52en/aquestalk.js) 合成；仓库里只有合成出的声音，不含 AquesTalk 本体。拼音→假名表来自 [yukumo-js](https://github.com/yukumo-group/yukumo-js)（MIT）。
 - 东方 Project 的角色版权归上海爱丽丝幻乐团（ZUN）。本片为同人科普作品，不构成医疗建议。
