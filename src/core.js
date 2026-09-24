@@ -154,7 +154,7 @@ function buildBar(bar, P) {
 // ===================== 背景音乐（WebAudio 现场合成，默认关） =====================
 // 一段八音盒风格的循环小曲：五声音阶 + 低音。不用音频文件，出片时 tools/render.mjs 用同一份乐谱离线渲染。
 const AUDIO = { on: false, ac: null, master: null,
-  play(from) { if (!this.on) return; this.stop(); this.ac = this.ac || new AudioContext(); this.ac.resume(); this.master = this.ac.createGain(); this.master.gain.value = .5; this.master.connect(this.ac.destination); score(this.ac, this.master, this.ac.currentTime + .05, from, FILM.DUR); },
+  play(from) { if (!this.on) return; this.stop(); this.ac = this.ac || new AudioContext(); this.ac.resume(); this.master = this.ac.createGain(); this.master.gain.value = 1.8; this.master.connect(this.ac.destination); score(this.ac, this.master, this.ac.currentTime + .05, from, FILM.DUR); },
   stop() { if (this.master) { try { this.master.gain.setTargetAtTime(0, this.ac.currentTime, .05); } catch (e) {} this.master = null; } } };
 function score(ac, out, t0, from = 0, dur = 300) {
   const BPM = 84, beat = 60 / BPM, bar = beat * 4;

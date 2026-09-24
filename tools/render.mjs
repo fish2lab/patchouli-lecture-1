@@ -17,7 +17,7 @@ const F0 = Math.round(from * FPS), F1 = Math.round(to * FPS), N = F1 - F0;
 console.log(`render ${N} frames (${(N / FPS).toFixed(1)}s) × ${jobs} jobs → ${out}`);
 // 背景音乐：页面里用 OfflineAudioContext 渲染同一份乐谱
 const wavB64 = await first.page.evaluate(async ({ from, dur }) => {
-  const sr = 48000, oac = new OfflineAudioContext(2, Math.ceil(sr * dur), sr), g = oac.createGain(); g.gain.value = .5; g.connect(oac.destination);
+  const sr = 48000, oac = new OfflineAudioContext(2, Math.ceil(sr * dur), sr), g = oac.createGain(); g.gain.value = 1.8; g.connect(oac.destination);
   score(oac, g, 0, from, from + dur); const buf = await oac.startRendering(), n = buf.length, dv = new DataView(new ArrayBuffer(44 + n * 4));
   const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
   ws(0, 'RIFF'); dv.setUint32(4, 36 + n * 4, true); ws(8, 'WAVE'); ws(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true); dv.setUint32(24, sr, true); dv.setUint32(28, sr * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, n * 4, true);

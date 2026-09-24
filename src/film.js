@@ -4,7 +4,7 @@
 {
   const only = Q.get('scene'), noSub = Q.has('nosub');
   defineFilm(SCENES.slice().sort((a, b) => a.order - b.order).filter(s => !only || only.split(',').includes(s.key)));
-  OVERLAY = (c, s, tau, cur) => { if (!noSub && cur && !s.noSub) drawSubtitle(c, cur, tau); };
+  OVERLAY = (c, s, tau, cur) => { if (s.start > 0 && !s.noFlip) pageFlip(c, tau); if (!noSub && cur && !s.noSub) drawSubtitle(c, cur, tau); };
   mountPlayer();
 }
 // 字幕：画面底部居中，深色半透明底，白字。说话人不是帕秋莉时前面加名字。
@@ -18,5 +18,22 @@ function drawSubtitle(c, cur, tau) {
   c.strokeStyle = alpha(P.moon, .55); c.lineWidth = 2; c.stroke(polyPath(rectPts(bx + 5, by + 5, bw - 10, size + 30, 16)));
   if (who) zh(c, who, CX - tw / 2, STAGE.sub.y + 6, { size, color: P.moon });
   zh(c, cur.text, CX - tw / 2 + (who ? zhWidth(c, who, size) : 0), STAGE.sub.y + 6, { size, color: '#fff8ec' });
+  c.restore();
+}
+
+// pageFlip：每段开头 0.6 秒，魔导书页像翻书一样从右往左翻过去（段与段之间的转场）。
+// 段首本来就是空白讲台画面，翻过去的那张纸画的也是空白页，所以翻完无缝。
+function pageFlip(c, tau) {
+  const D = .6; if (tau >= D) return;
+  const u = easeIO(tau / D), { x, y, w, h } = STAGE.board, cw = w * Math.cos(u * Math.PI), lift = Math.sin(u * Math.PI) * 40;
+  const X = cw >= 0 ? x : x + cw, ww = Math.abs(cw);
+  if (ww < 2) return;
+  c.save();
+  c.fillStyle = alpha('#000', .25 * Math.sin(u * Math.PI)); c.fill(polyPath([[x, y], [x + cw, y - lift], [x + cw, y + h + lift], [x, y + h]]));
+  const pts = [[x, y], [x + cw, y - lift], [x + cw, y + h + lift], [x, y + h]];
+  c.fillStyle = cw >= 0 ? P.paper : mix(P.paper, P.paperEdge, .5); c.strokeStyle = P.paperEdge; c.lineWidth = 5;
+  c.fill(polyPath(pts)); c.stroke(polyPath(pts));
+  const g = c.createLinearGradient(X, 0, X + ww, 0); g.addColorStop(0, alpha(P.paperEdge, cw >= 0 ? 0 : .5)); g.addColorStop(1, alpha(P.paperEdge, cw >= 0 ? .5 : 0));
+  c.fillStyle = g; c.fill(polyPath(pts));
   c.restore();
 }
