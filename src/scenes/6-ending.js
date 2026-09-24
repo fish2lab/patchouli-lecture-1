@@ -28,9 +28,9 @@ const S6K = (() => { const e7 = s6E(7);
 const S6LEATHER = '#5b3034';                                       // 书壳（和 kit 的 spread、开场封面同一张皮）
 const S6GOLD = mix(P.moon, P.cap, .32);                            // 封面金墨（月牙金调淡，暗皮面上看得清）
 const S6CW = BOOK.w / 2 + 20;                                      // 封面宽
-const S6PAT = { x: 1620, y: 900, h: 520 };                         // 帕秋莉在右页的站位（脚底）
+const S6PAT = { x: 1240, y: 900, h: 520, land: 1600 };            // 帕秋莉在右页的站位（脚底）；land 合书时跳上封面的落点
 // 左页四个压花格：物件中心、标签基线
-const S6CELLS = [[290, 300], [700, 300], [290, 640], [700, 640]];
+const S6CELLS = [[300, 290], [705, 290], [300, 630], [705, 630]];
 const S6ITEMS = [['moon', '睡够、睡好', '一'], ['cig', '不吸烟', '二'], ['shoe', '每天动一动', '三'], ['sugar', '少吃糖', '四']];
 // 演职信息（逐字照 docs/分镜v2.md 第 6 节，按意思断行）
 const S6CREDITS = [
@@ -107,7 +107,7 @@ function s6Snail(c, x, y, tau, a) { if (a <= 0) return; c.save(); c.globalAlpha 
 
 // 一件压花：从空中落下（高度 → 放大、影子远而虚）、压平（小小的纸屑动一下）、胶带、划掉、写字、打勾
 function s6Specimen(c, tau, i, t0) {
-  if (tau < t0) return; const [cx, cy] = S6CELLS[i], [kind, label, num] = S6ITEMS[i], u = tau - t0, s = 66;
+  if (tau < t0) return; const [cx, cy] = S6CELLS[i], [kind, label, num] = S6ITEMS[i], u = tau - t0, s = 82;
   // 下落：前 0.55 秒从 360 高落到纸面；鞋是蹦着进来的（三步）
   let x = cx, y = cy, lift = 0, rot = 0;
   if (kind === 'shoe') { const hp = sm(0, .95, u, t => t); const n = 3, k = Math.min(n - 1, Math.floor(hp * n)), f = hp * n - k;
@@ -132,14 +132,14 @@ function s6Specimen(c, tau, i, t0) {
   if (u > pressT && u < pressT + .3) { const a = 1 - (u - pressT) / .3; for (const sd of [-1, 1]) for (let j = 0; j < 3; j++) { const an = (j - 1) * .45 + (sd < 0 ? Math.PI : 0), r0 = s * 1.25 + (1 - a) * 18;
     rline(c, [[cx + Math.cos(an) * r0, cy + Math.sin(an) * r0 * .6], [cx + Math.cos(an) * (r0 + 16), cy + Math.sin(an) * (r0 + 16) * .6]], { w: 2.5, color: alpha(P.ink, a), seed: 670 + j, amp: .3 }); } }
   // 胶带
-  const tp = [[[-s * .7, s * .55, .5], [s * 1.0, -s * .65, -.6]], [[-s * .8, -s * .3, -.4], [s * .75, s * .1, .45]], [[-s * .75, s * .3, .35], [s * .8, s * .25, -.3]], [[-s * .65, -s * .1, .5], [s * .6, s * .5, -.45]]][i];
+  const tp = [[[-s * .55, s * .35, .6], [s * .5, s * .5, -.5]], [[-s * .8, -s * .3, -.4], [s * .75, s * .1, .45]], [[-s * .75, s * .3, .35], [s * .8, s * .25, -.3]], [[-s * .65, -s * .1, .5], [s * .6, s * .5, -.45]]][i];
   tp.forEach(([dx, dy, r], j) => s6Tape(c, cx + dx, cy + dy, r, sm(pressT + .15 + j * .12, pressT + .3 + j * .12, u, easeOut), 680 + i * 2 + j));
   // 划掉（香烟、糖）
   if (kind === 'cig' || kind === 'sugar') s6Strike(c, cx + (kind === 'sugar' ? 0 : 0), cy, s * 1.05, sm(pressT + .5, pressT + 1.0, u));
   // 手写标签（序号小一号）+ 金色勾
-  const ly = cy + 150, lw = zhWidth(c, label, 50), lp = writeP(tau, t0 + pressT + .25, label, .09);
+  const ly = cy + 160, lw = zhWidth(c, label, 52), lp = writeP(tau, t0 + pressT + .25, label, .09);
   zh(c, num, cx - lw / 2 - 26, ly, { size: 34, align: 'right', color: P.ink2, p: sm(t0 + pressT + .1, t0 + pressT + .2, tau) > 0 ? 1 : 0 });
-  zh(c, label, cx, ly, { size: 50, align: 'center', color: P.ink, p: lp });
+  zh(c, label, cx, ly, { size: 52, align: 'center', color: P.ink, p: lp });
   s6Check(c, cx + lw / 2 + 40, ly - 16, sm(t0 + pressT + .3 + label.length * .09, t0 + pressT + .6 + label.length * .09, tau));
 }
 
@@ -200,9 +200,9 @@ function s6Riffle(c, tau) {
 
 // ===================== 右页：折起来的纸条（免责） =====================
 function s6Note(c, tau) {
-  const t0 = s6T(6); if (tau < t0) return; const u = tau - t0, x = 1010, y = 250, pw = 156, h = 320, rot = -.025;
+  const t0 = s6T(6); if (tau < t0) return; const u = tau - t0, x = 1375, y = 230, pw = 156, h = 320, rot = -.025;
   const fly = sm(0, .55, u, easeOut), open2 = sm(.75, 1.05, u, easeOut), open3 = sm(1.05, 1.35, u, easeOut);
-  const sx = lerp(S6PAT.x - 150, x, fly), sy = lerp(S6PAT.y - 330, y, fly), sc = lerp(.35, 1, fly);
+  const sx = lerp(S6PAT.x + 120, x, fly), sy = lerp(S6PAT.y - 330, y, fly), sc = lerp(.35, 1, fly);
   c.save(); c.translate(sx, sy); c.rotate(rot + (1 - fly) * .5); c.scale(sc, sc);
   const lift = (1 - fly) * 160;
   s6Piece(c, rectPts(0, 0, pw, h, 2), P.cap, { seed: 801, lift, th: 2, step: 26 });
@@ -226,6 +226,12 @@ function s6Note(c, tau) {
   if (fly >= 1) brassPin(c, pw * 1.5, 18, 10 * sm(.55, .65, u, easeOutBack) + .01);
   c.restore();
 }
+
+// 右页角落的生活痕迹：一圈茶渍（翻页时跟着被翻走，翻完才出现）
+function s6Stain(c, tau) { const a = sm(S6K.riff0 + 5 * S6K.riffStep, S6K.riff0 + 5 * S6K.riffStep + .3, tau); if (a <= 0) return;
+  c.save(); c.globalAlpha *= a; c.strokeStyle = alpha(mix(P.moon, P.shelf, .5), .22); c.lineCap = 'round';
+  c.lineWidth = 5; c.beginPath(); c.arc(1690, 800, 66, .3, TAU - .5); c.stroke(); c.lineWidth = 2.5; c.beginPath(); c.arc(1694, 797, 60, 2.2, 5.6); c.stroke();
+  c.fillStyle = alpha(mix(P.moon, P.shelf, .5), .12); c.beginPath(); c.arc(1766, 842, 7, 0, TAU); c.fill(); c.restore(); }
 
 // ===================== 左页 =====================
 function s6LeftPage(c, tau) {
@@ -256,7 +262,7 @@ function s6Char(c, tau, L) {
   else if (cur(3)) { pose = 'cross'; mood = 'pout'; }
   else if (cur(4)) { pose = 'lecture'; mood = 'annoyed'; gesture = .8; }
   else if (cur(5)) { const lp = (tau - s6T(5)) / (s6E(5) - s6T(5)); pose = lp < .6 ? 'lecture' : 'stand'; mood = lp < .6 ? 'smile' : 'smug'; gesture = lp < .6 ? .95 : null; }
-  else if (cur(6)) { const lt = tau - s6T(6); pose = lt < .7 ? 'point' : 'lecture'; gesture = .55; }
+  else if (cur(6)) { const lt = tau - s6T(6); pose = lt < .7 || lt > 3.2 ? 'point' : 'lecture'; gesture = .55; facing = 1; look = .4; }
   else if (tau >= s6T(7)) {
     const lt = tau - s6T(7);
     if (lt < 2.4) { pose = 'stand'; mood = 'smug'; rot = -.14 * Math.sin(clamp((lt - 1.4) / .9, 0, 1) * Math.PI); tilt = .15 * Math.sin(clamp((lt - 1.4) / .9, 0, 1) * Math.PI); }   // 「下课」鞠一躬
@@ -268,7 +274,7 @@ function s6Char(c, tau, L) {
   c.restore();
   // 咳嗽：两朵小纸云（L3，烟飘过来）
   if (cur(2)) { const lt = tau - s6T(2); for (let k = 0; k < 2; k++) { const a = sm(1.0 + k * .45, 1.15 + k * .45, lt, easeOutBack) * (1 - sm(1.6 + k * .45, 1.9 + k * .45, lt)); if (a <= 0) continue;
-    const hx = r.head[0] - 70 - k * 30, hy = r.head[1] - 40 - k * 36 - (lt - 1 - k * .45) * 20; pop(c, hx, hy, a, () => { [[0, 0, 16], [14, -6, 12], [-13, -4, 11]].forEach(([a2, b, rr], j) => cutPaper(c, circPts(hx + a2, hy + b, rr, 14), P.cap, { seed: 820 + k * 3 + j, step: 5, blur: 3 })); }); } }
+    const hx = r.head[0] - 95 - k * 34, hy = r.head[1] + 20 - k * 30 - (lt - 1 - k * .45) * 20; pop(c, hx, hy, a, () => { [[0, 0, 16], [14, -6, 12], [-13, -4, 11]].forEach(([a2, b, rr], j) => cutPaper(c, circPts(hx + a2, hy + b, rr, 14), P.cap, { seed: 820 + k * 3 + j, step: 5, blur: 3 })); }); } }
   // 哈欠的一滴眼泪
   const yw = Math.sin(clamp((tau - K.yawn0) / (K.yawn1 - K.yawn0), 0, 1) * Math.PI); if (yw > .4) cutPaper(c, circPts(r.head[0] - 22, r.head[1] - 4, 4.5 * yw, 10), mix(P.ribbonBlue, P.cap, .6), { seed: 830, step: 3, blur: 1 });
   return r;
@@ -340,15 +346,16 @@ function s6Closing(c, tau, L) {
   }
   s6Sleeper(c, tau, L, dx, pitch);
   c.restore();
+  if (pitch < -.01) { const a = sm(0, -.8, pitch, t => t), g = c.createLinearGradient(0, 0, 0, H * .55); g.addColorStop(0, alpha('#0d0908', .85 * a)); g.addColorStop(1, alpha('#0d0908', 0)); c.fillStyle = g; c.fillRect(0, 0, W, H * .55); }
   // 最后半秒压暗
   const dk = sm(K.end - .7, K.end, tau); if (dk > 0) { c.fillStyle = alpha('#0d0908', dk * .75); c.fillRect(0, 0, W, H); }
 }
 // 帕秋莉：翻书时跳起来落在封面上 → 纸板一样扑倒 → 躺着睡（呼吸、Z）
 function s6Sleeper(c, tau, L, dx, pitch) {
   const K = S6K, j = sm(K.close0 + .35, K.close1 + .05, tau, t => t), jump = Math.sin(j * Math.PI) * 190, ground = S6PAT.y - (tau > K.close1 ? 6 : 0);
-  const fx = S6PAT.x - 20 + dx;
+  const fx = S6PAT.land + dx;
   if (tau < K.flop0) {
-    const x = fx, y = ground - jump, rot = j > 0 && j < 1 ? -.08 * Math.sin(j * TAU) : 0;
+    const x = lerp(S6PAT.x, S6PAT.land, sm(0, 1, j, easeIO)) + dx, y = ground - jump, rot = j > 0 && j < 1 ? -.08 * Math.sin(j * TAU) : 0;
     const pose = j > 0 && j < 1 ? 'stand' : tau < K.close0 + .35 ? 'tired' : 'tired', mood = j > .02 && j < .6 ? 'surprised' : 'sleepy';
     const [px, py, k] = s6TiltMap(x, y, pitch);
     c.save(); c.translate(px, py); c.rotate(rot); c.translate(-px, -py);
@@ -362,7 +369,9 @@ function s6Sleeper(c, tau, L, dx, pitch) {
   const bo = tau - K.flop1, bounce = bo < .35 ? Math.abs(Math.sin(bo / .35 * Math.PI)) * 14 * (1 - bo / .35) : 0;
   const lx = fx - 250, ly = ground + 96;
   const [px, py, k] = s6TiltMap(lx, ly, pitch);
-  const r = drawPatchouli(c, { x: px, y: py - bounce * k, h: S6PAT.h * k, pose: 'lie', mood: 'sleepy', facing: 1, blink: 1, t: tau });
+  const fl = 1 - (1 - Math.cos(pitch)) * .7; c.save(); c.translate(px, py); c.scale(1, fl); c.translate(-px, -py);
+  const r = drawPatchouli(c, { x: px, y: py - bounce * k, h: S6PAT.h * k, pose: 'lie', mood: 'sleepy', facing: 1, blink: 1, t: tau }); c.restore();
+  r.head = [r.head[0], py + (r.head[1] - py) * fl];
   // Z：从脸边一个个冒出来往右上飘
   for (let n = 0; n < 3; n++) { const per = 2.4, ph = ((tau - K.flop1 - .6 - n * .8) % per + per) % per, on = tau - K.flop1 - .6 - n * .8; if (on < 0) continue;
     const a = Math.min(sm(0, .3, ph), 1 - sm(1.7, 2.3, ph)); if (a <= 0) continue;
@@ -374,6 +383,7 @@ scene({ order: 6, key: 'ending', title: '总结', dur: S6K.end, lines: S6LINES,
     if (tau >= S6K.close0) { s6Closing(c, tau, L); return; }
     spread(c, tau);
     s6LeftPage(c, tau);
+    s6Stain(c, tau);
     s6Riffle(c, tau);
     s6Note(c, tau);
     s6Char(c, tau, L);
