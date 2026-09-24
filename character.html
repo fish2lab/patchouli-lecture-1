@@ -33,9 +33,9 @@ const CH_SHEETS = {
     chBg(c, 1920, 1080);
     const moods = ['normal', 'smile', 'smug', 'surprised', 'sleepy', 'annoyed', 'sad'];
     moods.forEach((m, i) => { const x = 140 + i * 272;
-      c.save(); c.beginPath(); c.rect(x - 130, 20, 260, 500); c.clip(); drawPatchouli(c, { x, y: 1480, h: 1800, mood: m, t, gesture: 0 }); c.restore();
+      c.save(); c.beginPath(); c.rect(x - 130, 20, 260, 500); c.clip(); drawPatchouli(c, { x, y: 1560, h: 1500, mood: m, t, gesture: 0 }); c.restore();
       zh(c, m, x, 510, { size: 30, align: 'center', color: P.paper });
-      c.save(); c.beginPath(); c.rect(x - 130, 540, 260, 480); c.clip(); drawPatchouli(c, { x, y: 1980, h: 1800, mood: m, t, mouth: .75, gesture: 0 }); c.restore();
+      c.save(); c.beginPath(); c.rect(x - 130, 540, 260, 480); c.clip(); drawPatchouli(c, { x, y: 2080, h: 1500, mood: m, t, mouth: .75, gesture: 0 }); c.restore();
       zh(c, m + ' 说话', x, 1050, { size: 30, align: 'center', color: P.paper }); });
   } },
   // Q 版 6 个姿势
@@ -66,8 +66,8 @@ const CH_SHEETS = {
   zoom: { w: 1200, h: 900, draw(c, t) {
     chBg(c, 1200, 900);
     const md = Q.get('mood') || 'normal';
-    drawPatchouli(c, { x: 330, y: 2750, h: 3300, mood: md, t, gesture: 0, blink: 0, mouth: +(Q.get('mouth') || 0) });
-    drawPatchouli(c, { x: 900, y: 2750, h: 3300, mood: 'smile', t, gesture: 0, mouth: .8 });
+    drawPatchouli(c, { x: 310, y: 2680, h: 2600, mood: md, t, gesture: 0, blink: 0, mouth: +(Q.get('mouth') || 0) });
+    drawPatchouli(c, { x: 900, y: 2680, h: 2600, mood: 'smile', t, gesture: 0, mouth: .8 });
   } },
 };
 function chBg(c, w, h) { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, P.night2); g.addColorStop(1, P.night3); c.fillStyle = g; c.fillRect(0, 0, w, h); }

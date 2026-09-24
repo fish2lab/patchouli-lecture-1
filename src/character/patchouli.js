@@ -123,16 +123,20 @@ const pchMirror = pts => pts.map(p => [-p[0], p[1], p[2]]);
 const pchCurve = (n, fx, fy) => { const o = []; for (let k = 0; k <= n; k++) o.push([fx(k / n), fy(k / n)]); return o; };
 
 // ===================== 静态形状（头部坐标：原点在下巴尖，y 向下，头顶约 -175，帽顶约 -250） =====================
-const PCH_FACE = [[-60, -150], [60, -150], [66, -104], [65, -68], [57, -38], [36, -13], [0, 0, 1], [-36, -13], [-57, -38], [-65, -68], [-66, -104]];
+const PCH_FACE = [[-62, -150], [62, -150], [68, -104], [68, -62], [60, -34], [38, -11], [0, 0, 1], [-38, -11], [-60, -34], [-68, -62], [-68, -104]];
 // 刘海：发尖是尖角点，发尖之间的缝是平滑控制点（二次曲线拱起）
-const PCH_BANG_TIPS = [[88, -98], [67, -98], [47, -93], [27, -97], [8, -91], [-12, -95], [-32, -92], [-52, -97], [-71, -95], [-88, -100]];
-const PCH_BANG_NOTCH = [-20, -24, -21, -25, -20, -24, -22, -21, -23];
+const PCH_BANG_TIPS = [[92, -82], [75, -91], [56, -88], [37, -93], [17, -86], [-3, -91], [-23, -84], [-43, -90], [-62, -87], [-80, -92], [-93, -80]];
+const PCH_BANG_NOTCH = [-15, -5, -17, -6, -19, -5, -16, -6, -14, -7];
 function pchBangsPts(dy = 0, sw = 0) {
   const o = [[-88, -150], [-72, -182], [0, -196], [72, -182], [88, -150], [92, -122]];
   PCH_BANG_TIPS.forEach((p, i) => {
     const wv = sw * Math.sin(i * 1.7);
     o.push([p[0] + wv, p[1] + dy, 1]);
-    if (i < PCH_BANG_TIPS.length - 1) { const q = PCH_BANG_TIPS[i + 1]; o.push([(p[0] + q[0]) / 2 + wv, Math.min(p[1], q[1]) + PCH_BANG_NOTCH[i] + dy, 0]); }
+    if (i < PCH_BANG_TIPS.length - 1) {
+      // 发束：发尖 → 缝（尖角）→ 下一个发尖，两边都向下鼓，发束饱满、缝细
+      const q = PCH_BANG_TIPS[i + 1], nx = (p[0] + q[0]) / 2 + wv * .5 + (i % 3 - 1) * 2, ny = Math.min(p[1], q[1]) + PCH_BANG_NOTCH[i] + dy;
+      o.push([(p[0] + nx) / 2 + wv * .5, (p[1] + ny) / 2 + 5 + dy * 0, 2], [nx, ny, 1], [(q[0] + nx) / 2, (q[1] + ny) / 2 + 5, 2]);
+    }
   });
   o.push([-92, -122]);
   return o;
@@ -141,16 +145,16 @@ const PCH_BANGS = pchBangsPts();
 const PCH_BANG_SHADOW = pchBangsPts(9);
 // 刘海高光（天使环）：上沿平滑，下沿锯齿
 const PCH_BANG_HI = (() => { const o = []; for (let k = 0; k <= 8; k++) { const x = -70 + k * 17.5; o.push([x, -150 + 10 * (x / 80) ** 2]); }
-  for (let k = 16; k >= 0; k--) { const x = -70 + k * 8.75; o.push([x, -136 + 10 * (x / 80) ** 2 + (k % 2 ? 7 : 0), 1]); } return o; })();
-const PCH_BANG_STRANDS = [[-62, -136, -61, -113], [-42, -140, -42, -114], [-22, -142, -22, -118], [-2, -144, -2, -113], [17, -142, 17, -120], [37, -140, 37, -114], [57, -136, 57, -118], [78, -130, 78, -120]];
+  for (let k = 10; k >= 0; k--) { const x = -70 + k * 14; o.push([x, -139 + 10 * (x / 80) ** 2 + (k % 2 ? 5 : 0) + (k % 3 ? 0 : 2), 1]); } return o; })();
+const PCH_BANG_STRANDS = [[-72, -134, -72, -106], [-54, -138, -53, -104], [-34, -140, -34, -100], [-14, -142, -14, -104], [6, -142, 6, -100], [26, -140, 26, -104], [46, -138, 46, -101], [64, -134, 65, -106]];
 // 帽子：蓬松的帽身 + 一圈荷叶边帽檐
-const PCH_CAP_DOME = [[-100, -112], [-122, -148], [-126, -190], [-106, -224], [-62, -244], [0, -252], [58, -246], [102, -226], [126, -192], [124, -150], [104, -112], [60, -134], [0, -144], [-60, -134]];
-const PCH_CAP_SHADE = [[16, -148], [80, -140], [120, -160], [124, -196], [104, -218], [102, -192], [82, -166], [48, -154]];
-const PCH_CAP_FOLDS = [[[-24, -240], [-42, -214], [-52, -184]], [[30, -242], [50, -214], [58, -188]], [[-78, -226], [-92, -200], [-96, -176]], [[84, -222], [98, -196]]];
+const PCH_CAP_DOME = [[-104, -112], [-130, -138], [-138, -174], [-120, -206], [-76, -228], [-14, -236], [50, -232], [102, -214], [132, -182], [136, -146], [112, -112], [60, -134], [0, -144], [-60, -134]];
+const PCH_CAP_SHADE = [[16, -148], [84, -140], [128, -156], [134, -186], [110, -210], [108, -186], [88, -164], [48, -154]];
+const PCH_CAP_FOLDS = [[[-30, -228], [-48, -206], [-56, -180]], [[24, -232], [44, -208], [52, -184]], [[-88, -214], [-104, -192], [-110, -168]], [[86, -218], [104, -192]]];
 const PCH_FRILL_UP = pchCurve(10, u => -118 + 236 * u, u => -106 - 62 * Math.sin(Math.PI * u));
 const PCH_FRILL_LOW = pchScallop(pchCurve(14, u => 122 - 244 * u, u => -80 - 62 * Math.sin(Math.PI * u) + 12 * (1 - Math.sin(Math.PI * u)) ** 3), 15, 5);
 const PCH_FRILL = [...PCH_FRILL_UP.map((p, i) => [p[0], p[1], i === 0 || i === 10 ? 1 : 0]), ...PCH_FRILL_LOW];
-const PCH_FRILL_PLEATS = pchValleys(PCH_FRILL_LOW).map(p => { const u = (122 - p[0]) / 244, top = -106 - 62 * Math.sin(Math.PI * u); return [[p[0], p[1]], [p[0] * .98, lerp(p[1], top, .62)]]; });
+const PCH_FRILL_PLEATS = pchValleys(PCH_FRILL_LOW).filter((p, i) => i % 2 === 0).map(p => { const u = (122 - p[0]) / 244, top = -106 - 62 * Math.sin(Math.PI * u); return [[p[0], p[1]], [p[0] * .98, lerp(p[1], top, .45)]]; });
 // 月牙（单位半径，内圆偏右上）
 const PCH_MOON = (() => {
   const cx = .46, cy = -.34, r2 = .82, outer = [], inner = [];
@@ -166,19 +170,19 @@ const PCH_MOON = (() => {
 })();
 
 // ===================== 身体（全身坐标：脚底 (0,0)，身高 860） =====================
-const PCH_DRESS = [[-24, -614], [24, -614], [60, -598], [70, -560], [74, -510], [80, -440], [96, -320], [114, -190], [128, -90], [133, -62, 1], [60, -55], [0, -53], [-60, -55], [-133, -62, 1], [-128, -90], [-114, -190], [-96, -320], [-80, -440], [-74, -510], [-70, -560], [-60, -598]];
+const PCH_DRESS = [[-24, -614], [24, -614], [56, -600], [64, -562], [64, -510], [62, -470], [74, -400], [94, -300], [114, -190], [128, -90], [133, -62, 1], [60, -55], [0, -53], [-60, -55], [-133, -62, 1], [-128, -90], [-114, -190], [-94, -300], [-74, -400], [-62, -470], [-64, -510], [-64, -562], [-56, -600]];
 const PCH_HEM_LOW = pchScallop(pchCurve(12, u => 140 - 280 * u, u => -34 + 8 * Math.sin(Math.PI * u)), 16, 4.5);
 const PCH_HEM = [[-134, -66, 1], ...pchCurve(8, u => -134 + 268 * u, u => -66 + 12 * Math.sin(Math.PI * u)).slice(1, -1), [134, -66, 1], ...PCH_HEM_LOW];
 const PCH_HEM_PLEATS = pchValleys(PCH_HEM_LOW);
 // 外袍右片（左片镜像）：外沿、下摆、前襟
-const PCH_ROBE = [[20, -612], [52, -606], [70, -588], [78, -548], [84, -490], [90, -430], [106, -310], [124, -190], [138, -88], [142, -66, 1], [110, -62], [84, -64, 1], [72, -150], [60, -300], [48, -430], [36, -520], [22, -580], [10, -606]];
-const PCH_ROBE_FRONT = [[84, -66], [72, -150], [60, -300], [48, -430], [36, -520]];
+const PCH_ROBE = [[20, -612], [50, -606], [66, -588], [71, -548], [71, -500], [69, -466], [81, -400], [101, -300], [120, -190], [136, -88], [142, -66, 1], [118, -62], [94, -64, 1], [82, -150], [68, -300], [56, -430], [42, -520], [26, -580], [12, -606]];
+const PCH_ROBE_FRONT = [[94, -66], [82, -150], [68, -300], [56, -430], [42, -520]];
 const PCH_ROBE_FRILL = (() => { const sc = pchScallop(PCH_ROBE_FRONT, 16, -3.2), back = PCH_ROBE_FRONT.slice().reverse().map(p => [p[0] - 7, p[1]]); return [...sc, ...back.map((p, i) => [p[0], p[1], i === 0 || i === back.length - 1 ? 1 : 0])]; })();
-const PCH_ROBE_SHADE = [[78, -548], [84, -490], [90, -430], [106, -310], [124, -190], [138, -88], [142, -66], [122, -64], [112, -150], [96, -300], [80, -430], [70, -520], [66, -570]];
+const PCH_ROBE_SHADE = [[71, -548], [71, -500], [69, -466], [81, -400], [101, -300], [120, -190], [136, -88], [142, -66], [124, -64], [112, -150], [94, -300], [76, -400], [62, -466], [62, -540]];
 // 披肩右半（左半镜像）
-const PCH_CAPE_LOW = pchScallop([[104, -546], [80, -541], [56, -540], [32, -548], [14, -564]], 7, 3.6);
-const PCH_CAPE = [[6, -596], [20, -618], [48, -614], [74, -602], [92, -582], [102, -560], ...PCH_CAPE_LOW, [8, -582]];
-const PCH_CAPE_SHADE = [[104, -546], [80, -541], [56, -540], [32, -548], [14, -564], [20, -576], [44, -560], [72, -556], [98, -562]];
+const PCH_CAPE_LOW = pchScallop([[96, -546], [74, -540], [52, -540], [30, -548], [14, -564]], 7, 3.6);
+const PCH_CAPE = [[6, -596], [20, -618], [46, -615], [70, -604], [86, -586], [95, -562], ...PCH_CAPE_LOW, [8, -582]];
+const PCH_CAPE_SHADE = [[96, -546], [74, -540], [52, -540], [30, -548], [14, -564], [20, -576], [44, -560], [70, -556], [92, -564]];
 
 // ===================== 通用小件 =====================
 // pchBow：蝴蝶结。size≈单边环的宽。tails 下垂的两条带子长度（0 不画）
@@ -300,9 +304,9 @@ function pchBackHair(c, rg, E, wb, flow, tiltX = 0, fan = 0) {
   const nt = 7; for (let k = 0; k <= nt; k++) { const u = k / nt, x = lerp(wb + fan, -wb - fan, u), y = E - (k % 2 ? 16 : 0) - 8 * Math.sin(k * 2.3) ** 2;
     pts.push([x + dx(y) + Math.sin(t * 1.7 + k) * 2.5, y, 1]); if (k < nt) pts.push([lerp(wb + fan, -wb - fan, u + .5 / nt) + dx(y), E - 34 - 6 * Math.sin(k * 1.3), 0]); }
   pts.push(...Lf);
-  const pa = pchShape(c, pts, { fill: PCH_C.hair, w: 3, j: rg.jb, sd: 11 + rg.tk });
+  const pa = pchShape(c, pts, { fill: PCH_C.hairBack, w: 3, j: rg.jb, sd: 11 + rg.tk });
   pchClip(c, pa, () => {
-    pchFillPts(c, [[-66, -150], [66, -150], [70 + dx(E * .5) * .8, E * .5], [60 + dx(E), E + 10], [-60 + dx(E), E + 10], [-70 + dx(E * .5) * .8, E * .5]], PCH_C.hairBack, 1, rg.jb, 13 + rg.tk);
+    for (const sg of [-1, 1]) pchFillPts(c, [[sg * 150, -150], [sg * 96, -150], [sg * 92 + dx(E * .3), E * .3], [sg * (wb - 26 + fan) + dx(E), E + 10], [sg * (wb + 40 + fan) + dx(E), E + 10]], PCH_C.hair, .9, rg.jb, 13 + sg + rg.tk);
     for (let k = -3; k <= 3; k++) { if (!k) continue; const x0 = k * 30; pchLine(c, [[x0 * .9, -120], [x0 * 1.05 + dx(E * .4), E * .4], [x0 * 1.1 + dx(E * .85), E * .85]], 1.6, PCH_C.hairShade, rg.jb, 15 + k + rg.tk, .7); }
   });
   return pa;
@@ -310,8 +314,8 @@ function pchBackHair(c, rg, E, wb, flow, tiltX = 0, fan = 0) {
 
 // 侧发（胸前的一缕，发梢扎蝴蝶结）。sg 哪一侧，E 发梢 y
 function pchLock(c, rg, sg, E, sway) {
-  const B = E - 56, xs = y => 78 + 4 * (y + 150) / (E + 150) + sway * ((y + 150) / (E + 150)) ** 2;
-  const ws = [[-150, 34], [-95, 30], [-40, 25], [B - 34, 20], [B - 6, 12], [B + 4, 14], [B + 22, 22], [E - 22, 20]];
+  const B = E - 50, xs = y => 76 + 2 * (y + 150) / (E + 150) + sway * ((y + 150) / (E + 150)) ** 2 + 5 * Math.sin((y + 150) / (E + 150) * Math.PI);
+  const ws = [[-150, 30], [-95, 26], [-40, 21], [B - 34, 17], [B - 6, 10], [B + 4, 12], [B + 20, 19], [E - 20, 16]];
   const out = ws.map(([y, w]) => [sg * (xs(y) + w / 2), y]), inn = ws.map(([y, w]) => [sg * (xs(y) - w / 2), y]).reverse();
   const tip = [[sg * (xs(E) + 5), E, 1], [sg * xs(E - 12), E - 14, 0], [sg * (xs(E) - 6), E - 4, 1]];
   const pa = pchShape(c, [...out, ...tip, ...inn], { fill: PCH_C.hair, w: 2.8, j: rg.jf * 1.5, sd: 21 + sg + rg.tk });
@@ -337,7 +341,7 @@ function pchHead(c, rg, o) {
   });
   // 腮红
   for (const sg of [-1, 1]) {
-    const bx = sg * 38 * Math.min(1.08, es), by = ey + 24 * es, g = c.createRadialGradient(bx, by, 1, bx, by, 17 * es);
+    const bx = sg * 40 * Math.min(1.08, es), by = ey + 22 * es, g = c.createRadialGradient(bx, by, 1, bx, by, 17 * es);
     g.addColorStop(0, alpha(P.blush, md.mouth === 'frown' ? .35 : .6)); g.addColorStop(1, alpha(P.blush, 0));
     c.save(); c.translate(bx, by); c.scale(1, .55); c.translate(-bx, -by); c.fillStyle = g; c.beginPath(); c.arc(bx, by, 17 * es, 0, TAU); c.fill(); c.restore();
     for (let k = -1; k <= 1; k++) pchLine(c, [[bx + k * 6 + 2, by - 3], [bx + k * 6 - 2, by + 3]], 1.2, PCH_C.skinDeep, 0, 0, .45);
@@ -351,7 +355,7 @@ function pchHead(c, rg, o) {
     c.restore();
   }
   // 鼻子、嘴
-  pchLine(c, [[3, ey + 25 * es], [1, ey + 29 * es]], 1.8, PCH_C.skinDeep, 0, 0, .8);
+  pchLine(c, [[3, ey + 21 * es], [1, ey + 25 * es]], 1.8, PCH_C.skinDeep, 0, 0, .8);
   c.save(); if (es !== 1) { c.translate(0, -22); c.scale(es * .9, es * .9); c.translate(0, 22); } pchMouth(c, md, o.mouth || 0, rg, t); c.restore();
   // 侧发、刘海
   const lockE = o.lockE || 132, sway = Math.sin(t * 1.4) * 2.5;
@@ -360,13 +364,13 @@ function pchHead(c, rg, o) {
   const bp = pchShape(c, pchBangsPts(0, Math.sin(t * 1.6) * .7), { fill: PCH_C.hair, w: 2.8, j: jf, sd: 61 + rg.tk });
   pchClip(c, bp, () => {
     pchFillPts(c, [[-100, -200], [100, -200], [100, -148], [0, -138], [-100, -148]], PCH_C.hairShade, .55);
-    pchFillPts(c, PCH_BANG_HI, PCH_C.hairHi, .75);
+    pchFillPts(c, PCH_BANG_HI, PCH_C.hairHi, .5);
     for (const s of PCH_BANG_STRANDS) pchLine(c, [[s[0], s[1]], [s[2] + 1, (s[1] + s[3]) / 2], [s[2], s[3]]], 1.4, PCH_C.hairShade, 0, 0, .8);
   });
   // 眉毛（画在刘海上）
   for (const sg of [-1, 1]) {
     const b = md.brow, asy = md.asym ? (sg > 0 ? -4 : 2) : 0;
-    pchLine(c, [[sg * 14, -110 + b[0] + b[1] + asy], [sg * 29, -115 + b[0] + (b[1] + b[2]) / 2 + asy], [sg * 45, -111 + b[0] + b[2] + asy]], 2.6, PCH_C.hairDeep, jf * .5, 71 + sg + rg.tk, .9);
+    pchLine(c, [[sg * 14, -98 + b[0] + b[1] + asy], [sg * 30, -103 + b[0] + (b[1] + b[2]) / 2 + asy], [sg * 47, -99 + b[0] + b[2] + asy]], 2.8, PCH_C.hairDeep, jf * .5, 71 + sg + rg.tk, .9);
   }
   // 帽子
   const dp = pchShape(c, PCH_CAP_DOME, { fill: PCH_C.cap, w: 3, j: rg.jb, sd: 81 + rg.tk });
@@ -384,9 +388,10 @@ function pchHead(c, rg, o) {
   // 表情附件
   if (md.vein) { c.save(); c.translate(-88, -176); c.rotate(-.2); for (let k = 0; k < 4; k++) { c.rotate(Math.PI / 2); pchLine(c, [[3, -9], [6, -4], [11, -3]], 2.6, PCH_C.red, 0, 0); } c.restore(); }
   if (md.bubble && (o.mouth || 0) < .06) {
-    const r = 6 + 5 * (.5 + .5 * Math.sin(t * 2.3));
-    c.save(); c.globalAlpha = .55; c.fillStyle = mix(P.sky, P.cap, .5); c.beginPath(); c.arc(14 + r * .8, ey + 30 * es, r, 0, TAU); c.fill(); c.globalAlpha = .9; c.strokeStyle = mix(P.blue, P.ink, .3); c.lineWidth = 1.4; c.stroke();
-    c.fillStyle = P.cap; c.beginPath(); c.arc(14 + r * .45, ey + 30 * es - r * .4, r * .22, 0, TAU); c.fill(); c.restore();
+    const r = 4 + 5 * (.5 + .5 * Math.sin(t * 2.3));
+    const bx = 5 + r * .85, by = ey + 27 * es + r * .35;
+    c.save(); c.globalAlpha = .55; c.fillStyle = mix(P.sky, P.cap, .5); c.beginPath(); c.arc(bx, by, r, 0, TAU); c.fill(); c.globalAlpha = .9; c.strokeStyle = mix(P.blue, P.ink, .3); c.lineWidth = 1.4; c.stroke();
+    c.fillStyle = P.cap; c.beginPath(); c.arc(bx - r * .35, by - r * .4, r * .22, 0, TAU); c.fill(); c.restore();
   }
   if (o.sweat) { const b = (t * 1.3) % 1; pchSweat(c, 74, -60 + b * 18, 8, 1 - b * .6); pchSweat(c, -80, -30 + ((b + .5) % 1) * 18, 6, 1 - ((b + .5) % 1) * .6); }
 }
@@ -404,7 +409,7 @@ function pchArmGeo(a) {
   const u1 = [Math.cos(g.a1), Math.sin(g.a1)], u2 = [Math.cos(g.a2), Math.sin(g.a2)], n1 = [-u1[1], u1[0]], n2 = [-u2[1], u2[0]];
   let nE = [n1[0] + n2[0], n1[1] + n2[1]]; const ln = Math.hypot(nE[0], nE[1]) || 1; nE = [nE[0] / ln, nE[1] / ln];
   const M = [(g.E[0] + g.Wr[0]) / 2, (g.E[1] + g.Wr[1]) / 2], C = g.Wr, add = (p, v, s) => [p[0] + v[0] * s, p[1] + v[1] * s];
-  const w0 = 17 * k, wE = 19 * k, wM = 23 * k, wC = 30 * k;
+  const w0 = 18 * k, wE = 21 * k, wM = 27 * k, wC = 36 * k;
   const sleeve = [[...add(g.S, n1, w0), 1], add(g.E, nE, wE), add(M, n2, wM), [...add(C, n2, wC), 1], [...add(C, n2, -wC), 1], add(M, n2, -wM), add(g.E, nE, -wE), [...add(g.S, n1, -w0), 1]];
   // 阴影在朝下的一侧
   const ss = n2[1] > 0 ? 1 : -1;
@@ -480,6 +485,7 @@ function pchBookCover(c, x, y, w, h, ang, rg, pages = false, sd0 = 111) {
 }
 
 // ===================== 全身 =====================
+const PCH_HS = .86;   // 全身里头部的缩放（头部坐标 → 全身坐标）
 function pchPoseFull(pose, g, t, bookOn) {
   const br = Math.sin(t * TAU / 3.6) * 1.5;
   const q = { ub: br, sh: 0, hx: 0, hy: 0, tilt: -.03 + Math.sin(t * .8) * .015, look: [2.5, 0], lids: undefined, capL: 0, capR: 0, rot: 0, R: null, Lf: null, book: null, front: false };
@@ -522,10 +528,10 @@ function drawPatchouli(c, o = {}) {
   const q = pchPoseFull(pose, g, t, bookOn), rg = { t, tk: tick(t), jb: .8, jf: .35 };
   c.save(); c.translate(x, y); c.scale(s * facing, s); if (q.rot) c.rotate(q.rot);
   c.lineJoin = 'round'; c.lineCap = 'round';
-  const ub = q.ub, HP = [q.hx, -628 + ub + q.hy + q.sh * .5];
+  const ub = q.ub, HP = [q.hx, -640 + ub + q.hy + q.sh * .5];
   const upper = (pts, dy) => pts.map(p => [p[0], p[1] + dy * clamp((-p[1] - 150) / 400, 0, 1), p[2]]);
   // 后发
-  c.save(); c.translate(HP[0], HP[1]); pchBackHair(c, rg, 330 - ub - q.hy, 126, -8, q.tilt * 120); c.restore();
+  c.save(); c.translate(HP[0], HP[1]); c.scale(PCH_HS, PCH_HS); pchBackHair(c, rg, (340 - ub - q.hy) / PCH_HS, 124, -8, q.tilt * 120); c.restore();
   // 靴子
   for (const sg of [-1, 1]) {
     c.save(); c.translate(sg * 30, 0);
@@ -551,15 +557,18 @@ function drawPatchouli(c, o = {}) {
     const pts = upper(pchMap(PCH_ROBE, px => sg * px, (px, py) => py), ub);
     const rp = pchShape(c, pts, { fill: PCH_C.robe, w: 3, j: rg.jb, sd: 141 + sg + rg.tk });
     pchClip(c, rp, () => pchFillPts(c, upper(pchMap(PCH_ROBE_SHADE, px => sg * px, (px, py) => py), ub), PCH_C.robeShade, sg < 0 ? .9 : .5));
-    pchShape(c, upper(pchMap(PCH_ROBE_FRILL, px => sg * px, (px, py) => py), ub), { fill: PCH_C.robeLight, w: 2, j: rg.jb * .6, sd: 145 + sg + rg.tk });
+    pchShape(c, upper(pchMap(PCH_ROBE_FRILL, px => sg * px, (px, py) => py), ub), { fill: PCH_C.robeLight, w: 1.6, line: PCH_C.lineSoft, j: rg.jb * .5, sd: 145 + sg + rg.tk });
   }
-  pchBow(c, -118, -300, 30, PCH_C.red, PCH_C.redShade, .25, rg.jb, 151 + rg.tk, 1.1);
+  pchBow(c, -86, -392, 24, PCH_C.red, PCH_C.redShade, .3, rg.jb, 151 + rg.tk, 1.2);
   // 手臂
-  const S = sg => [sg * 62, -590 + ub + q.sh];
+  const S = sg => [sg * 58, -590 + ub + q.sh];
   const gR = pchArmGeo({ S: S(1), ...q.R }), gL = pchArmGeo({ S: S(-1), ...q.Lf });
-  if (!q.front) { pchArmFull(c, gL, rg, 161); pchArmFull(c, gR, rg, 171); }
+  if (q.book === 'open') {
+    pchArmFull(c, gL, rg, 161); pchSleeve(c, gR, rg, 171);
+    const u = gR.u2; pchBookOpen(c, gR.Wr[0] + u[0] * 30 - 4, gR.Wr[1] + u[1] * 30 - 12, -.12 + Math.sin(t * 1.1) * .02, rg, .95);
+    pchHand(c, gR, rg, 176); pchCuff(c, gR, rg, 179);
+  } else if (!q.front) { pchArmFull(c, gL, rg, 161); pchArmFull(c, gR, rg, 171); }
   else { pchSleeve(c, gL, rg, 161); pchSleeve(c, gR, rg, 171); }
-  if (q.book === 'open') { const u = gR.u2; pchBookOpen(c, gR.Wr[0] + u[0] * 26, gR.Wr[1] + u[1] * 26 - 8, -.12 + Math.sin(t * 1.1) * .02, rg, .95); }
   // 披肩
   for (const sg of [-1, 1]) {
     const lift = sg > 0 ? q.capR : q.capL;
@@ -569,14 +578,14 @@ function drawPatchouli(c, o = {}) {
   }
   // 脖子、领子、领结
   c.save(); c.translate(0, ub + q.sh * .5);
-  const np = pchShape(c, [[-12, -646], [12, -646], [13, -606], [-13, -606]], { fill: PCH_C.skin, w: 2.4, line: PCH_C.faceLine });
-  pchClip(c, np, () => pchFillPts(c, [[-14, -650], [14, -650], [14, -626], [0, -620], [-14, -626]], PCH_C.skinShade, .9));
+  const np = pchShape(c, [[-11, -660], [11, -660], [12, -606], [-12, -606]], { fill: PCH_C.skin, w: 2.4, line: PCH_C.faceLine });
+  pchClip(c, np, () => pchFillPts(c, [[-14, -664], [14, -664], [14, -638], [0, -630], [-14, -638]], PCH_C.skinShade, .9));
   for (const sg of [-1, 1]) pchShape(c, [[0, -604, 1], [sg * 6, -614], [sg * 22, -616, 1], [sg * 20, -600], [sg * 8, -596, 1]], { fill: PCH_C.dress, w: 2.2, j: rg.jf, sd: 191 + sg + rg.tk });
   pchBow(c, 0, -600, 21, PCH_C.red, PCH_C.redShade, 0, rg.jf, 195 + rg.tk, 1);
   c.restore();
   // 头
-  c.save(); c.translate(HP[0], HP[1]); c.rotate(q.tilt);
-  pchHead(c, rg, { mood, mouth, blink, look: q.look, lids: q.lids, lockE: 132 });
+  c.save(); c.translate(HP[0], HP[1]); c.rotate(q.tilt); c.scale(PCH_HS, PCH_HS);
+  pchHead(c, rg, { mood, mouth, blink, look: q.look, lids: q.lids, lockE: 150, es: 1.16, ey: -57 });
   c.restore();
   // 前景层
   if (q.front) {
@@ -620,7 +629,7 @@ function pchChibiBody(c, rg, o) {
 function drawPatchouliChibi(c, o = {}) {
   const { x = 0, y = 0, h = 300, facing = 1, pose = 'stand', mood = 'normal', mouth = 0, blink = 0, t = 0 } = o, s = h / 300;
   const rg = { t, tk: tick(t), jb: .7, jf: .3 }, HK = .76;
-  const headO = { mood, mouth, blink, look: [2, 0], es: 1.22, ey: -58, lockE: 66 };
+  const headO = { mood, mouth, blink, look: [2, 0], es: 1.3, ey: -54, lockE: 66 };
   // 局部点 → 屏幕
   let mapPt = (lx, ly) => [x + lx * s * facing, y + ly * s];
   c.save(); c.translate(x, y); c.scale(s * facing, s); c.lineJoin = 'round'; c.lineCap = 'round';
