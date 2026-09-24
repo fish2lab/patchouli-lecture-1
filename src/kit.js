@@ -1,7 +1,8 @@
 'use strict';
 // 画具：颜色、手绘线、字、背景、讲台布局。所有场景共用，场景文件不改这里（缺什么先写在自己文件里，汇报里提）。
-// 画风第二版（docs/画风v2.md）：克制、写意。全片是一本摊开的魔导书——暖白纸、墨线、几级灰、一种帕秋莉紫；
-// 夜里是整页墨加白色刮痕线。帕秋莉是放在书页上的剪纸人偶（cutPaper）。字是霞鹜文楷手写体。
+// 画风第二版（docs/画风v2.md）：克制、高抽象、但不简单。整个画面是一本摊在深色木桌上的魔导书（spread），
+// 旧纸、墨线、几级灰、一种帕秋莉紫；书页上用古书的纸机关讲事：转盘、立体书、拉条、图钉和线、剪纸层。
+// 帕秋莉是贴在书页上的剪纸人偶（cutPaper）。字是霞鹜文楷手写体。
 
 const P = {
   // 纸、墨、灰（主色）
@@ -247,76 +248,6 @@ function caption(c, text, tau, t0 = 0, o = {}) {
   c.restore();
 }
 
-// ===================== 光与暗（第二版：红魔馆地下） =====================
-// 画面大部分涂黑，只有吊灯或悬空的珠光照出一块椭圆/梯形的亮纸面；亮区边界随烛火呼吸、随吊灯摆动。
-// 用法：先照常画亮区里的内容（纸、黑板、魔导书、帕秋莉），最后调 darkness(c, 亮区轮廓) 把其余地方涂黑。
-//   lampCone(t, { x, y0, y1, top, bottom, swing, flick })  顶部吊灯 → 梯形光锥 + 底部椭圆光斑，返回轮廓点
-//   orbPool(t, { x, y, rx, ry, flick })                      中心珠光 → 椭圆光斑，返回轮廓点
-const CHALK = '#e9e4d6';
-function lampSwing(t, amp = .035) { return amp * (Math.sin(t * .9) * .8 + Math.sin(t * 2.3 + 1) * .2); }   // 吊灯摆动的角度
-function flicker(t, seed = 1) { return .6 * noise1(t * 3.1, seed) + .4 * noise1(t * 7.7, seed + 3); }       // 烛火的抖动 -1..1
-function lampCone(t, o = {}) {
-  const { x = CX, y0 = 90, y1 = 900, top = 180, bottom = 1100, swing = 1, flick = 1, ry = 90, lampY = y0 } = o;
-  const a = lampSwing(t) * swing, dx = Math.sin(a) * (y1 - lampY), f = 1 + .018 * flick * flicker(t, 3);
-  const bx = x + dx, hw = bottom / 2 * f, pts = [];
-  // 光锥两边（梯形），底部接一段椭圆弧
-  const N = 28;
-  pts.push([x - top / 2, y0]);
-  for (let i = 1; i < N; i++) { const u = i / N; pts.push([lerp(x - top / 2, bx - hw, u) + 6 * flick * noise1(u * 4 + t * 1.3, 7), lerp(y0, y1, u)]); }
-  for (let i = 0; i <= 40; i++) { const th = Math.PI - i / 40 * Math.PI; pts.push([bx + Math.cos(th) * hw, y1 + Math.sin(th) * ry * f]); }
-  for (let i = N - 1; i >= 1; i--) { const u = i / N; pts.push([lerp(x + top / 2, bx + hw, u) + 6 * flick * noise1(u * 4 + t * 1.3, 9), lerp(y0, y1, u)]); }
-  pts.push([x + top / 2, y0]);
-  return pts;
-}
-function orbPool(t, o = {}) {
-  const { x = CX, y = CY, rx = 760, ry = 420, flick = 1 } = o, pts = [];
-  for (let i = 0; i < 72; i++) { const th = i / 72 * TAU, r = 1 + .02 * flick * (flicker(t, 11) + .6 * noise1(th * 2.2 + t * .9, 13));
-    pts.push([x + Math.cos(th) * rx * r, y + Math.sin(th) * ry * r]); }
-  return pts;
-}
-// darkness：亮区之外涂黑，边缘羽化；亮区内部越靠边越暗一点。o = { soft 羽化宽度, falloff 亮区内的暗角, center [x,y] 光心 }
-function darkness(c, pts, o = {}) {
-  const { soft = 46, falloff = .38, center = null, color = P.night } = o, path = polyPath(pts, true);
-  // 亮区内的衰减：以光心为圆心的径向暗角
-  if (falloff > 0) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
-    const [cx, cy] = center || [(x0 + x1) / 2, (y0 + y1) / 2], R = Math.max(x1 - x0, y1 - y0) * .62, g = c.createRadialGradient(cx, cy, R * .35, cx, cy, R);
-    g.addColorStop(0, 'rgba(20,14,10,0)'); g.addColorStop(1, `rgba(20,14,10,${falloff})`);
-    c.save(); c.clip(path); c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore(); }
-  // 亮区外：整块涂黑（挖掉亮区），用阴影把黑边羽化进亮区
-  const hole = new Path2D(); hole.rect(-200, -200, W + 400, H + 400); hole.addPath(path);
-  c.save(); c.fillStyle = color; c.shadowColor = color; c.shadowBlur = soft; c.fill(hole, 'evenodd'); c.restore();
-  c.save(); c.fillStyle = color; c.fill(hole, 'evenodd'); c.restore();
-  return path;
-}
-// 暗处隐约的书架剪影（在 darkness 之后画，几乎看不见，只给「地下图书馆」的纵深）
-function darkShelves(c, t, o = {}) {
-  const { al = 1, seed = 5 } = o; c.save(); c.globalAlpha *= al;
-  for (const [x0, w] of [[40, 300], [W - 340, 300]]) {
-    c.fillStyle = '#2a2530'; c.fillRect(x0, 60, w, H - 60);
-    for (let k = 0; k < 6; k++) { const y = 110 + k * 160; c.fillStyle = '#34303b'; c.fillRect(x0, y + 128, w, 10);
-      let x = x0 + 8; const r = rng(seed * 31 + k + x0); while (x < x0 + w - 14) { const bw = 12 + r() * 16, bh = 70 + r() * 50; c.fillStyle = r() < .5 ? '#302a36' : '#2c2831'; c.fillRect(x, y + 128 - bh, bw - 2, bh); x += bw; } }
-  }
-  c.restore();
-}
-// 吊灯：从画面顶端垂下的铁链 + 一圈烛台（墨色剪影，火苗是金色剪纸）
-function chandelier(c, x, y, t, o = {}) {
-  const { s = 1, lit = 1, swing = 1 } = o, a = lampSwing(t) * swing;
-  c.save(); c.translate(x, 0); c.rotate(a); c.translate(-x, 0);
-  rline(c, [[x, -10], [x, y - 30 * s]], { w: 3 * s, color: '#4a4350', seed: 971 });
-  cutPaper(c, [[x - 150 * s, y], [x + 150 * s, y], [x + 110 * s, y + 18 * s], [x - 110 * s, y + 18 * s]], '#3b3540', { seed: 972, step: 14, shadow: false });
-  cutPaper(c, [[x - 18 * s, y - 34 * s], [x + 18 * s, y - 34 * s], [x + 10 * s, y + 4], [x - 10 * s, y + 4]], '#3b3540', { seed: 973, step: 8, shadow: false });
-  for (let k = 0; k < 5; k++) { const cx = x + (k - 2) * 66 * s, cy = y - 4 * s;
-    cutPaper(c, rectPts(cx - 7 * s, cy - 26 * s, 14 * s, 26 * s, 3), '#e6dfcf', { seed: 974 + k, step: 6, shadow: false });
-    if (lit > k / 5) { const f = twos(t + k * .37), h = (22 + 5 * Math.sin(f * 11 + k)) * s;
-      { const g = c.createRadialGradient(cx, cy - 34 * s, 2, cx, cy - 34 * s, 34 * s); g.addColorStop(0, alpha(P.lamp, .35)); g.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = g; c.beginPath(); c.arc(cx, cy - 34 * s, 34 * s, 0, TAU); c.fill(); }
-      cutPaper(c, [[cx - 6 * s, cy - 26 * s], [cx + Math.sin(f * 7 + k) * 2 * s, cy - 26 * s - h], [cx + 6 * s, cy - 26 * s]], P.moon, { seed: 980 + k + (Math.floor(f * 4) % 3) * 7, step: 5, shadow: false, smooth: true }); } }
-  c.restore();
-}
-// 珠光：悬在空中的一颗发光的珠子（帕秋莉的魔法灯），轻轻上下浮
-function orbLamp(c, x, y, t, o = {}) { const { r = 20, lit = 1 } = o, yy = y + Math.sin(t * 1.4) * 6;
-  if (lit <= 0) return [x, yy];
-  c.save(); const g = c.createRadialGradient(x, yy, 2, x, yy, r * 5); g.addColorStop(0, alpha('#fff4d8', .55 * lit)); g.addColorStop(1, 'rgba(255,244,216,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, yy, r * 5, 0, TAU); c.fill();
-  c.fillStyle = alpha('#fff8e6', lit); c.beginPath(); c.arc(x, yy, r * (.9 + .06 * flicker(t, 21)), 0, TAU); c.fill(); c.restore(); return [x, yy]; }
 // 黑板：木框（剪纸）+ 石板（暗绿黑），返回石板内区 { x, y, w, h }。上面的字用粉笔色 CHALK
 function chalkboard(c, x, y, w, h, t, o = {}) {
   const { legs = true } = o;
@@ -330,11 +261,65 @@ function chalkboard(c, x, y, w, h, t, o = {}) {
 }
 // chalk：粉笔字（手写体、略透、边缘粗糙）
 function chalk(c, text, x, y, o = {}) { zh(c, text, x, y, { color: CHALK, ...o, al: (o.al ?? 1) * .92 }); }
-// 章节签（第二版，替代参考片的白底黑框展签）：暗处左上角一行金色手写字 + 一弯剪纸月牙
-function chapterMark(c, text, tau, t0 = 0, o = {}) {
-  const { t1 = Infinity } = o, k = Math.min(sm(t0, t0 + .4, tau), 1 - sm(t1, t1 + .3, tau)); if (k <= 0) return;
+// ===================== 魔导书（第二版的舞台） =====================
+// 整个画面是一本摊在深色木桌上的魔导书：旧纸色的左右两页、书脊的阴影、皮面书壳的边、几层书页的厚度。
+// 这不是画框：它是一件东西，翻页时真的会翻。所有内容画在书页上（帕秋莉是贴在书页上的剪纸人偶）。
+const BOOK = { x: 54, y: 40, w: W - 108, h: H - 80, gutter: CX, page: '#e7dcc4', page2: '#ddd0b3' };
+BOOK.L = { x: BOOK.x + 26, y: BOOK.y + 18, w: CX - 8 - (BOOK.x + 26), h: BOOK.h - 36 };
+BOOK.R = { x: CX + 8, y: BOOK.y + 18, w: BOOK.x + BOOK.w - 26 - (CX + 8), h: BOOK.h - 36 };
+const WOOD = '#34261f';
+function desk(c) {
+  c.fillStyle = WOOD; c.fillRect(0, 0, W, H);
+  c.save(); c.strokeStyle = 'rgba(0,0,0,.25)'; c.lineWidth = 2; for (let k = 0; k < 14; k++) { const y = 30 + k * 78 + Math.sin(k * 1.7) * 12; c.beginPath(); c.moveTo(0, y); c.bezierCurveTo(W * .3, y + 10, W * .6, y - 12, W, y + 6); c.stroke(); } c.restore();
+  grain(c, polyPath(rectPts(0, 0, W, H)), .1);
+}
+// spread：画桌面 + 翻开的书（两页），返回 BOOK。o.blank = true 时只画空白书页
+function spread(c, t = 0, o = {}) {
+  desk(c);
+  const { x, y, w, h } = BOOK;
+  cutPaper(c, rectPts(x - 10, y - 8, w + 20, h + 20, 10), '#5b3034', { seed: 1101, step: 28, blur: 16, sx: 0, sy: 8, grain: .12 });   // 皮面书壳
+  for (let k = 3; k >= 1; k--) cutPaper(c, rectPts(x + 14 - k * 3, y + 10 + k * 2, w - 28 + k * 6, h - 20, 4), mix(BOOK.page2, '#000000', .06 * k), { seed: 1102 + k, step: 60, shadow: false, grain: 0 });   // 书页厚度
+  for (const [pg, side] of [[BOOK.L, -1], [BOOK.R, 1]]) {
+    const path = cutPaper(c, rectPts(pg.x, pg.y, pg.w, pg.h, 3), BOOK.page, { seed: 1110 + side, step: 70, shadow: false, grain: .14, edge: false });
+    c.save(); c.clip(path);
+    // 书脊阴影 + 外缘略暗
+    const gx = side < 0 ? pg.x + pg.w : pg.x, g = c.createLinearGradient(gx, 0, gx + side * 150, 0); g.addColorStop(0, 'rgba(60,40,20,.30)'); g.addColorStop(1, 'rgba(60,40,20,0)'); c.fillStyle = g; c.fillRect(pg.x, pg.y, pg.w, pg.h);
+    const ox = side < 0 ? pg.x : pg.x + pg.w, g2 = c.createLinearGradient(ox, 0, ox + side * -70, 0); g2.addColorStop(0, 'rgba(60,40,20,.12)'); g2.addColorStop(1, 'rgba(60,40,20,0)'); c.fillStyle = g2; c.fillRect(pg.x, pg.y, pg.w, pg.h);
+    c.restore();
+  }
+  rline(c, [[CX, BOOK.y + 14], [CX, BOOK.y + BOOK.h - 14]], { w: 2, color: 'rgba(60,40,20,.35)', seed: 1120 });
+  return BOOK;
+}
+// pageHeader：书页左上角的页眉（一弯剪纸月牙 + 手写页名），代替参考片的展签
+function pageHeader(c, text, tau, t0 = 0, o = {}) {
+  const { t1 = Infinity, x = BOOK.L.x + 50, y = BOOK.L.y + 64 } = o, k = Math.min(sm(t0, t0 + .4, tau), 1 - sm(t1, t1 + .3, tau)); if (k <= 0) return;
   c.save(); c.globalAlpha *= k;
-  drawMoonIcon(c, 64, 70, 22, P.moon, -.5);
-  zh(c, text, 100, 84, { size: 40, color: '#d9c38e', p: writeP(tau, t0 + .1, text, .06) });
+  drawMoonIcon(c, x, y - 14, 16, P.moon, -.5);
+  zh(c, text, x + 30, y, { size: 36, color: P.ink2, p: writeP(tau, t0 + .1, text, .06) });
+  rline(c, [[x + 30, y + 14], [x + 30 + zhWidth(c, text, 36) * clamp(writeP(tau, t0 + .1, text, .06), 0, 1), y + 14]], { w: 1.5, color: alpha(P.ink2, .5), seed: 1130 });
   c.restore();
 }
+// turnPage：翻页转场。右页绕书脊翻到左边，0..1；翻过去的那张纸画成空白旧纸（背面略暗）
+function turnPage(c, u) {
+  if (u <= 0 || u >= 1) return; const R = BOOK.R, e = easeIO(u), cw = R.w * Math.cos(e * Math.PI), lift = Math.sin(e * Math.PI) * 36;
+  if (Math.abs(cw) < 2) return;
+  const pts = [[CX, R.y], [CX + cw, R.y - lift], [CX + cw, R.y + R.h + lift], [CX, R.y + R.h]];
+  c.save(); c.shadowColor = 'rgba(30,20,10,.35)'; c.shadowBlur = 30; c.shadowOffsetY = 10; c.fillStyle = cw > 0 ? BOOK.page : BOOK.page2; c.fill(polyPath(pts)); c.restore();
+  c.save(); c.clip(polyPath(pts)); grain(c, polyPath(pts), .14);
+  const g = c.createLinearGradient(CX, 0, CX + cw, 0); g.addColorStop(0, 'rgba(60,40,20,.28)'); g.addColorStop(1, `rgba(60,40,20,${cw > 0 ? .05 : .18})`); c.fillStyle = g; c.fill(polyPath(pts)); c.restore();
+}
+
+// ===================== 纸机关（第二版书页上用） =====================
+// brassPin：铜色两脚钉（转盘的轴、线的端点）
+function brassPin(c, x, y, r = 9) { cutPaper(c, circPts(x, y, r, 16), '#b08a45', { seed: 1201 + (x | 0) % 17, step: 4, blur: 3, sx: 1, sy: 2, grain: 0 }); c.fillStyle = 'rgba(255,240,200,.7)'; c.beginPath(); c.arc(x - r * .3, y - r * .3, r * .28, 0, TAU); c.fill(); }
+// thread：两点之间一根线，中间自然下垂 sag 像素；o = { color, w, p 画出比例, taut 0..1 绷紧 }
+function thread(c, a, b, o = {}) { const { color = '#6b4f55', w = 2.2, p = 1, sag = 30, taut = 0, seed = 1210 } = o, s = sag * (1 - taut);
+  const pts = []; for (let i = 0; i <= 20; i++) { const u = i / 20; pts.push([lerp(a[0], b[0], u), lerp(a[1], b[1], u) + Math.sin(u * Math.PI) * s]); }
+  rline(c, pts, { w, color, p, seed, amp: .4 }); return pts; }
+// popup：立体书——以 foldY 这条折线为轴，把 fn 画的东西从书页上「立起来」，k 0..1（0 = 平躺，1 = 立起）
+function popup(c, foldY, k, fn) { if (k <= .001) return; c.save(); c.translate(0, foldY); c.scale(1, k); c.translate(0, -foldY); fn(); c.restore();
+  if (k < .98) { c.save(); c.globalAlpha *= (1 - k) * .5; c.fillStyle = 'rgba(40,25,15,.25)'; c.fillRect(0, foldY - 2, W, 4); c.restore(); } }
+// vellum：半透明的硫酸纸（叠在别的东西上，下面隐约透出来）
+function vellum(c, pts, o = {}) { return cutPaper(c, pts, o.color || '#f4f1ea', { step: 20, grain: .05, blur: 4, ...o, al: (o.al ?? 1) * .55 }); }
+// spin：绕 (x, y) 转 a 弧度后画 fn（转盘）
+function spin(c, x, y, a, fn) { c.save(); c.translate(x, y); c.rotate(a); c.translate(-x, -y); fn(); c.restore(); }
