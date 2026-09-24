@@ -4,7 +4,7 @@
 {
   const only = Q.get('scene'), noSub = Q.has('nosub');
   defineFilm(SCENES.slice().sort((a, b) => a.order - b.order).filter(s => !only || only.split(',').includes(s.key)));
-  OVERLAY = (c, s, tau, cur) => { if (s.start > 0 && !s.noFlip) pageFlip(c, tau); if (!noSub && cur && !s.noSub) drawSubtitle(c, cur, tau); if (!s.noFrame) handFrame(c, tau); };
+  OVERLAY = (c, s, tau, cur) => { if (s.start > 0 && !s.noFlip) pageFlip(c, tau); if (!noSub && cur && !s.noSub) drawSubtitle(c, cur, tau); };
   mountPlayer();
 }
 // 字幕（第二版）：书页底部一条剪下来的纸条，上面一行手写字。说话人不是帕秋莉时前面加名字。
