@@ -54,6 +54,14 @@ const CH_SHEETS = {
       c.restore();
       zh(c, m, cx, top + 598, { size: 30, align: 'center', color: P.ink2 }); });
   } },
+  // 开发用：几个姿势放大看（?poses=a,b,c&moods=x,y,z）
+  zoom: { w: 1800, h: 1000, draw(c, t) {
+    chPaper(c, 1800, 1000);
+    const ps = (Q.get('poses') || 'stand,lecture,cross,hide').split(','), ms = (Q.get('moods') || '').split(',');
+    ps.forEach((p, i) => { const x = 1800 / ps.length * (i + .5), y = p === 'peek' ? 700 : p === 'sit' ? 780 : 960;
+      rline(c, [[x - 200, y], [x + 200, y]], { w: 3, color: P.ink2, seed: i + 3 });
+      const r = drawPatchouli(c, { x: p === 'lie' ? x - 60 : x, y, h: 880, pose: p, mood: ms[i] || 'normal', t, blink: p === 'lie' ? 1 : 0, mouth: +(Q.get('mouth') || 0) }); chMarks(c, r); });
+  } },
   // 示例构图：书页上她站在页边，另一边一条墨线曲线
   stage: { w: 1920, h: 1080, draw(c, t) {
     paperBg(c);

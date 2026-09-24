@@ -79,28 +79,28 @@ const PCH_G = (() => {
   const g = {};
   // ---- 身体（站姿，脚底为原点） ----
   // 钟形睡袍：肩窄，裙摆微微张开到脚踝
-  g.dress = pchCut([[-17, -298], [0, -300], [17, -298], [29, -290], [32, -262], [34, -210], [39, -150], [47, -90], [55, -40], [57, -30], [-57, -30], [-55, -40], [-47, -90], [-39, -150], [-34, -210], [-32, -262], [-29, -290]], 11, 10, .8);
+  g.dress = pchCut([[-16, -298], [0, -300], [16, -298], [26, -290], [29, -262], [31, -215], [37, -160], [48, -100], [62, -46], [66, -30], [-66, -30], [-62, -46], [-48, -100], [-37, -160], [-31, -215], [-29, -262], [-26, -290]], 11, 10, .8);
   // 裙摆荷叶边（下缘中间略低，像从略高处看圆裙）
-  g.hem = pchCut([...pchOpen([[-60, -38], [0, -35], [60, -38]], 6), ...pchScallop(u => [lerp(62, -62, u), -22 + 4 * (1 - (2 * u - 1) ** 2)], 9, 5)], 12, 4, .5, false);
+  g.hem = pchCut([...pchOpen([[-68, -38], [0, -35], [68, -38]], 6), ...pchScallop(u => [lerp(72, -72, u), -21 + 4 * (1 - (2 * u - 1) ** 2)], 11, 5)], 12, 4, .5, false);
   // 竖条纹：贴在睡袍上的细纸条（按裙形向下散开）
-  g.stripes = [-.78, -.52, -.26, 0, .26, .52, .78].map((u, i) => { const xt = u * 29, xb = u * 55;
+  g.stripes = [-.78, -.52, -.26, 0, .26, .52, .78].map((u, i) => { const xt = u * 26, xb = u * 62;
     return pchCut([[xt - 2.3, -291], [xt + 2.3, -291], [xb + 3.4, -38], [xb - 3.4, -38]], 30 + i, 12, .5, false); });
   // 外袍：两片，前面敞开露出条纹
-  const robeL = [[-9, -297], [-21, -297], [-31, -291], [-35, -262], [-38, -205], [-44, -145], [-51, -88], [-59, -44], [-40, -41], [-24, -45], [-21, -100], [-16, -180], [-12, -250]];
+  const robeL = [[-9, -297], [-20, -297], [-28, -291], [-32, -262], [-35, -212], [-41, -155], [-52, -98], [-66, -46], [-45, -42], [-26, -46], [-21, -100], [-16, -180], [-12, -250]];
   g.robeL = pchCut(robeL, 21, 10, .8); g.robeR = pchCut(pchMirror(robeL), 22, 10, .8);
   const trimL = [[-12, -250], [-16, -180], [-21, -100], [-24, -45], [-20.5, -45], [-17.5, -100], [-12.5, -180], [-8.5, -250], [-6, -296], [-9, -297]];
   g.trimL = pchCut(trimL, 23, 9, .4, false); g.trimR = pchCut(pchMirror(trimL), 24, 9, .4, false);
   g.shoeL = pchCut(ellPts(-12, -6, 9.5, 6, 14), 25, 5, .4); g.shoeR = pchCut(ellPts(12, -6, 9.5, 6, 14), 26, 5, .4);
   // 坐姿（座面为原点）：睡袍盖住膝盖垂到座沿下面
-  g.sitDress = pchCut([[-17, -148], [0, -150], [17, -148], [29, -140], [32, -112], [35, -60], [44, -18], [56, 4], [60, 24], [-60, 24], [-56, 4], [-44, -18], [-35, -60], [-32, -112], [-29, -140]], 13, 10, .8);
-  g.sitHem = pchCut([...pchOpen([[-62, 18], [0, 20], [62, 18]], 6), ...pchScallop(u => [lerp(64, -64, u), 34 + 3 * (1 - (2 * u - 1) ** 2)], 9, 5)], 14, 4, .5, false);
+  g.sitDress = pchCut([[-17, -148], [0, -150], [17, -148], [29, -140], [32, -112], [35, -60], [44, -18], [55, 2], [59, 16], [-59, 16], [-55, 2], [-44, -18], [-35, -60], [-32, -112], [-29, -140]], 13, 10, .8);
+  g.sitHem = pchCut([...pchOpen([[-61, 10], [0, 12], [61, 10]], 6), ...pchScallop(u => [lerp(64, -64, u), 26 + 3 * (1 - (2 * u - 1) ** 2)], 9, 5)], 14, 4, .5, false);
   g.sitStripes = [-.78, -.52, -.26, 0, .26, .52, .78].map((u, i) => { const xt = u * 29, xb = u * 58;
-    return pchCut([[xt - 2.3, -141], [xt + 2.3, -141], [xb + 3.4, 22], [xb - 3.4, 22]], 40 + i, 12, .5, false); });
-  const sitRobeL = [[-9, -147], [-21, -147], [-31, -141], [-35, -112], [-38, -60], [-48, -16], [-60, 14], [-40, 16], [-25, 12], [-21, -30], [-15, -90], [-11, -110]];
+    return pchCut([[xt - 2.3, -141], [xt + 2.3, -141], [xb + 3.4, 14], [xb - 3.4, 14]], 40 + i, 12, .5, false); });
+  const sitRobeL = [[-9, -147], [-21, -147], [-31, -141], [-35, -112], [-38, -60], [-48, -16], [-59, 8], [-40, 10], [-25, 6], [-21, -30], [-15, -90], [-11, -110]];
   g.sitRobeL = pchCut(sitRobeL, 27, 10, .8); g.sitRobeR = pchCut(pchMirror(sitRobeL), 28, 10, .8);
   // 小腿（膝盖为原点，垂下）+ 鞋
-  g.shin = pchCut([[-5, -4], [5, -4], [5.5, 20], [4.5, 40], [-4.5, 40], [-5.5, 20]], 29, 8, .4);
-  g.sitShoe = pchCut(ellPts(1.5, 43, 8.5, 6, 14), 31, 5, .4);
+  g.shin = pchCut([[-5, -4], [5, -4], [5.5, 24], [4.5, 50], [-4.5, 50], [-5.5, 24]], 29, 8, .4);
+  g.sitShoe = pchCut(ellPts(1.5, 53, 8.5, 6, 14), 31, 5, .4);
   // ---- 上身（和身体同一坐标，随呼吸、驼背一起动） ----
   g.neck = pchCut([[-6, -312], [6, -312], [7, -295], [-7, -295]], 32, 8, .3, false);
   g.collar = pchCut([...pchOpen([[-15, -302], [0, -304], [15, -302]], 5), ...pchScallop(pchLine([17, -293], [-17, -293]), 4, 3)], 33, 3.5, .4, false);
@@ -126,8 +126,8 @@ const PCH_G = (() => {
   g.face = pchCut([[0, -6], [12, -8], [25, -15], [35, -28], [41, -46], [43, -70], [42, -96], [37, -118], [0, -127], [-37, -118], [-42, -96], [-43, -70], [-41, -46], [-35, -28], [-25, -15], [-12, -8]], 53, 7, .5);
   g.cheekPuff = pchCut(ellPts(36, -27, 9, 8.5, 16), 54, 5, .3);
   // 后发：从帽下一直垂到小腿，两侧框住身体，发梢剪成几道尖
-  const bSide = pchOpen([[60, -140], [66, -104], [69, -50], [72, 20], [76, 100], [76, 160], [72, 200]], 5);
-  const bTips = [[65, 188], [60, 214], [52, 194], [44, 208], [36, 182], [18, 170], [0, 162], [-18, 172], [-34, 184], [-42, 210], [-51, 192], [-59, 216], [-66, 190]];
+  const bSide = pchOpen([[58, -140], [64, -104], [66, -50], [69, 0], [68, 50], [62, 100], [56, 145], [52, 172]], 5);
+  const bTips = [[50, 196], [44, 180], [38, 200], [32, 174], [16, 160], [0, 152], [-16, 162], [-31, 172], [-37, 198], [-44, 178], [-51, 194], [-54, 168]];
   g.backHair = pchCut([...bSide, ...bTips, ...pchMirror(bSide), [-30, -160], [0, -164], [30, -160]], 55, 10, .9, false);
   // 刘海：齐刘海剪成几片尖角
   g.bangs = pchCut([[-50, -142], [50, -142], [49, -100], [47, -70], [44, -61], [37, -77], [31, -58], [24, -74], [17, -61], [10, -76], [4, -57], [-3, -75], [-9, -60], [-16, -76], [-22, -57], [-29, -74], [-35, -61], [-41, -77], [-46, -63], [-49, -80], [-50, -110]], 56, 6, .5, false);
@@ -140,9 +140,9 @@ const PCH_G = (() => {
   g.bow = pchCut(PCH_BOW_PTS, 62, 3, .3, false);
   g.bowKnot = pchCut(ellPts(0, 0, 2.6, 3, 8), 63, 2, .1, false);
   // 帽子：蓬大的睡帽 + 一圈荷叶边 + 帽顶几道褶
-  g.puff = pchCut([[-72, -112], [-80, -140], [-77, -170], [-62, -196], [-34, -213], [0, -218], [34, -214], [62, -199], [78, -174], [82, -144], [76, -112], [0, -118]], 64, 9, .8);
-  g.pleats = [[-44, -128, -38, -196], [-8, -132, -4, -212], [30, -130, 36, -204], [60, -122, 66, -178]].map(([x0, y0, x1, y1], i) => pchCut([[x0 - 1.4, y0], [lerp(x0, x1, .5) - 1.2, lerp(y0, y1, .5) + 2], [x1, y1], [lerp(x0, x1, .5) + 1.2, lerp(y0, y1, .5) + 2], [x0 + 1.4, y0]], 65 + i, 9, .25, false));
-  g.frill = pchCut([...pchOpen([[-82, -100], [-44, -124], [0, -134], [44, -124], [82, -100]], 5), ...pchScallop(u => { const v = 1 - 2 * u; return [84 * v, -108 + 30 * v * v]; }, 11, 6.5)], 69, 4, .5, false);
+  g.puff = pchCut([[-80, -104], [-92, -124], [-92, -150], [-76, -174], [-46, -191], [-8, -198], [30, -196], [62, -184], [84, -162], [90, -136], [82, -110], [0, -118]], 64, 9, .8);
+  g.pleats = [[-52, -128, -66, -160], [-20, -134, -26, -168], [14, -134, 18, -166], [48, -128, 60, -156]].map(([x0, y0, x1, y1], i) => pchCut([[x0 - 1.6, y0], [lerp(x0, x1, .5) - 1, lerp(y0, y1, .5)], [x1, y1], [lerp(x0, x1, .5) + 1, lerp(y0, y1, .5)], [x0 + 1.6, y0]], 65 + i, 9, .25, false));
+  g.frill = pchCut([...pchOpen([[-86, -96], [-46, -120], [0, -130], [46, -120], [86, -96]], 5), ...pchScallop(u => { const v = 1 - 2 * u; return [88 * v, -110 + 32 * v * v]; }, 12, 6)], 69, 4, .5, false);
   g.moon = pchCut(pchCrescent(20, 8.5), 70, 4, .3, false);
   // 小道具：「哼」气团、汗滴
   g.puffCloud = pchCut([[-16, 4], [-19, -4], [-13, -11], [-5, -12], [0, -16], [9, -14], [14, -8], [19, -5], [18, 4], [11, 9], [2, 8], [-6, 10], [-13, 9]], 71, 4, .4);
@@ -192,15 +192,15 @@ function pchPose(pose, g, tt) {
     case 'point': return { book: [-10, -226, -.12], back: [-.08, .98, 'tips', true], front: [2.02, .12, 'point', false], turn: .3, look: .8, hr: -.05 };
     case 'hide': return { book: [2, -306, -.04], back: [-.55, 3.48, 'tips', false], front: [.55, -3.5, 'tips', false], bookOverFace: true, turn: .12, look: .55, hr: .06 };
     case 'cross': return { book: [0, -232, .06], back: [-.2, 1.62, 'none', true], front: [.22, -1.5, 'none', true], turn: -.55, look: .9, hr: -.11 };
-    case 'tired': return { lean: .13, hr: .3, book: null, hang: true, back: [-.13, 0, 'tips', false], front: [-.1, 0, 'tips', false], turn: .1, look: -.2, drop: 5 };
-    case 'lift': return { book: null, back: [-2.72, .12, 'grip', true], front: [2.72, -.12, 'grip', true], turn: 0, look: 0, shrug: 9, sink: 7 };
-    case 'lie': return { book: [2, -230, .02], back: [-.2, 1.62, 'tips', true], front: [.22, -1.5, 'tips', true], turn: 0, look: 0 };
-    default: return { book: [0, -228, .04], back: [-.12, .58, 'tips', true], front: [.1, -.5, 'tips', true], turn: .18, look: .15 };
+    case 'tired': return { lean: .035, hr: .1, nod: 1, sink: 12, shrug: -6, book: null, hang: true, back: [-.13, 0, 'tips', false], front: [-.1, 0, 'tips', false], turn: .1, look: -.2, drop: 5 };
+    case 'lift': return { book: null, back: [-2.5, -.25, 'grip', true], front: [2.5, .25, 'grip', true], armsLate: true, armLen: 1.5, turn: 0, look: 0, shrug: 8, sink: 6 };
+    case 'lie': return { hatRot: .62, book: [2, -230, .02], back: [-.2, 1.62, 'tips', true], front: [.22, -1.5, 'tips', true], turn: 0, look: 0 };
+    default: return { book: [0, -226, .04], back: [-.06, .32, 'tips', false], front: [.06, -.3, 'tips', false], turn: .18, look: .15 };
   }
 }
 
 // ===================== 绘制 =====================
-const PCH_OFF = 6000;
+const PCH_OFF = 6000, PCH_BODY = .95, PCH_HEAD = 1.12 / PCH_BODY;   // 头 1.12 倍、身子 0.95 倍：约 3.7 头身
 // pchPaint：画一层剪纸。items = [{ p: Path2D, m: 矩阵, col }]。sh = 投影 { blur, sx, sy, al }，同层合并一次投影；gr 纸纹
 function pchPaint(c, items, sh, env, gr = true) {
   if (!items.length) return;
@@ -234,32 +234,35 @@ function drawPatchouli(c, o = {}) {
   else if (pose === 'sit') root = pchTR(root, 0, 0, sway * .5);
   else if (pose === 'peek') root = pchTR(root, 0, 0, sway * .5);
   else root = pchTR(root, 0, 0, sway);
-  const up = pose === 'sit' ? 150 : pose === 'peek' ? 312 : 0;           // 上身整体下移（坐、探头）
+  const frame = root;                                                     // 锚点坐标（设计单位）
+  root = pchTR(root, 0, 0, 0, PCH_BODY, PCH_BODY);                         // 身子略小一号
+  const up = pose === 'sit' ? 150 : pose === 'peek' ? 313 : 0;           // 上身整体下移（坐、探头）
   const breath = 1.1 * Math.sin(tt * TAU / 3.4) + (ps.drop ? -ps.drop : 0);
   // 驼背：上身绕腰转；睡袍斜切跟上
-  const lean = ps.lean || 0, waist = [0, -190 + up];
-  let ug = pchTR(root, 0, up);
-  ug = pchPivot(ug, 0, -190, lean); ug = pchTR(ug, 0, -breath);
+  const lean = ps.lean || 0;
+  const ugL = pchTR(pchPivot(pchTR(PCH_I, 0, up), 0, -190, lean), 0, -breath), ug = pchMul(root, ugL);
   const lowerM = lean ? pchMul(root, [1, 0, -Math.sin(lean) * 1.05 * 110 / 300, 1, 0, 0]) : root;
-  // 头
-  const neck = [0, -300 + (ps.sink || 0)];
+  // 头（头部件按 PCH_HEAD 放大：头大、身子小）
+  const neck = [0, -300 + (ps.sink || 0)], neckL = pchApply(ugL, neck);
   const hr = (ps.hr || 0) + (md.chin || 0) * (pose === 'lie' ? 0 : 1) + tilt + .012 * Math.sin(tt * .9 + 1);
-  const head = pchTR(ug, neck[0], neck[1], hr);
+  const head = pchTR(ug, neck[0], neck[1], hr, PCH_HEAD, PCH_HEAD);
   const turn = clamp(pose !== 'cross' && md.turn !== undefined ? md.turn : ps.turn || 0, -1, 1);
   const look = clamp(o.look !== undefined ? o.look : (md.look !== undefined ? md.look : ps.look || 0), -1, 1);
   // 画的环境：投影随 s 略放大，边线约 1px
   const sk = Math.sqrt(clamp(s, .4, 3)), T0 = c.getTransform(), dev = Math.hypot(T0.a, T0.b) || 1;
   let pat = null;
-  try { pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix([root[0] * .7, root[1] * .7, root[2] * .7, root[3] * .7, root[4], root[5]])); } catch (e) { pat = null; }
+  try { pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix([frame[0] * .7, frame[1] * .7, frame[2] * .7, frame[3] * .7, frame[4], frame[5]])); } catch (e) { pat = null; }
   const env = { sk: sk * dev * (1 + .08 * Math.sin(tt * .8)), lw: 1 / (s * dev), pat, x, y };
   const it = (p, m, col, edge) => ({ p, m, col, edge });
   const paint = (items, sh, gr) => pchPaint(c, items, sh, env, gr);
   const G = PCH_G;
   let clipped = false;
-  if (pose === 'peek') { const cp = new Path2D(); cp.addPath(polyPath(rectPts(-3000, -3000, 6000, 3000)), new DOMMatrix(root)); c.save(); c.clip(cp); clipped = true; }
+  if (pose === 'peek') { const cp = new Path2D(); cp.addPath(polyPath(rectPts(-3000, -3000, 6000, 3000)), new DOMMatrix(frame)); c.save(); c.clip(cp); clipped = true; }
 
   // ---- 1 后发 ----
-  const hairM = pchPivot(pchTR(ug, neck[0], neck[1], hr * .45 + .008 * Math.sin(tt * 1.3 + 2)), 0, -140, 0);
+  // 后发垂着：只跟一点头的转动，不跟驼背；躺下时散在头顶那边的地上
+  const hairM = pose === 'lie' ? pchTR(root, neckL[0], neckL[1], 0, PCH_HEAD * .8, PCH_HEAD * .75)
+    : pchTR(root, neckL[0], neckL[1], hr * .12 + .008 * Math.sin(tt * 1.3 + 2), PCH_HEAD, PCH_HEAD);
   paint([it(G.backHair, hairM, PCH_K.hairBack)], PCH_SH.big);
 
   // ---- 2 腿、睡袍、条纹、外袍（peek 不画身体） ----
@@ -284,7 +287,7 @@ function drawPatchouli(c, o = {}) {
   // ---- 手臂骨架 ----
   const shrug = ps.shrug || 0, arm = (sd, spec) => {
     const [a, b, hand, over] = spec, sh = [sd * 27, -284 - shrug];
-    const u = pchTR(ug, sh[0], sh[1], -a), l = pchTR(u, 0, 44, -b);
+    const k = ps.armLen || 1, u = pchTR(ug, sh[0], sh[1], -a, k, k), l = pchTR(u, 0, 44, -b);
     return { u, l, hand, over, tip: pchApply(l, hand === 'point' ? [.5, 73] : hand === 'grip' ? [0, 56] : [0, 60]) };
   };
   const AB = arm(-1, ps.back), AF = arm(1, ps.front);
@@ -302,6 +305,8 @@ function drawPatchouli(c, o = {}) {
     // 只露头：手扒在边线上（手在最后画）
   } else if (ps.bookOverFace) {
     sleeve([AB, AF]);
+  } else if (ps.armsLate) {
+    // lift：举起的袖子压在头发和帽子外面，最后画
   } else {
     sleeve([AB, AF].filter(A => !A.over));
     drawBook();
@@ -313,14 +318,14 @@ function drawPatchouli(c, o = {}) {
   const faceItems = [it(G.face, head, PCH_K.skin)];
   if (md.puff) faceItems.push(it(G.cheekPuff, head, PCH_K.skin));
   paint(faceItems, PCH_SH.mid);
-  pchFace(c, head, md, { turn, look, blink, mouth, tt }, paint, it);
+  pchFace(c, ps.nod ? pchTR(head, 0, ps.nod * 4.5) : head, md, { turn, look, blink, mouth, tt }, paint, it);
 
   // ---- 前发：鬓发、刘海 ----
   const lockM = sd => pchPivot(head, sd * 47, -104, -hr * .55 + .02 * Math.sin(tt * 1.5 + sd));
   const LR = lockM(1), LL = lockM(-1);
   paint([it(G.lockL, LL, PCH_K.hair), it(G.lockR, LR, PCH_K.hair), it(G.bangs, pchTR(head, turn * 3, 0), PCH_K.hair)], PCH_SH.mid);
   paint(G.bangLines.map(p => it(p, pchTR(head, turn * 3, 0), PCH_K.hairLine, false)), null, false);
-  pchBrows(md, turn, head, paint, it);
+  pchBrows(md, turn, ps.nod ? pchTR(head, 0, ps.nod * 3) : head, paint, it);
   if (ps.bookOverFace) { drawBook(); hands([AB, AF]); }
   // 发梢蝴蝶结（左红右蓝）
   const bowR = pchTR(LR, 47, 74, .2), bowL = pchTR(LL, -47, 77, -.25, .92, .92);
@@ -332,12 +337,14 @@ function drawPatchouli(c, o = {}) {
   }
 
   // ---- 帽子 ----
-  const hat = pchPivot(head, 0, -112, .01 * Math.sin(tt * 1.2 + .5) - (ps.sink ? .02 : 0));
+  const hat = pchPivot(head, 0, -112, .01 * Math.sin(tt * 1.2 + .5) + (ps.hatRot || 0));
   paint([it(G.puff, hat, PCH_K.cap)], PCH_SH.big);
   paint(G.pleats.map(p => it(p, hat, PCH_K.capFold, false)), null, false);
   paint([it(G.frill, pchPivot(hat, 0, -112, .008 * Math.sin(tt * 1.9)), PCH_K.cap)], PCH_SH.mid);
-  const moonM = pchTR(hat, 44, -172, -.75 + .03 * Math.sin(tt * 1.4));
+  const moonM = pchTR(hat, 50, -160, -.7 + .03 * Math.sin(tt * 1.4));
   paint([it(G.moon, moonM, PCH_K.gold)], PCH_SH.mid);
+
+  if (ps.armsLate) { sleeve([AB, AF]); hands([AB, AF]); }
 
   // ---- 表情道具 ----
   if (md.hmph) { const hm = pchTR(head, -88, -44, -hr + .1 * Math.sin(tt * 3), 1 + .05 * Math.sin(tt * 5), 1 + .05 * Math.sin(tt * 5));
@@ -349,14 +356,14 @@ function drawPatchouli(c, o = {}) {
   let handPts;
   if (pose === 'peek') {
     if (clipped) { c.restore(); clipped = false; }
-    const hp = [[-46, 0], [50, 0]].map(([hx, hy], i) => pchTR(root, hx, hy + .6 * Math.sin(tt * 2 + i), (i ? .06 : -.08)));
-    const cuffClip = new Path2D(); cuffClip.addPath(polyPath(rectPts(-3000, -3000, 6000, 3000)), new DOMMatrix(root));
+    const hp = [[-46, 0], [50, 0]].map(([hx, hy], i) => pchTR(frame, hx, hy + .6 * Math.sin(tt * 2 + i), (i ? .06 : -.08)));
+    const cuffClip = new Path2D(); cuffClip.addPath(polyPath(rectPts(-3000, -3000, 6000, 3000)), new DOMMatrix(frame));
     c.save(); c.clip(cuffClip); paint(hp.map(m => it(G.peekCuff, m, PCH_K.trim)), PCH_SH.tiny, false); c.restore();
     paint(hp.map(m => it(G.peekHand, m, PCH_K.skin)), PCH_SH.mid, false);
     handPts = hp.map(m => pchApply(m, [0, 4]));
   } else handPts = [AB.tip, AF.tip];
   if (clipped) c.restore();
-  const bookPt = bookM ? pchApply(bookM, [0, 0]) : pchApply(root, [0, 0]);
+  const bookPt = bookM ? pchApply(bookM, [0, 0]) : pchApply(frame, [0, 0]);
   return { head: pchApply(head, [0, -55]), hands: handPts.slice().sort((a, b) => a[0] - b[0]), book: bookPt, tip: pose === 'peek' ? handPts[1] : AF.tip };
 }
 
