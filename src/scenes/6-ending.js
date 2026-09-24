@@ -166,11 +166,14 @@ function s6Plate(c, k, tau) {
     s6Piece(c, [[cx + 150, cy - 110], [cx + 164, cy - 110], [cx + 162, cy + 150], [cx + 152, cy + 150]], P.g2, { seed: 723, th: 2, step: 20 });
     s6Piece(c, circPts(x0 + 90, y0 + 80, 50, 32), P.paper, { seed: 724, th: 3, step: 10 });
     rline(c, [[x0 + 90, y0 + 80], [x0 + 90, y0 + 50]], { w: 3, seed: 725 }); rline(c, [[x0 + 90, y0 + 80], [x0 + 112, y0 + 92]], { w: 3, seed: 726 });
-  } else if (k === 3) {   // 一根线的过山车：向远处延伸的单线，近粗远细
-    const pts = []; for (let i = 0; i <= 60; i++) { const z = i / 60, X = Math.sin(z * 4) * 180, Y = -Math.sin(z * 5.5 + .6) * 110 * (1 - z * .3) + 40, sc = 1 / (1 + z * 3.2);
-      pts.push([cx + X * sc, cy - 60 + (Y + 220) * sc, sc]); }
-    for (let i = 1; i < pts.length; i++) rline(c, [pts[i - 1], pts[i]], { w: 7 * pts[i][2] + 1, color: P.ink, seed: 730 + i, amp: .2 });
-    const b = pts[14]; cutPaper(c, circPts(b[0], b[1] - 8, 10, 16), P.red, { seed: 739, step: 4 });
+  } else if (k === 3) {   // 一根线的过山车：地平线、向远处延伸的单线（近粗远细），地上一道淡影，线上一颗珠子
+    const hy = y0 + 150, gy = 250, pt = z => { const sc = 1 / (1 + z * 4), X = -270 + 380 * z + 90 * Math.sin(z * 6), Y = 190 * Math.pow(Math.sin(z * Math.PI * 3.6), 2) * Math.exp(-z * 1.2);
+      return [[cx + 40 + X * sc, hy + (gy - Y) * sc, sc], [cx + 40 + X * sc, hy + gy * sc, sc]]; };
+    rline(c, [[x0 + 20, hy], [x0 + w - 20, hy]], { w: 1.5, color: alpha(P.ink, .25), seed: 731, amp: .3 });
+    const top = [], gnd = []; for (let i = 0; i <= 80; i++) { const [a, b] = pt(i / 80); top.push(a); gnd.push(b); }
+    for (let i = 1; i < gnd.length; i += 2) rline(c, [gnd[i - 1], gnd[i]], { w: 4 * gnd[i][2] + .6, color: alpha(P.ink, .18), seed: 732, amp: 0 });
+    for (let i = 1; i < top.length; i++) rline(c, [top[i - 1], top[i]], { w: 9 * top[i][2] + 1, color: P.ink, seed: 733, amp: 0 });
+    const b = top[9]; cutPaper(c, circPts(b[0], b[1] - 12 * b[2] - 4, 16 * b[2] + 3, 16), P.red, { seed: 739, step: 4 });
   } else if (k === 4) {   // 蓝晒星图：白色星点和连线
     const st = [[-200, -120], [-120, -60], [-40, -140], [60, -80], [150, -150], [200, -20], [110, 40], [10, 10], [-90, 80], [-190, 40], [40, 130], [170, 120]].map(([a, b]) => [cx + a, cy + b]);
     [[0, 1], [1, 2], [2, 3], [3, 4], [3, 7], [7, 6], [6, 5], [7, 8], [8, 9], [8, 10], [10, 11], [6, 11]].forEach(([a, b], j) => rline(c, [st[a], st[b]], { w: 1.8, color: alpha(P.cap, .75), seed: 740 + j, amp: .4 }));
@@ -237,7 +240,7 @@ function s6Stain(c, tau) { const a = sm(S6K.riff0 + 5 * S6K.riffStep, S6K.riff0 
 function s6LeftPage(c, tau) {
   const K = S6K;
   pageHeader(c, '合上魔导书', tau, .2, { t1: K.riff0 + .02 });
-  pageHeader(c, '合上魔导书', tau, K.riff0 + 5 * K.riffStep + .15);
+  pageHeader(c, '合上魔导书', tau, K.riff0 + 5 * K.riffStep + .15, { t1: 1e6 });   // 不传 t1 时 kit 里 Infinity−Infinity 得 NaN，月牙会提前出现
   for (let i = 0; i < 4; i++) {
     // L6：四件东西依次轻轻跳一下
     const j = s6T(5) + .35 + i * .28, hop = Math.sin(clamp((tau - j) / .32, 0, 1) * Math.PI);
