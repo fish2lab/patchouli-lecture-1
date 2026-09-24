@@ -13,7 +13,7 @@ const S5LINES = seq(1.0, [
   ['世卫组织还建议：每周两天以上，做做力量练习。', { hold: .8 }],
   ['姆Q……杠铃……好重……', { mood: 'sad', pause: .3, hold: 1.8 }],
   ['还有：少坐。任何强度的活动，都比一直坐着强。', { hold: .6 }],
-  ['坐着学一小时，就起来接杯水、走两圈、伸个懒腰。', { hold: 1.5 }],
+  ['坐着学一小时，就起来接杯水、走两圈、伸个懒腰。', { hold: 2.1 }],
   ['我喘成这样是因为哮喘。你们，可没有这个借口。', { mood: 'smug', pause: .9, hold: 1.1 }],
 ]);
 const S5END = seqEnd(S5LINES), S5DUR = S5END + 2.1;
@@ -29,7 +29,7 @@ const S5KC = mix(P.g3, P.ink2, .35), S5KB = mix(S5KC, P.ink, .28);            //
 const S5GR = mix(P.green, P.paper, .08), S5GRD = mix(P.green, P.ink, .25);       // 本页唯一的强调色：绿
 const S5BLK = mix(P.ink, P.ink2, .35), S5WH = '#f2ede4', S5GOLD = mix(P.moon, P.g3, .25), S5RED = mix(P.red, P.ink, .2);
 const S5WATER = mix(P.g1, P.blue, .22);
-const S5KS = 1.35, S5SS = 1.5;   // 左页小人的放大（运动小人、学生）
+const S5KS = 1.5, S5SS = 1.6;   // 左页小人的放大（运动小人、学生）
 
 // ===================== 透视：书页平面 + 立起来的纸片 =====================
 // 书页坐标 (X, Y) 就是平放时的屏幕坐标；h 是离开书页的高度（朝书页法线）。和 kit 的 tiltPlane 用同一套透视（f、cx、cy）。
@@ -37,13 +37,15 @@ const S5F = 1400, S5CY = 760, S5L = [.3, .42];   // 焦距、俯仰轴、光（�
 function s5P(V, X, Y, h = 0) { const x = X - V.cx, d = Y - V.cy, cp = Math.cos(V.p), sp = Math.sin(V.p), y = d * cp + h * sp, z = d * sp - h * cp, k = S5F / (S5F + z);
   return [V.cx + x * k, V.cy + y * k, k]; }
 // 镜头：p 俯仰（负 = 近处在下），cx 横移后的透视中心，zm 推拉，dy 竖移。tilt=0 时就是正上方的平面
+// 镜头用「对准哪里」来写：[书页上的 X, Y, 离页高度 hc, 推近倍数]，这一点落在画面正中略上
 function s5View(tau) {
   const tilt = sm(.2, 1.9, tau, easeIO) * (1 - sm(S5OUT.tilt0, S5OUT.tilt1, tau, easeIO));
-  const A = [0, 1, 0], R = [260, 1.18, -40], Lf = [-330, 1.22, -60], Wd = [0, 1.06, -60], J = [460, 1.35, 10], Lf2 = [-260, 1.2, -70];
-  const K = [[0, A], [1.9, A], [2.6, R], [s5T(1) - .1, R], [s5T(1) + .7, Lf], [s5T(2) + .1, Lf], [s5T(2) + .8, Wd], [s5E(3) - .1, Wd], [s5E(3) + .5, J],
-    [s5E(4) - .1, J], [s5T(5) + .5, Lf2], [s5T(7) - .7, Lf2], [s5T(7) + .2, [180, 1.15, -40]], [S5OUT.fold, [180, 1.15, -40]], [S5OUT.tilt1, A]];
-  const [dx, zm, dy] = key(tau, K);
-  return { p: -.88 * tilt, cx: CX + dx * tilt, cy: S5CY, zm: lerp(1, zm, tilt), dy: dy * tilt, tilt };
+  const A = [960, 640, 120, 1.02, 0], R = [1470, 800, 250, 1.28, 0], Lf = [540, 700, 150, 1.3, 20], Wd = [790, 780, 120, 1.26, 50], J = [1420, 850, 290, 1.45, 0], Lf2 = [680, 800, 120, 1.24, 20], E = [1000, 790, 140, 1.08, 40];
+  const K = [[0, A], [1.9, A], [2.7, R], [s5T(1) - .1, R], [s5T(1) + .7, Lf], [s5T(2) + .1, Lf], [s5T(2) + .8, Wd], [s5E(3) - .1, Wd], [s5E(3) + .5, J],
+    [s5E(4) - .1, J], [s5T(5) + .5, Lf2], [s5T(7) - .7, Lf2], [s5T(7) + .2, E], [S5OUT.fold, E], [S5OUT.tilt1, A]];
+  const [X, Y, hc, z0, yo] = key(tau, K), V = { p: -.88 * tilt, cx: CX + (X - CX) * tilt, cy: S5CY, zm: lerp(1, z0, tilt), tilt, dy: 0 };
+  const pt = s5P(V, X, Y, hc); V.dy = (yo - 30 - (pt[1] - CY) * V.zm) * tilt;
+  return V;
 }
 // 卡片（立体书里立起来的一张纸）：底边钉在书页 (X, Y)，高 h0 处；a 是折起的角度（0 平躺、π/2 竖直）。
 // 卡片局部坐标 (lx, ly)：ly 向下为正，底边在 ly = 0。s5Loc → 书页坐标 [X, Y, h]
@@ -139,8 +141,8 @@ function s5Kid(g, o = {}) {
     case 'sit': hip = [0, -40]; lean = .32 + .04 * Math.sin(ph); nod = .25; body();
       LF = leg(hip, Math.PI / 2 - .05, -Math.PI / 2 + .1); LB = leg([hip[0] - 3, hip[1]], Math.PI / 2 - .12, -Math.PI / 2 + .12);
       AF = s5IK(sh, [44, -58], UA, FA, 1); AB = s5IK(sh, [38, -57], UA, FA, 1); break;
-    case 'stretch': hip = [0, -62]; lean = -.1 - .06 * Math.sin(ph); nod = -.25; body();
-      LF = leg(hip, .08, 0); LB = leg(hip, -.08, 0); AF = arm(sh, Math.PI - .35, -.2); AB = arm(sh, Math.PI + .3, .2); break;
+    case 'stretch': hip = [0, -62]; lean = -.12 - .06 * Math.sin(ph); nod = -.3; body();
+      LF = leg(hip, .1, 0); LB = leg(hip, -.1, 0); { const top = [head[0] - 4, head[1] - 44]; AF = s5IK(sh, top, UA, FA, -1); AB = s5IK(sh, [top[0] - 3, top[1] + 2], UA, FA, -1); } break;
     case 'cup': hip = [0, -62]; lean = -.04; nod = -.12; body();
       LF = leg(hip, .06, 0); LB = leg(hip, -.06, 0); AB = arm(sh, .1, .1); AF = s5IK(sh, [head[0] + 12, head[1] + 6], UA, FA, 1);
       post = () => { const hp = AF[2]; cutPaper(g, [[hp[0] - 2, hp[1] - 12], [hp[0] + 11, hp[1] - 12], [hp[0] + 9, hp[1] + 6], [hp[0], hp[1] + 6]], S5WH, { seed: seed + 70, step: 4, blur: 2, sx: 1, sy: 1 }); }; break;
@@ -153,7 +155,7 @@ function s5Kid(g, o = {}) {
   limb(LF, 10, S5KC, seed + 16);
   // 头 + 发型
   const hx = head[0], hy = head[1];
-  if (hair === 1) s5Cap(g, [hx - 10, hy - 8], [hx - 24, hy + 8], 9, S5KC, seed + 20);
+  if (hair === 1) { s5Cap(g, [hx - 12, hy - 6], [hx - 19, hy + 16], 8, S5KC, seed + 20); s5Circ(g, hx - 13, hy - 9, 5, S5KB, seed + 24); }
   if (hair === 3) s5Circ(g, hx - 7, hy - 15, 7, S5KC, seed + 21);
   s5Circ(g, hx, hy, 16, S5KC, seed + 22);
   if (hair === 2) s5Cap(g, [hx + 4, hy - 12], [hx + 22, hy - 10], 6, S5KB, seed + 23);
@@ -248,7 +250,7 @@ function s5Barbell(g, st, tau, part) {
 function s5Lifter(g, tau, L, st) {
   const { squash = 0, shake = 0 } = st, j = shake * (hash(Math.floor(tau * 12), 5) - .5) * 5;
   const po = { x: j, y: 0, h: 520, pose: 'lift', mood: st.mood || 'flustered', mouth: L.mouth, blink: blinkAt(tau, 5), t: tau };
-  const yc = st.gy - 6, sy = 1 - .62 * squash, sx = 1 + .35 * squash;
+  const yc = st.gy - 6, sy = 1 - .7 * squash, sx = 1 + .5 * squash;
   g.save(); g.translate(0, 0); g.scale(1, 1 - .05 * squash);
   s5Barbell(g, st, tau, 'back');
   g.save(); g.beginPath(); g.rect(-600, yc, 1200, 800); g.clip(); drawPatchouli(g, po); g.restore();
@@ -281,15 +283,18 @@ function s5Falling(i, X0, Y0, h0, u) {
     return [x + ax, y + bb * Math.cos(th), h - bb * Math.sin(th)]; });
 }
 // 大脑：一根纸茎托着一片脑形剪纸，lit 个绿点亮起
-const S5BRAIN = (() => { const o = []; for (let k = 0; k < 44; k++) { const a = k / 44 * TAU, r = 1 + .07 * Math.sin(a * 7) + .03 * Math.sin(a * 13); o.push([Math.cos(a) * 128 * r, -250 + Math.sin(a) * 88 * r * (Math.sin(a) > 0 ? .92 : 1)]); } return o; })();
-const S5LIGHT = [[-80, -275], [-35, -305], [20, -290], [70, -300], [95, -250]];
+// 侧面的大脑（朝右）：大脑、小脑、脑干（脑干就是托着它的纸茎）
+const S5BRAIN = [[-122, -8], [-130, -40], [-118, -72], [-92, -94], [-55, -106], [-10, -110], [35, -104], [76, -88], [106, -62], [124, -30], [124, 4], [110, 30], [82, 44], [46, 42], [14, 46], [-18, 40], [-52, 30], [-84, 22], [-108, 12]].map(([x, y]) => [x, y - 262]);
+const S5CEREB = [[-100, 12], [-72, 14], [-52, 26], [-56, 48], [-80, 56], [-104, 48], [-116, 30]].map(([x, y]) => [x, y - 262]);
+const S5LIGHT = [[-80, -310], [-30, -345], [30, -335], [85, -305], [95, -262]];
 function s5Brain(g, tau, lit) {
-  s5Cap(g, [0, 0], [0, -170], 12, P.g2, 860);
-  cutPaper(g, [[-14, -160], [14, -160], [8, -190], [-8, -190]], P.g2, { seed: 861, step: 6 });
-  cutPaper(g, S5BRAIN, mix(P.blush, P.paper2, .5), { seed: 862, step: 12, blur: 3, sx: 1.5, sy: 2.5 });
-  const gy = [[[-100, -250], [-70, -290], [-40, -260], [-10, -300], [20, -270]], [[-60, -220], [-30, -240], [0, -210], [40, -240], [80, -220]], [[30, -320], [50, -290], [85, -300], [100, -270]], [[-110, -290], [-90, -320], [-60, -325]], [[-20, -190], [10, -200], [40, -185]]];
-  gy.forEach((pts, k) => rline(g, pts, { w: 2.2, color: alpha(P.ink2, .55), seed: 870 + k, smooth: true, amp: .5 }));
-  rline(g, [[0, -335], [2, -300], [-3, -260], [2, -215], [0, -168]], { w: 1.6, color: alpha(P.ink2, .45), seed: 876, smooth: true, amp: .4 });
+  cutPaper(g, [[-9, 0], [9, 0], [2, -200], [-26, -200]], P.g2, { seed: 860, step: 10 });
+  cutPaper(g, S5CEREB, mix(P.blush, P.g2, .45), { seed: 861, step: 8, blur: 3, sx: 1.5, sy: 2.5 });
+  for (let k = 0; k < 3; k++) rline(g, [[-108, -236 + k * 9], [-84, -232 + k * 9], [-60, -230 + k * 9]], { w: 1.4, color: alpha(P.ink2, .45), seed: 862 + k, smooth: true, amp: .3 });
+  cutPaper(g, S5BRAIN, mix(P.blush, P.paper2, .5), { seed: 863, step: 12, blur: 3, sx: 1.5, sy: 2.5 });
+  const gy = [[[-10, -370], [0, -330], [-14, -300], [-4, -265]], [[-60, -242], [-10, -270], [40, -262], [80, -240]], [[-110, -300], [-80, -330], [-50, -318], [-40, -350]], [[-100, -265], [-70, -280], [-40, -275]],
+    [[30, -355], [50, -330], [40, -300], [70, -290], [100, -300]], [[60, -250], [90, -270], [112, -262]], [[-60, -345], [-30, -360]]];
+  gy.forEach((pts, k) => rline(g, pts, { w: 2.2, color: alpha(P.ink2, .5), seed: 870 + k, smooth: true, amp: .5 }));
   S5LIGHT.forEach(([x, y], k) => { const q = lit(k); if (q <= 0) return; pop(g, x, y, easeOutBack(clamp(q, 0, 1)), () => { s5Circ(g, x, y, 11, S5GR, 880 + k); sparkle(g, x + 9, y - 9, 7 * clamp(q, 0, 1), { color: '#fbf6e8' }); }); });
   // 挂在纸茎上的小标签「有氧」
   const sw = .05 * Math.sin(twos(tau) * 1.7); g.save(); g.translate(8, -120); g.rotate(sw);
@@ -298,7 +303,7 @@ function s5Brain(g, tau, lit) {
   zh(g, '有氧', 44, 34, { size: 30, color: P.ink }); g.restore();
 }
 // 日历帐篷：V 形立体件（真三维），i 是星期几。k 0..1 撑开。返回正面的仿射（写字、贴纸用）
-const S5DAYS = '一二三四五六日', S5TENT = { Y: 610, w: 88, L: 70, x0: 150, gap: 112 };
+const S5DAYS = '一二三四五六日', S5TENT = { Y: 720, w: 88, L: 70, x0: 150, gap: 112 };
 function s5TentGeo(V, i, k) {
   const X = S5TENT.x0 + i * S5TENT.gap, hw = S5TENT.w / 2, hT = S5TENT.L * .86 * Math.sin(k * Math.PI / 2), dd = Math.sqrt(Math.max(0, S5TENT.L * S5TENT.L - hT * hT)), Y = S5TENT.Y;
   const F = [[X - hw, Y + dd, 0], [X + hw, Y + dd, 0], [X + hw, Y, hT], [X - hw, Y, hT]], B = [[X - hw, Y - dd, 0], [X + hw, Y - dd, 0], [X + hw, Y, hT], [X - hw, Y, hT]];
@@ -328,7 +333,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
     const pieces = [], add = p => { if (p) pieces.push(p); };
 
     // ---------- 体力条：L0 撕掉 9 格，L4「好重」撕掉最后一格 ----------
-    const STX = 1660, STY = 560, tear = [];
+    const STX = 1670, STY = 640, tear = [];
     { const a = s5W(0, '好吧'), b = s5W(0, '反面'); for (let i = 9; i >= 1; i--) { const n = 9 - i; tear[i] = n < 3 ? a + n * .42 : b + (n - 3) * .13; } tear[0] = s5W(4, '好重', .5); }
     const stA = fold(1.0, Infinity);
     add(s5Card(V, STX, STY, stA, g => s5Stamina(g, tau, i => tau >= tear[i]), { ref: 150, al: outA }));
@@ -337,23 +342,23 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       add({ z: landed ? -1e9 : STY + 5, draw: cc => { const pp = s5Proj(V, q); fade(cc, outA, () => cutPaper(cc, pp, S5GR, { seed: 890 + i, step: 6, blur: 2, sx: 1, sy: 1.2, grain: .05 })); },
         shadow: landed ? null : g => { g.fillStyle = '#000'; g.fill(polyPath(s5Proj(V, s5Hull(q.map(s5Sh))))); } }); }
     // 吸入器（L0「反面教材」时立起；L7 咳嗽时喷一下）
-    add(s5Card(V, 1570, 840, fold(s5W(0, '反面', .3)), g => {
+    add(s5Card(V, 1590, 900, fold(s5W(0, '反面', .3)), g => {
       cutPaper(g, [[-14, 0], [14, 0], [14, -54], [8, -60], [-8, -60], [-14, -54]], P.g1, { seed: 895, step: 6 });
       cutPaper(g, [[-14, -8], [-34, -8], [-36, -24], [-14, -24]], P.g2, { seed: 896, step: 5 });
       cutPaper(g, rectPts(-10, -76, 20, 18, 3), P.g2, { seed: 897, step: 5 });
     }, { ref: 40, al: outA }));
 
     // ---------- L1：大脑 + 五个运动小人 ----------
-    const kidX = [180, 340, 505, 670, 835], kidY = 600, kidKinds = ['walk', 'jog', 'bike', 'swim', 'ball'], kidWords = ['快走', '慢跑', '骑车', '游泳', '打球'];
+    const kidX = [175, 340, 505, 670, 840], kidY = 740, kidKinds = ['walk', 'jog', 'bike', 'swim', 'ball'], kidWords = ['快走', '慢跑', '骑车', '游泳', '打球'];
     const kidOn = kidWords.map(w => s5W(1, w, -.1)), kidOff = kidX.map((_, i) => t2 + .15 + i * .1);
-    const brA = fold(t1 + .2, t2 + .05), BX = 505, BY = 380;
+    const brA = fold(t1 + .2, t2 + .05), BX = 610, BY = 610;
     if (brA > 0) add(s5Card(V, BX, BY, brA, g => s5Brain(g, tau, k => (tau - kidOn[k] - .35) / .3), { ref: 200 }));
     kidX.forEach((x, i) => { const a = fold(kidOn[i], kidOff[i]); if (a <= 0) return;
       const ph = twos(tau) * TAU * [1.3, 2.3, 1.4, 1, 1.9][i] + i;
       add(s5Card(V, x, kidY, a, g => { g.scale(S5KS, S5KS); s5Kid(g, { kind: kidKinds[i], ph, hair: [0, 1, 2, 3, 1][i], seed: 300 + i * 40 }); }, { ref: 90 }));
       // 线：从大脑连到小人头上，接上时绷紧
       if (brA > .3) { const q = sm(kidOn[i] + .25, kidOn[i] + .55, tau), head = kidKinds[i] === 'swim' ? [34, -42] : kidKinds[i] === 'bike' ? [26, -120] : [3, -127];
-        const [ax, ay, ah] = s5Loc(BX, BY, brA, 0, S5LIGHT[i][0] * .9, -175), [bx, by, bh] = s5Loc(x, kidY, a, 0, head[0] * S5KS, head[1] * S5KS);
+        const [ax, ay, ah] = s5Loc(BX, BY, brA, 0, S5LIGHT[i][0] * .8 - 10, -226), [bx, by, bh] = s5Loc(x, kidY, a, 0, head[0] * S5KS, head[1] * S5KS);
         const pa = s5P(V, ax, ay, ah), pb = s5P(V, bx, by, bh), pe = [lerp(pa[0], pb[0], q), lerp(pa[1], pb[1], q)];
         if (q > 0) add({ z: BY + 1, draw: cc => thread(cc, [pa[0], pa[1]], pe, { sag: 30 * (1 - q * .7), color: alpha('#6b4f55', .85), w: 1.8, seed: 900 + i }) }); } });
 
@@ -372,7 +377,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
           cc.restore(); }),
         shadow: g => { if (G.hT < 1) return; g.fillStyle = '#000'; g.fill(polyPath(s5Proj(V, s5Hull([...G.F, ...G.B].map(s5Sh))))); } }); }
     // 横幅：150 分钟（剪开前一整条，剪开后七段各自落下）
-    const banA = fold(s5W(2, '150', -.2), cutT + cutDur + 1.4), BNX = 490, BNY = 480;
+    const banA = fold(s5W(2, "150", -.2), cutT + cutDur + 1.0), BNX = 490, BNY = 600;
     if (banA > 0) add(s5Card(V, BNX, BNY, banA, g => {
       for (const x of [-300, 300]) s5Cap(g, [x, 0], [x, -150], 6, P.g2, 940 + x);
       const cutP = sm(cutT, cutT + cutDur, tau), segW = 600 / 7;
@@ -387,7 +392,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
     // 两顶帐篷上的哑铃（L3）
     [1, 4].forEach((i, n) => { const G = tents[i]; if (!G) return; const a = fold(s5W(3, '两天', n * .25), tentOff(i) - .2); if (a <= 0) return;
       const bob = 3 * Math.abs(Math.sin(twos(tau) * 3 + n));
-      add(s5Card(V, G.X, G.Y, a, g => { g.translate(0, -bob);
+      add(s5Card(V, G.X, G.Y, a, g => { g.translate(0, -bob); g.scale(1.5, 1.5);
         s5Cap(g, [-22, -14], [22, -14], 7, mix(P.g3, P.ink, .2), 970 + n);
         for (const s of [-1, 1]) { cutPaper(g, rectPts(s * 22 - 6, -30, 12, 32, 3), mix(P.ink2, P.ink, .3), { seed: 972 + n + s, step: 6 }); cutPaper(g, rectPts(s * 31 - 4, -25, 8, 22, 2), mix(P.ink2, P.ink, .2), { seed: 975 + n + s, step: 5 }); }
       }, { h0: G.hT, ref: 30, z: G.Y + 1 })); });
@@ -395,7 +400,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
     // ---------- L5–L7：书桌、椅子、学生、沙漏、饮水机、走圈 ----------
     const pullT = s5W(5, '少坐', -.1), backT = t6 + .1, upT = s5W(6, '就起来', -.05), cupT = s5W(6, '接杯水', -.3), lapT = s5W(6, '走两圈', -.2), strT = s5W(6, '伸个懒腰', -.15);
     const pull = sm(pullT, pullT + .5, tau, easeIO) * (1 - sm(backT, backT + .5, tau, easeIO));
-    const deskA = fold(t5 - .2, S5OUT.fold), DKX = 280, DKY = 600;
+    const deskA = fold(t5 - .2, S5OUT.fold), DKX = 250, DKY = 740;
     // 书桌 + 椅子（一张卡）：拉条抽出来时椅子往前滑、折倒
     add(s5Card(V, DKX, DKY - 2, deskA, g => { g.scale(S5SS, S5SS); g.translate(30, 0);
       cutPaper(g, rectPts(10, -76, 96, 9, 2), P.g2, { seed: 980, step: 10 }); for (const x of [16, 96]) s5Cap(g, [x, -70], [x, 0], 6, P.g2, 981 + x);
@@ -406,7 +411,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       s5Cap(g, [-24, -40], [16, -40], 7, P.g3, 985); s5Cap(g, [-24, -40], [-26, -98], 6, P.g3, 986); s5Cap(g, [-22, -40], [-24, 0], 5, P.g3, 987); s5Cap(g, [14, -40], [16, 0], 5, P.g3, 988);
     }, { ref: 50 }));
     // 学生：坐 → 站起来走 → 回来坐下（沙漏）→ 接水 → 走两圈 → 伸懒腰 → 接着慢慢走圈
-    const LOOP = { x: 540, y: 770, rx: 290, ry: 80 }, WX = 830, WY = 520;
+    const LOOP = { x: 540, y: 890, rx: 300, ry: 62 }, WX = 840, WY = 690;
     if (deskA > 0) {
       let kind = 'sit', X = DKX, Y = DKY + 6, face = 1, ph = twos(tau) * TAU * 1.3;
       const loopPt = th => [LOOP.x + LOOP.rx * Math.cos(th), LOOP.y + LOOP.ry * Math.sin(th)];
@@ -414,16 +419,17 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
         if (tau > backT - .1) { const v = sm(backT - .1, backT + .35, tau); X = lerp(DKX + 170, DKX, v); Y = lerp(DKY + 66, DKY + 6, v); face = -1; } }
       if (tau >= upT) { const u = sm(upT, cupT + .3, tau, easeIO); kind = 'walk'; face = 1; X = lerp(DKX, WX - 60, u); Y = lerp(DKY + 6, WY + 30, u); }
       if (tau >= cupT + .3) { kind = 'cup'; X = WX - 60; Y = WY + 30; }
-      if (tau >= lapT) { const u = sm(lapT, lapT + .5, tau), p0 = [WX - 60, WY + 30], p1 = loopPt(-.9); kind = 'walk';
+      const lapEnd = strT + 1.25, th0 = -.35, thE = TAU * 2 + Math.PI / 2;
+      if (tau >= lapT) { const u = sm(lapT, lapT + .4, tau), p0 = [WX - 60, WY + 30], p1 = loopPt(th0); kind = 'jog'; ph = twos(tau) * TAU * 2.4;
         if (u < 1) { X = lerp(p0[0], p1[0], u); Y = lerp(p0[1], p1[1], u); face = 1; }
-        else { const th = -.9 + (tau - lapT - .5) / (strT - lapT - .5) * (TAU * 2 + Math.PI / 2 + .9 - .0); const th2 = Math.min(th, TAU * 2 + Math.PI / 2); [X, Y] = loopPt(th2); face = -Math.sin(th2) >= 0 ? 1 : -1; kind = 'jog'; ph = twos(tau) * TAU * 2.4; } }
-      if (tau >= strT) { kind = 'stretch'; [X, Y] = loopPt(Math.PI / 2); face = 1; ph = twos(tau) * 2; }
-      if (tau >= s5E(6) - .2) { const th = Math.PI / 2 + (tau - s5E(6) + .2) * .55; [X, Y] = loopPt(th); face = -Math.sin(th) >= 0 ? 1 : -1; kind = 'walk'; ph = twos(tau) * TAU * 1.2; }
+        else { const th = lerp(th0, thE, sm(lapT + .4, lapEnd, tau, e => e)); [X, Y] = loopPt(th); face = Math.sin(th) < 0 ? 1 : -1; } }
+      if (tau >= lapEnd) { kind = 'stretch'; [X, Y] = loopPt(Math.PI / 2); face = 1; ph = twos(tau) * 2; }
+      if (tau >= s5E(6) + .1) { const th = Math.PI / 2 + (tau - s5E(6) - .1) * .5; [X, Y] = loopPt(th); face = Math.sin(th) < 0 ? 1 : -1; kind = 'walk'; ph = twos(tau) * TAU * 1.2; }
       const kA = deskA * (kind === 'sit' ? 1 : 1);
       add(s5Card(V, X, Y, kA, g => { g.scale(face * S5SS, S5SS); s5Kid(g, { kind, ph, hair: 1, seed: 500 }); }, { ref: 100, z: Y + 2 }));
     }
     // 沙漏：L6 前半漏完「一小时」，「就起来」时翻过来
-    const hgA = fold(t6 + .15, S5OUT.fold), HGX = 580, HGY = 560;
+    const hgA = fold(t6 + .15, S5OUT.fold), HGX = 590, HGY = 700;
     if (hgA > 0) add(s5Card(V, HGX, HGY, hgA, g => { g.scale(1.3, 1.3);
       const flip = sm(upT - .15, upT + .3, tau, easeOutBack), run = sm(t6 + .5, upT - .2, tau, e => e), run2 = sm(upT + .3, S5OUT.fold, tau, e => e) * .5;
       zh(g, '1 小时', 0, 26, { size: 32, align: 'center', color: P.ink2, p: writeP(tau, t6 + .5, '1 小时', .08) });
@@ -434,8 +440,8 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       if (T1 > .02) { const yT = -4 - 46 * T1; g.save(); if (dir < 0) g.scale(1, -1); cutPaper(g, [[-26 * (-yT / 50), yT], [26 * (-yT / 50), yT], [3, -4], [-3, -4]], sand, { seed: 991, step: 6, shadow: false }); g.restore(); }
       if (B1 > .02) { const yB = 50 - 44 * B1; g.save(); if (dir < 0) g.scale(1, -1); cutPaper(g, [[-26, 50], [26, 50], [lerp(26, 6, 1 - (50 - yB) / 50), yB], [0, yB - 8], [-lerp(26, 6, 1 - (50 - yB) / 50), yB]], sand, { seed: 992, step: 6, shadow: false }); g.restore(); }
       if (T1 > .02 && T1 < .98 && Math.abs(flip - (flip > .5 ? 1 : 0)) < .05) rline(g, [[0, 0], [0, 44 * (dir)]], { w: 1.5, color: sand, seed: 993, amp: .1 });
-      for (const y of [-56, 56]) cutPaper(g, rectPts(-36, y - 5, 72, 10, 3), mix(P.g3, P.shelf, .3), { seed: 994 + y, step: 8 });
-      for (const x of [-32, 32]) s5Cap(g, [x, -52], [x, 52], 4, mix(P.g3, P.shelf, .3), 996 + x);
+      for (const y of [-56, 56]) cutPaper(g, rectPts(-36, y - 5, 72, 10, 3), mix(P.g2, P.shelf, .35), { seed: 994 + y, step: 8 });
+      for (const x of [-31, 31]) s5Cap(g, [x, -52], [x, 52], 2.6, P.g2, 996 + x);
       g.restore();
     }, { ref: 60 }));
     // 饮水机（接水）
@@ -449,7 +455,7 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
     }, { ref: 70 }));
     // 立着的小牌子：任何活动 ＞ 一直坐着
     const sgA = fold(s5W(5, '任何', -.1), S5OUT.fold);
-    if (sgA > 0) add(s5Card(V, 500, 400, sgA, g => {
+    if (sgA > 0) add(s5Card(V, 500, 540, sgA, g => {
       for (const x of [-190, 190]) s5Cap(g, [x, 0], [x, -60], 6, P.g2, 1010 + x);
       cutPaper(g, rectPts(-240, -140, 480, 86, 4), P.paper, { seed: 1012, step: 16 });
       zh(g, '任何活动 ＞ 一直坐着', 0, -82, { size: 42, align: 'center', color: P.ink, p: writeP(tau, s5W(5, '任何'), '任何活动 ＞ 一直坐着', .07) });
@@ -458,18 +464,18 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
 
     // ---------- 帕秋莉（立在右页上的剪纸人偶） ----------
     {
-      const home = [1420, 760], left = [1170, 740], box = [1470, 700], front = [1420, 790], side = [1190, 770];
+      const home = [1420, 800], left = [1180, 810], box = [1260, 780], front = [1420, 850], side = [1110, 860];
       let X = home[0], Y = home[1], h0 = 0, pose = 'stand', mood = L.mood || 'normal', facing = 1, look = -.2, gesture = null, hop = 0;
       const hopTo = (ta, tb, A, B) => { const u = sm(ta, tb, tau, e => e); if (u <= 0) return false; X = lerp(A[0], B[0], u); Y = lerp(A[1], B[1], u); hop = Math.abs(Math.sin(u * Math.PI * 3)) * 26 * (u < 1 ? 1 : 0); return true; };
       if (tau < t1 - .2) { pose = tau < s5W(0, '好吧') ? 'stand' : 'tired'; mood = tau < s5W(0, '好吧') ? 'normal' : 'sleepy'; look = tau < s5W(0, '好吧') ? .1 : -.3; }
       else if (tau < t2) { hopTo(t1 - .2, t1 + .6, home, left); pose = tau < t1 + .6 ? 'stand' : 'point'; facing = -1; look = .5; mood = 'normal'; }
-      else if (tau < t3) { hopTo(t2 - .15, t2 + .55, left, box); pose = tau < t2 + .55 ? 'stand' : 'sit'; h0 = tau < t2 + .55 ? 0 : 96; facing = -1; look = .6; mood = tau > s5W(2, '就够') ? 'smug' : 'normal'; }
+      else if (tau < t3) { const u = sm(t2 - .15, t2 + .45, tau, e => e); X = lerp(left[0], box[0], u); Y = lerp(left[1], box[1], u); h0 = 96 * easeOut(u) + 70 * Math.sin(u * Math.PI); pose = u < .75 ? 'stand' : 'sit'; if (pose === 'sit') h0 = Math.max(96, h0); facing = -1; look = .6; mood = tau > s5W(2, '就够') ? 'smug' : 'normal'; }
       else if (tau < s5E(3) + .2) { X = box[0]; Y = box[1]; if (tau < s5W(3, '力量', -.3)) { pose = 'sit'; h0 = 96; facing = -1; mood = 'normal'; look = .7; }
-        else { hopTo(s5W(3, '力量', -.3), s5W(3, '力量', .3), box, front); pose = 'hide'; mood = 'flustered'; facing = -1; look = .8; } }
+        else { const u = sm(s5W(3, '力量', -.3), s5W(3, '力量', .3), tau, e => e); X = lerp(box[0], front[0], u); Y = lerp(box[1], front[1], u); h0 = 96 * (1 - u) + 60 * Math.sin(u * Math.PI); pose = 'hide'; mood = 'flustered'; facing = -1; look = .8; } }
       else if (tau < t5 + .35) { X = front[0]; Y = front[1]; pose = 'lift'; }
-      else if (tau < t6) { X = front[0]; Y = front[1]; pose = tau < s5W(5, '任何', -.2) ? 'tired' : 'lecture'; mood = tau < s5W(5, '任何', -.2) ? 'annoyed' : 'normal'; facing = -1; look = .5; gesture = .9; }
-      else if (tau < t7 - .8) { X = front[0]; Y = front[1]; facing = -1; look = .5; pose = tau < strT ? 'point' : 'lift'; mood = tau < strT ? 'normal' : 'smug'; }
-      else { X = front[0]; Y = front[1]; const cough = tau < s5W(7, '你们', -.15); pose = cough ? 'tired' : 'cross'; mood = cough ? 'annoyed' : 'smug'; look = cough ? -.2 : .8; facing = 1; }
+      else if (tau < t6) { hopTo(t5 + .4, t5 + 1.1, front, side); if (tau < t5 + .4) { X = front[0]; Y = front[1]; } pose = tau < s5W(5, '任何', -.2) ? 'tired' : 'lecture'; mood = tau < s5W(5, '任何', -.2) ? 'annoyed' : 'normal'; facing = -1; look = .5; gesture = .9; }
+      else if (tau < t7 - .8) { X = side[0]; Y = side[1]; facing = -1; look = .5; pose = tau < strT ? 'point' : 'lift'; mood = tau < strT ? 'normal' : 'smug'; }
+      else { X = side[0]; Y = side[1]; hopTo(s5W(7, '你们', -.45), s5W(7, '你们', .15), side, front); const cough = tau < s5W(7, '你们', -.15); pose = cough ? 'tired' : 'cross'; mood = cough ? 'annoyed' : 'smug'; look = cough ? -.2 : .8; facing = 1; }
       // 咳嗽时身子一抖
       const coughs = [t7 - .8, t7 - .35]; let jx = 0; for (const tc of coughs) { const q = tau - tc; if (q > 0 && q < .18) { jx = 5 * Math.sin(q * 70); pose = 'tired'; mood = 'annoyed'; } }
       const pA = fold(.9, S5OUT.fold) * 1;
@@ -496,12 +502,12 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       const draw = g => { g.translate(jx, 0);
         if (jokeOn) s5LifterGuarded(g, tau, L, lift, barIn * (1 - barOut));
         else drawPatchouli(g, { x: 0, y: 0, h: 520, pose, mood, look, facing, gesture, mouth: L.mouth, blink: blinkAt(tau, 5), t: tau }); };
-      if (pA > 0) add(s5Card(V, X, Y, pA, draw, { h0: h0 + hop, ref: 260, z: Y + 3, al: outA }));
+      if (pA > 0) add(s5Card(V, X, Y, pA, draw, { h0: h0 + hop, ref: 260, z: h0 > 0 ? box[1] + 60 : Y + 3, al: outA }));
       // 咳嗽的两朵小纸云
       coughs.forEach((tc, k) => { const q = tau - tc; if (q <= 0 || q > 1.1) return;
         add(s5Card(V, X - 60 - q * 40, Y + 4, Math.PI / 2, g => { const s = .8 + q * .5, a = 1 - sm(.6, 1.1, q);
-          g.globalAlpha *= a; g.translate(0, -300 - q * 50 - k * 20); g.scale(s, s); cutPaper(g, [[-22, 6], [-26, -6], [-18, -16], [-6, -18], [0, -24], [13, -20], [20, -12], [27, -7], [25, 6], [15, 12], [3, 11], [-8, 14], [-18, 12]], S5WH, { seed: 1030 + k, step: 5 });
-          zh(g, '咳', 0, 4, { size: 20, align: 'center', color: P.ink2 }); }, { ref: 100, z: Y + 4 })); });
+          g.globalAlpha *= a; g.translate(0, -330 - q * 60 - k * 30); g.scale(s * 1.7, s * 1.7); cutPaper(g, [[-22, 6], [-26, -6], [-18, -16], [-6, -18], [0, -24], [13, -20], [20, -12], [27, -7], [25, 6], [15, 12], [3, 11], [-8, 14], [-18, 12]], S5WH, { seed: 1030 + k, step: 5 });
+          zh(g, '咳', 0, 5, { size: 17, align: 'center', color: P.ink2 }); }, { ref: 100, z: Y + 4 })); });
     }
 
     // ---------- 画：桌面 → 书页平面（透视）→ 影子 → 立体件（远的先画） ----------
@@ -518,10 +524,10 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
       // 书页上的手写
       fade(b, outA * (1 - sm(t5 - .4, t5 - .1, tau)), () => {
         const s1 = '150 ÷ 7 ≈ 21 分钟 / 天', w1 = s5W(2, '一天', -.3);
-        zh(b, s1, 520, 700, { size: 50, align: 'center', color: P.ink, p: writeP(tau, w1, s1, .06) });
+        zh(b, s1, 520, 850, { size: 50, align: 'center', color: P.ink, p: writeP(tau, w1, s1, .06) });
         const s2 = '＋ 力量练习 · 每周 ≥ 2 天', w2 = s5W(3, '两天', -.2);
-        zh(b, s2, 520, 780, { size: 44, align: 'center', color: P.ink2, p: writeP(tau, w2, s2, .06) });
-        zh(b, 'WHO 2020', 870, 830, { size: 26, align: 'right', color: P.g2, p: writeP(tau, w2 + 1.2, 'WHO 2020', .05) });
+        zh(b, s2, 520, 925, { size: 44, align: 'center', color: P.ink2, p: writeP(tau, w2, s2, .06) });
+        zh(b, 'WHO 2020', 880, 965, { size: 26, align: 'right', color: P.g2, p: writeP(tau, w2 + 1.2, 'WHO 2020', .05) });
       });
       // 走圈的虚线、拉条
       fade(b, outA * sm(t5 - .1, t5 + .3, tau), () => {
@@ -532,7 +538,13 @@ scene({ order: 5, key: 'exercise', title: '运动', dur: S5DUR, lines: S5LINES, 
         if (pull < .05) arrow(b, [tx, ty + 120], [tx - 30, ty + 170], { w: 2.5, color: alpha(P.ink2, .6), head: 12, seed: 1052, bend: 8 });
       });
     }, { pitch: V.p, cx: V.cx, cy: V.cy, f: S5F });
-    // 远处桌面压暗一点（空间感）
+    // 桌面的木板缝（透视里向远处收拢），书以外的地方；远处压暗一点
+    if (V.tilt > .01) { const e = 8, bq = s5Proj(V, [[BOOK.x - 10 - e, BOOK.y - 8 - e], [BOOK.x + BOOK.w + 10 + e, BOOK.y - 8 - e], [BOOK.x + BOOK.w + 10 + e, BOOK.y + BOOK.h + 12 + e], [BOOK.x - 10 - e, BOOK.y + BOOK.h + 12 + e]]);
+      c.save(); const cp = new Path2D(); cp.rect(-3000, -3000, W + 6000, H + 6000); cp.addPath(polyPath(bq)); c.clip(cp, 'evenodd');
+      for (let k = -10; k <= 14; k++) { const X = CX + k * 270 + 40, a = s5P(V, X, -3000), b = s5P(V, X, 1500);
+        rline(c, [[a[0], a[1]], [b[0], b[1]]], { w: 2, color: `rgba(0,0,0,${.3 * V.tilt})`, seed: 1070 + k, amp: .5 }); }
+      c.restore(); }
+    if (V.tilt > .01) { c.save(); const sc0 = c.getTransform().a / V.zm; c.setTransform(sc0, 0, 0, sc0, 0, 0); const gr = c.createLinearGradient(0, 0, 0, 460); gr.addColorStop(0, `rgba(12,8,6,${.5 * V.tilt})`); gr.addColorStop(1, 'rgba(12,8,6,0)'); c.fillStyle = gr; c.fillRect(0, 0, W, 460); c.restore(); }
     s5Shadows(c, pieces, .22);
     pieces.sort((a, b) => a.z - b.z).forEach(p => { c.save(); p.draw(c); c.restore(); });
     c.restore();
