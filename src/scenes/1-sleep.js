@@ -23,7 +23,7 @@ const S1DUR = seqEnd(S1LINES) + 1.0;
 const S1T = i => S1LINES[i][0], S1E = i => S1LINES[i][1];
 const S1POSE = ['lecture', 'point', 'lecture', 'point', 'lecture', 'lecture', 'point', 'lecture', 'lecture', 'point', 'lecture', 'lecture'];
 const S1IRIS = .6;                                   // 圆形转场时长
-const S1DIAL = { big: [1030, 525, 240], mini: [1748, 205, 76] };   // 表盘：讲台大表盘、角上小表盘 [x, y, r]
+const S1DIAL = { big: [1050, 515, 240], mini: [1748, 205, 76] };   // 表盘：讲台大表盘、角上小表盘 [x, y, r]
 const S1HX = 780;                                    // 黑板小标题左沿
 
 // ===================== 小工具 =====================
@@ -159,8 +159,8 @@ function s1Dial(c, x, y, r, o = {}) {
   if (big && p > .8) fade(c, sm(.8, 1, p), () => {
     zh(c, '12', x, y - r * .6, { size: 34, align: 'center', base: 'middle' });
     zh(c, '0', x, y + r * .62, { size: 34, align: 'center', base: 'middle', color: P.paper });
-    zh(c, '6', x - r * .66, y, { size: 34, align: 'center', base: 'middle', outline: P.paper, ow: 6 });
-    zh(c, '18', x + r * .64, y, { size: 34, align: 'center', base: 'middle', outline: P.paper, ow: 6 });
+    zh(c, '6', x - r * .68, y - 26, { size: 34, align: 'center', base: 'middle' });
+    zh(c, '18', x + r * .66, y - 26, { size: 34, align: 'center', base: 'middle' });
   });
   if (arc && arc[1] > arc[0] + .05) { const pts = s1ArcPts(x, y, r * 1.1, arc[0], arc[1]); rline(c, pts, { w: lw * 1.7, color: P.purple, seed: seed + 40, t, smooth: true });
     rshape(c, circPts(...pts[0], lw * 1.5, 12), { fill: P.purple, stroke: false }); }
@@ -168,7 +168,7 @@ function s1Dial(c, x, y, r, o = {}) {
     rline(c, [[x, y], e], { w: lw * 1.7, seed: seed + 41, t });
     rshape(c, [[e[0] + Math.cos(a) * hl * .6, e[1] + Math.sin(a) * hl * .6], [e[0] + Math.cos(a + 2.3) * hl * .5, e[1] + Math.sin(a + 2.3) * hl * .5], [e[0] + Math.cos(a - 2.3) * hl * .5, e[1] + Math.sin(a - 2.3) * hl * .5]], { fill: P.ink, w: 2, seed: seed + 42, t });
     rshape(c, circPts(x, y, r * .065, 16), { fill: P.moon, w: lw * .6, seed: seed + 43, t }); }
-  if (orb && p >= 1) { const hm = ((hand % 24) + 24) % 24, day = sm(5.3, 6.5, hm) * (1 - sm(17.6, 18.6, hm)), q = s1Pt(x, y, r * 1.3, hand);
+  if (orb && p >= 1) { const hm = ((hand % 24) + 24) % 24, day = sm(5.3, 6.5, hm) * (1 - sm(17.6, 18.6, hm)), q = s1Pt(x, y, r * (big ? 1.24 : 1.3), hand);
     if (day > .01) fade(c, day * orb, () => s1Sun(c, q[0], q[1], r * .13, { t, seed: seed + 50 }));
     if (day < .99) fade(c, (1 - day) * orb, () => { const g = c.createRadialGradient(q[0], q[1], 2, q[0], q[1], r * .3); g.addColorStop(0, alpha(P.moon, .5)); g.addColorStop(1, alpha(P.moon, 0)); c.fillStyle = g; c.beginPath(); c.arc(q[0], q[1], r * .3, 0, TAU); c.fill(); drawMoonIcon(c, q[0], q[1], r * .13, P.moon, -.4); }); }
 }
@@ -299,10 +299,10 @@ function s1Sleepy(c, x, y, r, t, rot = 0, seed = 240) {
   zh(c, '困', 0, 12, { size: 36, align: 'center', color: P.paper });
   c.restore();
 }
-function s1Membrane(c, x0, x1, y, t, seed = 250) {
+function s1Membrane(c, x0, x1, y, t, seed = 250, gap = null) {
   const top = [], bot = []; for (let x = x0; x <= x1; x += 20) { top.push([x, y - 22 + Math.sin(x * .02) * 5]); bot.push([x, y + 22 + Math.sin(x * .02) * 5]); }
   c.save(); c.fillStyle = alpha(P.pink, .3); c.fill(polyPath([...top, ...bot.slice().reverse()])); c.restore();
-  for (const q of [...top, ...bot]) rshape(c, circPts(q[0], q[1], 8, 10), { fill: P.pink, w: 2.5, seed: seed + q[0], t });
+  for (const q of [...top, ...bot]) if (!gap || Math.abs(q[0] - gap) > 96) rshape(c, circPts(q[0], q[1], 8, 10), { fill: P.pink, w: 2.5, seed: seed + q[0], t });
 }
 function s1Socket(c, x, y, t, seed = 260) {
   rshape(c, [[x - 88, y + 70], [x - 88, y - 44], [x - 42, y - 50], [x - 40, y - 2], [x + 40, y - 2], [x + 42, y - 50], [x + 88, y - 44], [x + 88, y + 70]], { fill: P.teal, w: 5, seed, t });
@@ -443,7 +443,7 @@ function s1Board(c, tau) {
   s1Title(c, tau, '咖啡因', T(9) + .2, T(10));
   { const a = T(9), b = T(10), al = 1 - sm(b - .25, b, tau);
     if (tau >= a && al > 0) fade(c, al, () => {
-      const mb = s1V(tau, a + .1); s1Pop(c, 1090, 650, mb, () => { s1Membrane(c, 780, 1400, 660, t); s1Socket(c, 1090, 650, t); zh(c, '受体', 1090, 790, { size: 38, align: 'center', color: P.ink2 }); });
+      const mb = s1V(tau, a + .1); s1Pop(c, 1090, 650, mb, () => { s1Membrane(c, 780, 1400, 660, t, 250, 1090); s1Socket(c, 1090, 650, t); zh(c, '受体', 1090, 790, { size: 38, align: 'center', color: P.ink2 }); });
       s1Pop(c, 1620, 640, s1V(tau, a + .3), () => { s1Cup(c, 1620, 640, 1, t); zh(c, '咖啡', 1620, 790, { size: 38, align: 'center', color: P.ink2 }); });
       // 咖啡因从杯里飞出来，先占住槽
       const cf = sm(a + .8, a + 1.7, tau); if (cf > 0) { const q = s1Bez([1620, 540], [1360, 330], [1090, 610], cf); s1Caffeine(c, q[0], q[1], 34, t); }
@@ -454,6 +454,7 @@ function s1Board(c, tau) {
         let q = [p0[0], p0[1] + bob], rot = Math.sin(t * 2 + k) * .15;
         if (k === 0) { const hit = [1090, 560]; q = back > 0 ? [lerp(hit[0], 940, back), lerp(hit[1], 470, back) - Math.sin(back * Math.PI) * 60] : [lerp(p0[0], hit[0], go), lerp(p0[1], hit[1], go) + bob * (1 - go)]; rot += back * 5; }
         s1Pop(c, q[0], q[1], v, () => s1Sleepy(c, q[0], q[1], 34, t, rot, 240 + k)); });
+      if (back > .6) zh(c, '？', 990, 420, { size: 44, color: P.purple, al: sm(.6, 1, back) });
       fade(c, win(a + 2.3, b, tau, .15), () => { sparkle(c, 1090, 540, 26 * (1 - back * .5), { color: P.red, rot: t * 4 }); });
       zh(c, '困意信号', 900, 270, { size: 38, align: 'center', color: P.purple, p: writeP(tau, a + .6, '困意信号') });
       s1Pop(c, 1300, 470, s1V(tau, a + 2.35), () => s1Tag(c, 1300, 470, '被占住！', { t, fill: P.red, size: 40 }));
@@ -484,7 +485,7 @@ function s1Board(c, tau) {
     const words = ['单词', '公式', '定理', '年代', '语法'], hd = [930, 596], src = [1500, 580];
     if (tau < END) words.forEach((wd, k) => { const t0 = a + 1.3 + k * .42, u = clamp((tau - t0) / 1.0, 0, 1); if (u <= 0 || u >= 1) return;
       const q = s1Bez(src, [1230 - k * 20, 420 + k * 12], hd, easeIO(u)); zh(c, wd, q[0], q[1], { size: lerp(42, 22, u * u), align: 'center', color: P.purple, al: Math.min(1, u * 5, (1 - u) * 5), outline: P.paper, ow: 6 }); sparkle(c, q[0] + 30, q[1] - 20, 8, { al: 1 - u, rot: t * 3 }); });
-    s1Pop(c, 1230, 340, s1V(tau, a + 3.1, END), () => { s1Floppy(c, 1030, 336, .8, t); zh(c, '睡觉 = 存档', 1100, 362, { size: 64, color: P.ink }); check(c, 1470, 330, 60, { p: sm(a + 3.6, a + 4.0, tau), t }); });
+    s1Pop(c, 1230, 340, s1V(tau, a + 3.1, END), () => { s1Floppy(c, 1030, 336, .8, t); zh(c, '睡觉 = 存档', 1100, 362, { size: 64, color: P.ink }); check(c, 1510, 330, 60, { p: sm(a + 3.6, a + 4.0, tau), t }); });
   }
 }
 // 表盘位置：L2–L4 讲台正中偏左；L6、L9–L11 缩在黑板右上角；L7 又放大回来
@@ -518,14 +519,14 @@ function s1Dorm(c, t, open) {
   rshape(c, rectPts(x0 - 24, y0 - 36, w + 48, 46, 8), { fill: mix(P.red, P.ink, .25), w: 5, seed: 402, t });
   rshape(c, rectPts(x0 + w / 2 - 110, y0 + 26, 220, 62, 10), { fill: P.paper, w: 4, seed: 403, t }); zh(c, '7 号楼', x0 + w / 2, y0 + 72, { size: 42, align: 'center' });
   const cols = [P.pink, P.green, P.blue, P.gold, P.teal];
-  for (let r = 0; r < 3; r++) for (let k = 0; k < 5; k++) { const wx = x0 + 44 + k * 148, wy = y0 + 120 + r * 130, sd = 410 + r * 10 + k, hh = hash(sd, 4);
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 5; k++) { const wx = x0 + 44 + k * 148, wy = y0 + 100 + r * 125, sd = 410 + r * 10 + k, hh = hash(sd, 4);
     rshape(c, rectPts(wx, wy, 104, 84, 4), { fill: mix(P.sky, P.paper, .25), w: 4, seed: sd, t });
     rline(c, [[wx + 52, wy], [wx + 52, wy + 84]], { w: 3, seed: sd + 50, t });
     if (hh < .45) rshape(c, [[wx + 4, wy + 4], [wx + 40, wy + 4], [wx + 26, wy + 80], [wx + 4, wy + 80]], { fill: cols[(r + k) % 5], w: 3, seed: sd + 60, t });
     rline(c, [[wx - 8, wy + 96], [wx + 112, wy + 96]], { w: 5, color: P.ink2, seed: sd + 70, t });
     if (hh > .62) { rline(c, [[wx, wy + 6], [wx + 104, wy + 6]], { w: 2, seed: sd + 80, t }); s1Tee(c, wx + 30, wy + 6, .7, cols[(k + 2) % 5], t, sd + 90); s1Tee(c, wx + 76, wy + 6, .6, cols[(k + 4) % 5], t, sd + 95); } }
   // 门
-  const dx = 370, dw = 190, dy = 588, dh = 292;
+  const dx = 370, dw = 190, dy = 612, dh = 268;
   rshape(c, rectPts(dx - 20, dy - 24, dw + 40, 24, 4), { fill: P.shelf2, w: 4, seed: 470, t });
   rshape(c, rectPts(dx, dy, dw, dh, 2), { fill: P.night3, w: 5, seed: 471, t });
   const lw = dw / 2 * (1 - open * .8);
@@ -581,7 +582,7 @@ function s1Yard(c, tau) {
 
 // ===================== 满屏 2：熄灯后的上下铺（L8） =====================
 function s1Night(c, tau) {
-  const t = tau, u = tau - S1T(7), D = S1T(8) - S1T(7) + S1IRIS, dark = sm(.35, .5, u);
+  const t = tau, u = tau - S1T(7), D = S1T(8) - S1T(7) + S1IRIS, dark = sm(.95, 1.1, u);
   const z = 1 + .1 * sm(.5, D, u, easeSine), F = [720, 690];
   c.save(); c.translate(F[0], F[1]); c.scale(z, z); c.translate(-F[0], -F[1]);
   const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, mix(P.night3, P.paper2, .35)); g.addColorStop(1, mix(P.night2, P.paper2, .25)); c.fillStyle = g; c.fillRect(-200, -200, W + 400, H + 400);
@@ -617,27 +618,28 @@ function s1Night(c, tau) {
   // 熄灯
   if (dark > 0) { c.fillStyle = alpha(mix(P.night, '#000', .4), .62 * dark); c.fillRect(-200, -200, W + 400, H + 400); }
   // 手机的光照亮脸（画在暗层之上）
-  const ph = [760, 650], fl = .9 + .1 * Math.sin(t * 7) * Math.sin(t * 3.1);
+  const ph = [772, 648], fl = .9 + .1 * Math.sin(t * 7) * Math.sin(t * 3.1);
   if (dark > 0) { c.save(); c.globalCompositeOperation = 'lighter'; const lg = c.createRadialGradient(ph[0] - 50, ph[1] + 60, 10, ph[0] - 50, ph[1] + 60, 330); lg.addColorStop(0, alpha(P.blue, .55 * dark * fl)); lg.addColorStop(1, alpha(P.blue, 0)); c.fillStyle = lg; c.beginPath(); c.arc(ph[0] - 50, ph[1] + 60, 330, 0, TAU); c.fill(); c.restore(); }
   const skin = mix(P.skin, P.sky, .55 * dark);
   s1Head(c, 628, 752, 50, { t, rot: -.3, eyes: dark > .5 ? 'wide' : 'open', mouth: dark > .5 ? 'flat' : 'smile', skin, seed: 660, look: 8 });
-  s1Tube(c, [[700, 790], [720, 700], [736, 668]], mix(P.pink, P.night3, .3 * dark), 16, t, 661);
-  rshape(c, circPts(738, 666, 12, 12), { fill: skin, w: 3.5, seed: 662, t });
-  c.save(); c.translate(ph[0], ph[1]); c.rotate(-.55);
+  const sleeve = mix(P.pink, P.night3, .3 * dark);
+  s1Tube(c, [[736, 796], [748, 752], [766, 714]], sleeve, 16, t, 661);
+  c.save(); c.translate(ph[0], ph[1]); c.rotate(-.5);
   rshape(c, rectPts(-40, -72, 80, 144, 14), { fill: P.ink2, w: 4, seed: 663, t }); rshape(c, circPts(-18, -50, 8, 10), { fill: P.ink, w: 2.5, seed: 664, t });
   c.save(); c.globalAlpha = dark; c.strokeStyle = alpha(mix(P.sky, '#fff', .6), .9); c.lineWidth = 5; c.stroke(polyPath(rectPts(-44, -76, 88, 152, 16))); c.restore();
+  rshape(c, ellPts(-30, 52, 16, 13, 14), { fill: skin, w: 3.5, seed: 662, t }); rshape(c, ellPts(38, 34, 9, 12, 12), { fill: skin, w: 3, seed: 665, t });
   c.restore();
   // 上铺室友的 Zzz
   for (let k = 0; k < 3; k++) { const q = (t * .45 + k / 3) % 1; zh(c, 'Z', 640 + q * 80 + k * 5, 300 - q * 110, { size: 28 + q * 20, color: P.paper2, al: Math.sin(q * Math.PI) * .9 }); }
   c.restore();
   // 左上「熄灯」签
-  fade(c, win(.2, 2.8, u, .25), () => s1Tag(c, 250, 60, '23:30 熄灯', { t, fill: P.ink, size: 38, seed: 670 }));
+  fade(c, win(.35, 3.2, u, .25), () => s1Tag(c, 250, 60, '23:30 熄灯', { t, fill: P.ink, size: 38, seed: 670 }));
   // 右上：角上表盘，太阳困惑地冒出来
   const [dx, dy, dr] = [1700, 200, 104];
-  s1Pop(c, dx, dy, s1V(tau, S1T(7) + .7), () => s1Dial(c, dx, dy, dr, { t, hand: 25.45, red: 1, orb: 0 }));
-  const sv = s1V(tau, S1T(7) + 1.4), sp = s1Pt(dx, dy, dr * 1.25, 26.3);
+  s1Pop(c, dx, dy, s1V(tau, S1T(7) + 1.2), () => s1Dial(c, dx, dy, dr, { t, hand: 25.45, red: 1, orb: 0 }));
+  const sv = s1V(tau, S1T(7) + 1.8), sp = [1572, 342];
   s1Pop(c, sp[0], sp[1], sv, () => { s1Sun(c, sp[0], sp[1], 46, { t, mood: 'confused' }); zh(c, '?', sp[0] + 56, sp[1] - 34 + Math.sin(t * 4) * 5, { size: 52, color: P.sun, outline: P.ink, ow: 6 }); });
-  s1Pop(c, 1440, 420, s1V(tau, S1T(7) + 2.0), () => { bubble(c, 1230, 390, 420, 104, { tail: [sp[0] - 40, sp[1] + 10], t, fill: P.paper }); zh(c, '现在是……白天？', 1440, 458, { size: 42, align: 'center', p: writeP(tau, S1T(7) + 2.1, '现在是……白天？', .1) }); });
+  s1Pop(c, 1440, 420, s1V(tau, S1T(7) + 2.4), () => { bubble(c, 1230, 390, 420, 104, { tail: [sp[0] - 24, sp[1] + 30], t, fill: P.paper }); zh(c, '现在是……白天？', 1440, 458, { size: 42, align: 'center', p: writeP(tau, S1T(7) + 2.5, '现在是……白天？', .1) }); });
 }
 
 // ===================== 组装 =====================
