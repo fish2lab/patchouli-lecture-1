@@ -83,7 +83,12 @@ const S4REW = [5, 13, 22, 31].filter(e => e < S4ED.length).map(e => { const [i, 
 function s4Rot(p, a, b) { const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b); const x = p[0] * ca + p[2] * sa, z = -p[0] * sa + p[2] * ca; return [x, p[1] * cb - z * sb, p[1] * sb + z * cb]; }
 const s4Ang = tau => .35 + tau * .055;
 const S4TILT = .2;
-const s4Cam = tau => ({ x: 200 + 90 * Math.sin(tau * .13), y: 30 + 40 * Math.sin(tau * .11 + 1), z: -1500, f: 1250 });
+// 镜头：一直慢漂（视差）；几个节拍上推近、抬高俯看，停住—突然动—再停住
+function s4Cam(tau) {
+  const push = key(tau, [[s4At(1, .3), 0], [s4At(1, .45), 1], [s4T(2) + .2, 1], [s4T(2) + .8, 0], [s4At(5, .25), 0], [s4At(5, .4), .6], [s4T(6) - .3, .6], [s4T(6) + .5, .3], [s4E(6), .3], [s4E(6) + .5, 0]]);
+  const up = key(tau, [[s4T(4) - .3, 0], [s4T(4) + .6, 1], [s4At(5, .2), 1], [s4At(5, .45), 0], [s4T(9) - .2, 0], [s4T(9) + 1.2, .5]]);
+  return { x: 200 + 90 * Math.sin(tau * .13) - 60 * push, y: 30 + 40 * Math.sin(tau * .11 + 1) - 520 * up, z: -1500 + 330 * push, f: 1250, pitch: .3 * up };
+}
 
 // 生理叹息的呼吸量 0..1：吸（大）→ 再吸（补一小口）→ 呼（长），做一遍半。时间对着语音：「连吸」「两口气」「再用嘴慢慢地、长长地呼出去」
 function s4Breath(tau) {
@@ -232,9 +237,10 @@ function s4Scene(c, tau, L) {
   // ---- 纸：进场时蓝晒液一刷一刷盖过夜色 ----
   const dev = sm(S4IN, S4IN + 1.1, tau);
   if (dev < 1) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06);
-    // 一笔一笔从左往右刷：每笔的前端斜着、毛糙（刷毛）
-    c.save(); const cl = new Path2D(), nb = 12, bh = H / nb; for (let k = 0; k < nb; k++) { const y0 = k * bh - 8, e = sm(S4IN + (k * 5 % nb) * .045, S4IN + .6 + (k * 5 % nb) * .045, tau, easeOut), x1 = lerp(-260, W + 260, e);
-      const pts = [[-10, y0]]; for (let j = 0; j <= 8; j++) { const v = j / 8; pts.push([x1 + 90 * (.5 - v) + 30 * noise1(j * 1.7 + k * 5, 5), y0 + v * (bh + 16)]); } pts.push([-10, y0 + bh + 16]); cl.addPath(polyPath(pts)); }
+    // 像蓝晒显影：一圈不规则的水渍从中间洇开，洇到的地方夜色变成普鲁士蓝
+    const R = lerp(0, 1350, sm(S4IN, S4IN + 1.1, tau, easeIn)), pts = [];
+    for (let i = 0; i < 90; i++) { const a = i / 90 * TAU; const rr = R * (1 + .14 * noise1(a * 2.2, 5) + .05 * noise1(a * 9, 6)); pts.push([CX - 120 + Math.cos(a) * rr * 1.25, CY + Math.sin(a) * rr]); }
+    c.save(); const cl = polyPath(pts);
     c.clip(cl); c.drawImage(S4SHEET, 0, 0); c.restore(); }
   else c.drawImage(S4SHEET, 0, 0);
 
