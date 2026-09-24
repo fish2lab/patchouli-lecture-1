@@ -1,0 +1,197 @@
+'use strict';
+// 画具：颜色、手绘线、字、背景、讲台布局。所有场景共用，场景文件不改这里（缺什么先写在自己文件里，汇报里提）。
+// 画风：「魔法图书馆的讲义」——深紫夜色的大图书馆做底，羊皮纸魔导书页当黑板，线条是手绘的、每秒抖 8 次，
+// 字是霞鹜文楷手写体。颜色饱和度中等，暖光。
+
+const P = {
+  // 图书馆夜色
+  night: '#1c1530', night2: '#271d42', night3: '#352858', shelf: '#4a2f2a', shelf2: '#62402f', shelfDark: '#2c1c1a', lamp: '#ffcf7a',
+  // 纸和墨
+  paper: '#f5ecd7', paper2: '#eadbb8', paperEdge: '#c9ae7f', ink: '#2b2140', ink2: '#5a4b73', faint: '#b8a98f',
+  // 帕秋莉的颜色
+  hair: '#9d7fd6', hairDark: '#6f55a8', dress: '#f3e6f0', stripe: '#b9a0d8', cap: '#fbf4f7', moon: '#e9b949', ribbonRed: '#d8394d', ribbonBlue: '#3d78d6', skin: '#fde8dc', blush: '#f4a7b0',
+  // 功能色
+  red: '#e0474c', green: '#4caf7a', blue: '#4a8fe0', sky: '#8fcaf2', sun: '#f7b733', orange: '#f08a3c', gold: '#e8b64c', purple: '#7b5ea7', pink: '#f09bb5', teal: '#3fb3a8', gray: '#8b8398',
+};
+
+// ===================== 几何 =====================
+function ellPts(cx, cy, rx, ry, n = 48, rot = 0) { const p = []; for (let i = 0; i < n; i++) { const a = i / n * TAU, x = rx * Math.cos(a), y = ry * Math.sin(a); p.push([cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]); } return p; }
+const circPts = (cx, cy, r, n = 48) => ellPts(cx, cy, r, r, n);
+function rectPts(x, y, w, h, r = 0) {
+  if (!r) return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  const p = [], arc = (cx, cy, a0) => { for (let k = 0; k <= 6; k++) { const a = a0 + k / 6 * Math.PI / 2; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } };
+  arc(x + w - r, y + r, -Math.PI / 2); arc(x + w - r, y + h - r, 0); arc(x + r, y + h - r, Math.PI / 2); arc(x + r, y + r, Math.PI); return p;
+}
+function starPts(x, y, r, n = 5, inner = .45, rot = 0) { const o = []; for (let k = 0; k < n * 2; k++) { const a = rot - Math.PI / 2 + k / (n * 2) * TAU, rr = k % 2 ? r * inner : r; o.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr]); } return o; }
+function heartPts(x, y, s, n = 40) { const o = []; for (let k = 0; k < n; k++) { const a = k / n * TAU, u = Math.pow(Math.sin(a), 3), v = -(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) / 16; o.push([x + s * u, y + s * v]); } return o; }
+function pathLen(pts, close) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); if (close) L += Math.hypot(pts[0][0] - pts.at(-1)[0], pts[0][1] - pts.at(-1)[1]); return L; }
+// resample：按弧长每 step 取一个点
+function resample(pts, step = 6, close = false) {
+  const q = close ? [...pts, pts[0]] : pts, out = [];
+  for (let i = 1; i < q.length; i++) { const a = q[i - 1], b = q[i], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step)); for (let k = 0; k < n; k++) out.push([lerp(a[0], b[0], k / n), lerp(a[1], b[1], k / n)]); }
+  if (!close) out.push(q.at(-1).slice()); return out;
+}
+// spline：Catmull-Rom 过这些点（几个控制点画出顺滑曲线）
+function spline(pts, step = 6, close = false) {
+  if (pts.length < 3) return resample(pts, step, close);
+  const n = pts.length, Pp = i => close ? pts[(i + n) % n] : pts[clamp(i, 0, n - 1)], out = [], segs = close ? n : n - 1;
+  for (let i = 0; i < segs; i++) { const p0 = Pp(i - 1), p1 = Pp(i), p2 = Pp(i + 1), p3 = Pp(i + 2), m = Math.max(2, Math.round(Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) / step));
+    for (let k = 0; k < m; k++) { const t = k / m, t2 = t * t, t3 = t2 * t; out.push([0, 1].map(j => .5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3))); } }
+  if (!close) out.push(pts.at(-1).slice()); return out;
+}
+// wobble：手绘的抖。seed 相同则形状相同；seed 加 tick(t) 就会按 8fps 换样子
+function wobble(pts, seed = 1, amp = 1.6, freq = .035) {
+  return pts.map((p, i) => [p[0] + amp * noise1(i * freq * 6 + seed * 3.1, seed), p[1] + amp * noise1(i * freq * 6 + seed * 7.7, seed + 9)]);
+}
+function polyPath(pts, close = true) { const p = new Path2D(); pts.forEach((q, i) => i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1])); if (close) p.closePath(); return p; }
+
+// ===================== 手绘线和形状 =====================
+// rline：一笔手绘线。o = { w 线宽, color, p 画出比例 0..1, close, amp 抖动幅度, seed, t（传入就会 8fps 抖）, smooth, cap, dash, al }
+function rline(c, pts, o = {}) {
+  const { w = 4, color = P.ink, p = 1, close = false, amp = 1.4, seed = 1, t = null, smooth = false, dash = null, al = 1 } = o;
+  if (p <= 0 || pts.length < 2) return;
+  let q = smooth ? spline(pts, 6, close) : resample(pts, 6, close);
+  q = wobble(q, seed + (t === null ? 0 : tick(t)), amp);
+  if (p < 1) { const L = pathLen(q), end = L * p; let acc = 0, k = 1; for (; k < q.length; k++) { const d = Math.hypot(q[k][0] - q[k - 1][0], q[k][1] - q[k - 1][1]); if (acc + d > end) { const u = (end - acc) / d; q = [...q.slice(0, k), [lerp(q[k - 1][0], q[k][0], u), lerp(q[k - 1][1], q[k][1], u)]]; break; } acc += d; } }
+  c.save(); c.globalAlpha *= al; c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round'; if (dash) c.setLineDash(dash);
+  c.stroke(polyPath(q, close && p >= 1)); c.restore();
+}
+// rshape：填色 + 手绘描边。o = { fill, stroke(默认 P.ink，false 不描), w, seed, t, amp, smooth, al }
+function rshape(c, pts, o = {}) {
+  const { fill = null, stroke = P.ink, w = 4, seed = 1, t = null, amp = 1.2, smooth = false, al = 1 } = o;
+  let q = smooth ? spline(pts, 6, true) : resample(pts, 6, true); q = wobble(q, seed + (t === null ? 0 : tick(t)), amp);
+  const path = polyPath(q, true);
+  c.save(); c.globalAlpha *= al;
+  if (fill) { c.fillStyle = fill; c.fill(path); }
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = w; c.lineJoin = 'round'; c.stroke(path); }
+  c.restore(); return path;
+}
+// hatch：在路径里画斜线阴影
+function hatch(c, path, bbox, o = {}) {
+  const { gap = 14, angle = -.8, color = P.ink, w = 2, al = .25, seed = 1, t = null } = o, [x, y, bw, bh] = bbox, R = Math.hypot(bw, bh);
+  c.save(); c.clip(path); c.globalAlpha *= al; c.strokeStyle = color; c.lineWidth = w; c.lineCap = 'round';
+  const cx = x + bw / 2, cy = y + bh / 2, ca = Math.cos(angle), sa = Math.sin(angle), s = seed + (t === null ? 0 : tick(t));
+  for (let d = -R / 2; d < R / 2; d += gap) { const j = (hash(d | 0, s) - .5) * 3; c.beginPath(); c.moveTo(cx + ca * -R / 2 - sa * (d + j), cy + sa * -R / 2 + ca * (d + j)); c.lineTo(cx + ca * R / 2 - sa * (d - j), cy + sa * R / 2 + ca * (d - j)); c.stroke(); }
+  c.restore();
+}
+// arrow：从 a 到 b 的手绘箭头（可弯：bend 为弯曲量）
+function arrow(c, a, b, o = {}) {
+  const { w = 5, color = P.ink, p = 1, bend = 0, head = 22, seed = 3, t = null } = o;
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+  const pts = spline([a, [mx - dy / L * bend, my + dx / L * bend], b], 6);
+  rline(c, pts, { w, color, p, seed, t });
+  if (p >= .98) { const e = pts.at(-1), f = pts.at(-4) || pts[0], ang = Math.atan2(e[1] - f[1], e[0] - f[0]);
+    rline(c, [[e[0] - Math.cos(ang - .45) * head, e[1] - Math.sin(ang - .45) * head], e, [e[0] - Math.cos(ang + .45) * head, e[1] - Math.sin(ang + .45) * head]], { w, color, seed: seed + 1, t }); }
+}
+function check(c, x, y, s, o = {}) { rline(c, [[x - s * .5, y], [x - s * .12, y + s * .38], [x + s * .55, y - s * .45]], { w: s * .14, color: P.green, ...o }); }
+function cross(c, x, y, s, o = {}) { const p = o.p ?? 1; rline(c, [[x - s * .45, y - s * .45], [x + s * .45, y + s * .45]], { w: s * .14, color: P.red, ...o, p: clamp(p * 2, 0, 1) }); rline(c, [[x + s * .45, y - s * .45], [x - s * .45, y + s * .45]], { w: s * .14, color: P.red, ...o, p: clamp(p * 2 - 1, 0, 1), seed: 7 }); }
+// sparkle：四角星闪光
+function sparkle(c, x, y, r, o = {}) { const { color = '#fff6d8', al = 1, rot = 0 } = o; if (r <= 0) return; c.save(); c.globalAlpha *= al; c.fillStyle = color; c.fill(polyPath(starPts(x, y, r, 4, .28, rot))); c.restore(); }
+// pop：以 (x, y) 为中心缩放 k 后执行 fn（弹出效果：k = easeOutBack(...)）
+function pop(c, x, y, k, fn) { if (k <= .001) return; c.save(); c.translate(x, y); c.scale(k, k); c.translate(-x, -y); fn(); c.restore(); }
+// fade：以透明度 a 执行 fn
+function fade(c, a, fn) { if (a <= .001) return; c.save(); c.globalAlpha *= clamp(a, 0, 1); fn(); c.restore(); }
+
+// ===================== 字 =====================
+// zh：手写楷体。o = { size=48, color, align='left'|'center'|'right', p=1（显示前 p 比例的字，逐字写出）, weight=400, outline（描边颜色）, ow 描边宽, base='alphabetic'|'middle', al }
+function zh(c, text, x, y, o = {}) {
+  const { size = 48, color = P.ink, align = 'left', p = 1, weight = 400, outline = null, ow = 8, base = 'alphabetic', al = 1 } = o;
+  const chars = [...String(text)], n = p >= 1 ? chars.length : Math.floor(chars.length * clamp(p, 0, 1) + 1e-6), s = chars.slice(0, n).join('');
+  if (!s) return;
+  c.save(); c.globalAlpha *= al; c.font = `${weight} ${size}px ${ZH_STACK}`; c.textBaseline = base;
+  // 对齐按全句宽度算，逐字写出时不跳位
+  const full = c.measureText(chars.join('')).width, x0 = align === 'center' ? x - full / 2 : align === 'right' ? x - full : x;
+  c.textAlign = 'left';
+  if (outline) { c.lineJoin = 'round'; c.strokeStyle = outline; c.lineWidth = ow; c.strokeText(s, x0, y); }
+  c.fillStyle = color; c.fillText(s, x0, y); c.restore();
+}
+function zhWidth(c, text, size = 48, weight = 400) { c.save(); c.font = `${weight} ${size}px ${ZH_STACK}`; const w = c.measureText(text).width; c.restore(); return w; }
+// wrapText：按宽度折行（中文逐字），返回行数组
+function wrapText(c, text, maxW, size = 48) { const out = []; let cur = ''; for (const ch of String(text)) { if (ch === '\n') { out.push(cur); cur = ''; continue; } if (zhWidth(c, cur + ch, size) > maxW && cur) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out; }
+// writeP：从 t0 开始逐字写出的进度（每字 spc 秒）
+const writeP = (tau, t0, text, spc = .07) => clamp((tau - t0) / Math.max(.01, [...String(text)].length * spc), 0, 1);
+
+// ===================== 场景布景 =====================
+// libraryBg：大图书馆夜景（远处书架、暖灯、飘着的尘光）。o = { dim 0..1 压暗, seed }
+function libraryBg(c, t, o = {}) {
+  const { dim = 0, seed = 3 } = o;
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, P.night); g.addColorStop(1, P.night2); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  // 远处书架：三排，越远越暗
+  for (let row = 0; row < 3; row++) {
+    const y0 = 60 + row * 300, hh = 250, dark = mix(P.shelfDark, P.night, .35 + row * .05);
+    c.fillStyle = dark; c.fillRect(0, y0 - 18, W, 18); c.fillRect(0, y0 + hh, W, 22);
+    let x = -10; const r = rng(seed * 31 + row);
+    while (x < W) { const bw = 18 + r() * 26, bh = hh * (.62 + r() * .36), col = ['#5b3a55', '#3d4a6b', '#6b4a3a', '#4a5a4a', '#5a3040', '#3a3a60', '#6a5a3a'][Math.floor(r() * 7)];
+      c.fillStyle = mix(col, P.night, .45 + row * .08); c.fillRect(x, y0 + hh - bh, bw - 3, bh);
+      if (r() < .5) { c.fillStyle = alpha('#e8c98a', .12); c.fillRect(x + 3, y0 + hh - bh + 12, bw - 9, 4); }
+      x += bw + (r() < .08 ? 30 : 0); }
+  }
+  // 暖灯光晕
+  const lg = c.createRadialGradient(W * .5, 120, 20, W * .5, 200, 900); lg.addColorStop(0, alpha(P.lamp, .22)); lg.addColorStop(1, alpha(P.lamp, 0)); c.fillStyle = lg; c.fillRect(0, 0, W, H);
+  // 地板
+  const fg = c.createLinearGradient(0, 930, 0, H); fg.addColorStop(0, '#2a1d2e'); fg.addColorStop(1, '#170f1f'); c.fillStyle = fg; c.fillRect(0, 930, W, H - 930);
+  // 飘浮的尘光
+  for (let k = 0; k < 40; k++) { const x = (hash(k, seed) * W + t * (8 + hash(k, 2) * 14)) % W, y = (hash(k, 5) * 900 - t * (5 + hash(k, 7) * 9) + 2000) % 900 + 40, a = .25 + .35 * Math.sin(t * 1.3 + k);
+    c.fillStyle = alpha('#fff0c0', Math.max(0, a) * .6); c.beginPath(); c.arc(x, y, 1.5 + hash(k, 9) * 2.5, 0, TAU); c.fill(); }
+  if (dim > 0) { c.fillStyle = alpha('#000', dim); c.fillRect(0, 0, W, H); }
+}
+// board：羊皮纸魔导书页（讲台右边的「黑板」）。返回内容区 { x, y, w, h }。o = { t, title, seed, color }
+function board(c, x, y, w, h, o = {}) {
+  const { t = null, title = null, seed = 11, color = P.paper } = o;
+  c.save(); c.fillStyle = alpha('#000', .35); c.fill(polyPath(rectPts(x + 10, y + 14, w, h, 18))); c.restore();
+  rshape(c, rectPts(x, y, w, h, 18), { fill: color, stroke: P.paperEdge, w: 6, seed, t, amp: 1 });
+  c.save(); c.clip(polyPath(rectPts(x, y, w, h, 18)));
+  const g = c.createRadialGradient(x + w / 2, y + h / 2, Math.min(w, h) * .3, x + w / 2, y + h / 2, Math.max(w, h) * .75); g.addColorStop(0, alpha(P.paper2, 0)); g.addColorStop(1, alpha(P.paperEdge, .45)); c.fillStyle = g; c.fillRect(x, y, w, h);
+  c.restore();
+  // 四角的魔法花纹
+  for (const [cx, cy, sx, sy] of [[x + 26, y + 26, 1, 1], [x + w - 26, y + 26, -1, 1], [x + 26, y + h - 26, 1, -1], [x + w - 26, y + h - 26, -1, -1]])
+    rline(c, [[cx, cy + sy * 40], [cx, cy], [cx + sx * 40, cy]], { w: 3, color: P.paperEdge, seed: seed + cx, t });
+  if (title) { zh(c, title, x + w / 2, y + 74, { size: 52, align: 'center', color: P.ink, weight: 400 }); rline(c, [[x + w / 2 - zhWidth(c, title, 52) / 2 - 20, y + 96], [x + w / 2 + zhWidth(c, title, 52) / 2 + 20, y + 96]], { w: 3, color: P.paperEdge, seed: seed + 5, t }); }
+  return { x: x + 40, y: y + (title ? 120 : 40), w: w - 80, h: h - (title ? 160 : 80) };
+}
+// chapterTag：左上角章节签（「第一页 · 睡眠」）
+function chapterTag(c, tau, text, o = {}) {
+  const { t0 = 0, color = P.moon } = o, k = sm(t0, t0 + .5, tau, easeOutBack); if (k <= 0) return;
+  const w = zhWidth(c, text, 40) + 70;
+  c.save(); c.translate(lerp(-w, 0, k), 0);
+  rshape(c, [[0, 36], [36 + w, 36], [w + 10, 70], [36 + w, 104], [0, 104]], { fill: P.ink, stroke: color, w: 3, seed: 21, t: tau });
+  drawMoonIcon(c, 40, 70, 18, color);
+  zh(c, text, 70, 84, { size: 40, color: P.paper });
+  c.restore();
+}
+// drawMoonIcon：月牙（帕秋莉帽子上的那个）。rot 旋转
+function drawMoonIcon(c, x, y, r, color = P.moon, rot = 0) { c.save(); c.translate(x, y); c.rotate(rot); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.clip(); const p = new Path2D(); p.arc(0, 0, r, 0, TAU); p.moveTo(r * .45 + r * .85, -r * .3); p.arc(r * .45, -r * .3, r * .85, 0, TAU); c.fillStyle = color; c.fill(p, 'evenodd'); c.restore(); }
+// magicCircle：旋转的魔法阵（帕秋莉施法、转场）。o = { color, al, spin }
+function magicCircle(c, x, y, r, t, o = {}) {
+  const { color = P.moon, al = 1, spin = .3 } = o; if (r <= 1) return;
+  c.save(); c.globalAlpha *= al; c.translate(x, y); c.strokeStyle = color; c.lineWidth = 3;
+  c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke(); c.beginPath(); c.arc(0, 0, r * .86, 0, TAU); c.stroke();
+  c.rotate(t * spin); c.beginPath(); for (let k = 0; k <= 5; k++) { const a = k * 2 * TAU / 5 - Math.PI / 2; k ? c.lineTo(Math.cos(a) * r * .86, Math.sin(a) * r * .86) : c.moveTo(Math.cos(a) * r * .86, Math.sin(a) * r * .86); } c.stroke();
+  c.rotate(-t * spin * 2); c.font = `${r * .1}px serif`; c.fillStyle = color; c.textAlign = 'center';
+  const runes = '日月火水木金土☾✦◇'; for (let k = 0; k < 20; k++) { c.save(); c.rotate(k / 20 * TAU); c.fillText(runes[k % runes.length], 0, -r * .9); c.restore(); }
+  c.restore();
+}
+// bubble：对话气泡/便签。tail = [x, y] 尾巴指向点（可空）
+function bubble(c, x, y, w, h, o = {}) {
+  const { tail = null, fill = '#fff', stroke = P.ink, t = null, seed = 31, w: lw = 4 } = o;
+  const pts = rectPts(x, y, w, h, Math.min(28, h / 3));
+  const bx = tail && clamp(tail[0], x + 40, x + w - 40), by = tail && (tail[1] > y + h ? y + h : y);
+  if (tail) rshape(c, [[bx - 22, by], tail, [bx + 22, by]], { fill, stroke, w: lw, seed: seed + 1, t });
+  rshape(c, pts, { fill, stroke, w: lw, seed, t });
+  // 盖住气泡边框和尾巴相接的那一段，让尾巴和气泡连成一体
+  if (tail) { c.save(); c.strokeStyle = fill; c.lineWidth = lw + 3; c.beginPath(); c.moveTo(bx - 17, by); c.lineTo(bx + 17, by); c.stroke(); c.restore(); }
+}
+
+// ===================== 讲台布局 =====================
+// 标准讲课画面：帕秋莉站左边，右边一块魔导书页当黑板，字幕在最下方。场景可以不用这个布局。
+const STAGE = {
+  char: { x: 360, y: 1040, h: 860 },          // 帕秋莉脚底中心和身高
+  board: { x: 700, y: 70, w: 1170, h: 790 },   // 黑板（魔导书页）
+  sub: { y: 990 },                             // 字幕基线（film.js 画）
+};
+// blinkAt：自动眨眼。返回 0..1（1 = 闭眼）
+function blinkAt(t, seed = 1) { const period = 3.2 + hash(1, seed) * 1.5, u = ((t + hash(2, seed) * 3) % period); return u < .12 ? Math.sin(u / .12 * Math.PI) : 0; }
+// stageChar：在讲台位置画帕秋莉，嘴型、表情、眨眼自动从当前台词取。o 覆盖 drawPatchouli 的参数
+function stageChar(c, tau, L, o = {}) {
+  drawPatchouli(c, { x: STAGE.char.x, y: STAGE.char.y, h: STAGE.char.h, facing: 1, pose: 'lecture', mood: (L && L.mood) || 'normal', mouth: (L && L.mouth) || 0, blink: blinkAt(tau), t: tau, ...o });
+}
