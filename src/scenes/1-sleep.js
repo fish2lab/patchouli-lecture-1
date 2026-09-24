@@ -88,6 +88,7 @@ function s1Student(c, x, y, s, o = {}) {
   const { t = 0, pose = 'stand', k = 1, ph = 0, facing = 1, shirt = P.blue, pants = P.ink2, seed = 40 } = o;
   const st = pose === 'stretch' ? k : 0, walk = pose === 'walk';
   c.save(); c.translate(x, y); c.scale(s * facing, s);
+  if (st > 0) c.rotate(Math.sin(t * 2.4) * .06 * st);
   c.fillStyle = alpha(P.ink, .18); c.beginPath(); c.ellipse(0, 4, 62, 12, 0, 0, TAU); c.fill();
   c.translate(0, walk ? -Math.abs(Math.sin(ph)) * 7 : -st * 6);
   const sw = walk ? Math.sin(ph) * .45 : 0;
@@ -629,6 +630,10 @@ function s1Night(c, tau) {
   c.save(); c.globalAlpha = dark; c.strokeStyle = alpha(mix(P.sky, '#fff', .6), .9); c.lineWidth = 5; c.stroke(polyPath(rectPts(-44, -76, 88, 152, 16))); c.restore();
   rshape(c, ellPts(-30, 52, 16, 13, 14), { fill: skin, w: 3.5, seed: 662, t }); rshape(c, ellPts(38, 34, 9, 12, 12), { fill: skin, w: 3, seed: 665, t });
   c.restore();
+  // 手机里冒出来的点赞、消息
+  if (dark > 0) for (let k = 0; k < 5; k++) { const q = (t * .55 + k / 5) % 1, x0 = ph[0] + 20 + (hash(k, 4) - .5) * 90 + Math.sin(q * 6 + k) * 16, y0 = ph[1] - 90 - q * 190, al = Math.sin(q * Math.PI) * dark;
+    if (k % 2) rshape(c, heartPts(x0, y0, 14 + 4 * hash(k, 5)), { fill: alpha(P.pink, al), stroke: alpha(P.ink, al), w: 2.5, seed: 680 + k, t });
+    else { rshape(c, rectPts(x0 - 20, y0 - 14, 40, 28, 10), { fill: alpha(P.sky, al), stroke: alpha(P.ink, al), w: 2.5, seed: 685 + k, t }); for (let j = -1; j <= 1; j++) { c.fillStyle = alpha(P.ink, al); c.beginPath(); c.arc(x0 + j * 10, y0, 3, 0, TAU); c.fill(); } } }
   // 上铺室友的 Zzz
   for (let k = 0; k < 3; k++) { const q = (t * .45 + k / 3) % 1; zh(c, 'Z', 640 + q * 80 + k * 5, 300 - q * 110, { size: 28 + q * 20, color: P.paper2, al: Math.sin(q * Math.PI) * .9 }); }
   c.restore();
