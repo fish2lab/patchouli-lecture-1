@@ -31,42 +31,49 @@ const S4C = { bg: mix(P.blue, '#0b2a55', .62), hi: mix(P.blue, '#2a64a0', .5), d
   white: '#eef0e6', red: mix(P.red, '#ffffff', .25), gold: P.moon, edge: '#e4e2d6' };
 const s4W = (a = 1) => alpha(S4C.white, a);
 
-// 蓝晒纸：底色 + 曝光不匀的色斑 + 刷子纹 + 四边露出的纸（载入时画一次）
+// 蓝晒纸：底色 + 曝光不匀的色斑 + 刷子纹 + 四边露出的纸（载入时画一次）；S4INSET 是刷子没刷到的纸边宽度
+const S4INSET = 34;
+function s4EdgePts(seed) { // 刷涂区域的轮廓：四边各自毛糙，角是圆的
+  const pts = [], m = S4INSET, pad = (u, s) => m - 12 + 16 * noise1(u * 22, s) + 5 * noise1(u * 90, s + 5);
+  const n = 90; for (let i = 0; i < n; i++) { const u = i / n; pts.push([m + u * (W - 2 * m), pad(u, seed)]); }
+  for (let i = 0; i < 50; i++) { const u = i / 50; pts.push([W - pad(u, seed + 1), m + u * (H - 2 * m)]); }
+  for (let i = 0; i < n; i++) { const u = i / n; pts.push([W - m - u * (W - 2 * m), H - pad(u, seed + 2)]); }
+  for (let i = 0; i < 50; i++) { const u = i / 50; pts.push([pad(u, seed + 3), H - m - u * (H - 2 * m)]); }
+  return pts; }
+const S4EDGE = polyPath(s4EdgePts(7));
 const S4SHEET = (() => {
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'), r = rng(401);
+  g.fillStyle = S4C.edge; g.fillRect(0, 0, W, H);
+  // 纸边上的刷毛痕：左右两边横向的细长笔触伸进纸边
+  g.save(); g.lineCap = 'round';
+  for (let k = 0; k < 90; k++) { const y = r() * H, left = k % 2, len = 30 + r() * 60; g.strokeStyle = alpha(S4C.bg, .25 + r() * .4); g.lineWidth = 1 + r() * 3.5;
+    g.beginPath(); if (left) { g.moveTo(S4INSET + 20, y); g.lineTo(S4INSET + 20 - len, y + (r() - .5) * 4); } else { g.moveTo(W - S4INSET - 20, y); g.lineTo(W - S4INSET - 20 + len, y + (r() - .5) * 4); } g.stroke(); }
+  g.restore();
+  g.save(); g.clip(S4EDGE);
   g.fillStyle = S4C.bg; g.fillRect(0, 0, W, H);
-  for (let k = 0; k < 16; k++) { const x = r() * W, y = r() * H, rr = 180 + r() * 480, col = r() < .55 ? S4C.hi : S4C.deep, a = .18 + r() * .22;
+  for (let k = 0; k < 14; k++) { const x = r() * W, y = r() * H, rr = 220 + r() * 520, col = r() < .5 ? S4C.hi : S4C.deep, a = .16 + r() * .2;
     const gr = g.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, alpha(col, a)); gr.addColorStop(1, alpha(col, 0)); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
-  // 刷子纹：横向长笔触
-  for (let k = 0; k < 70; k++) { const y = r() * H, x0 = -100 + r() * 300, x1 = W - 200 + r() * 300, w = 6 + r() * 40;
-    g.strokeStyle = alpha(r() < .5 ? S4C.hi : S4C.deep, .08 + r() * .1); g.lineWidth = w; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(x0, y); g.bezierCurveTo(W * .33, y + (r() - .5) * 30, W * .66, y + (r() - .5) * 30, x1, y + (r() - .5) * 20); g.stroke(); }
-  // 四边：刷子没刷到的地方露出纸，边缘毛糙
-  const edge = new Path2D(); edge.rect(0, 0, W, H);
-  const inner = []; const pad = (u, s) => 16 + 22 * (.5 + .5 * noise1(u * 38, s)) + 10 * Math.max(0, noise1(u * 140, s + 3));
-  for (let i = 0; i <= 120; i++) { const u = i / 120; inner.push([u * W, pad(u, 1)]); }
-  for (let i = 0; i <= 70; i++) { const u = i / 70; inner.push([W - pad(u, 2), u * H]); }
-  for (let i = 0; i <= 120; i++) { const u = i / 120; inner.push([W - u * W, H - pad(u, 3)]); }
-  for (let i = 0; i <= 70; i++) { const u = i / 70; inner.push([pad(u, 4), H - u * H]); }
-  edge.addPath(polyPath(inner)); g.fillStyle = S4C.edge; g.fill(edge, 'evenodd');
-  // 纸边上零星的蓝色刷痕
-  for (let k = 0; k < 40; k++) { const side = k % 4, u = r(), len = 20 + r() * 60; g.strokeStyle = alpha(S4C.bg, .35 + r() * .3); g.lineWidth = 2 + r() * 5; g.beginPath();
-    if (side === 0) { g.moveTo(u * W, 40); g.lineTo(u * W + len, 12 + r() * 20); } else if (side === 2) { g.moveTo(u * W, H - 40); g.lineTo(u * W + len, H - 12 - r() * 20); }
-    else if (side === 1) { g.moveTo(W - 40, u * H); g.lineTo(W - 12 - r() * 16, u * H + len * .5); } else { g.moveTo(40, u * H); g.lineTo(12 + r() * 16, u * H + len * .5); } g.stroke(); }
+  // 刷子纹：少量宽而淡的横向笔触，略斜
+  for (let k = 0; k < 22; k++) { const y = r() * H, w = 30 + r() * 110, tilt = (r() - .5) * 60;
+    g.strokeStyle = alpha(r() < .5 ? S4C.hi : S4C.deep, .05 + r() * .07); g.lineWidth = w; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-100, y - tilt); g.bezierCurveTo(W * .33, y + (r() - .5) * 50, W * .66, y + (r() - .5) * 50, W + 100, y + tilt); g.stroke(); }
+  // 边缘药液积得厚一点：内框附近压暗
+  const vg = g.createRadialGradient(CX, CY, H * .45, CX, CY, W * .62); vg.addColorStop(0, alpha(S4C.deep, 0)); vg.addColorStop(1, alpha(S4C.deep, .45)); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  g.restore();
   grain(g, polyPath(rectPts(0, 0, W, H)), .16);
   return cv;
 })();
 
 // ===================== 星（神经元）和连线 =====================
-const S4N = 34;
+const S4N = 44;
 const S4ST = (() => { const r = rng(404), out = []; let guard = 0;
   while (out.length < S4N && guard++ < 20000) { const x = r() * 2 - 1, y = r() * 2 - 1, z = r() * 2 - 1; if (x * x + y * y + z * z > 1) continue;
-    const p = [x * 460, y * 250, z * 320]; if (out.some(q => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 118)) continue; out.push([...p, .45 + r() * .8]); }
+    const p = [x * 540, y * 300, z * 420]; if (out.some(q => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 125)) continue; out.push([...p, .45 + r() * .8]); }
   return out; })();
 const s4D = (i, j) => Math.hypot(S4ST[i][0] - S4ST[j][0], S4ST[i][1] - S4ST[j][1], S4ST[i][2] - S4ST[j][2]);
 // 连线：最近邻，每颗星最多 3 条
 const S4ED = (() => { const pr = []; for (let i = 0; i < S4N; i++) for (let j = i + 1; j < S4N; j++) pr.push([s4D(i, j), i, j]); pr.sort((a, b) => a[0] - b[0]);
-  const deg = Array(S4N).fill(0), E = []; for (const [d, i, j] of pr) { if (E.length >= 44 || d > 330) break; if (deg[i] < 3 && deg[j] < 3) { E.push([i, j]); deg[i]++; deg[j]++; } } return E; })();
+  const deg = Array(S4N).fill(0), E = []; for (const [d, i, j] of pr) { if (E.length >= 58 || d > 340) break; if (deg[i] < 3 && deg[j] < 3) { E.push([i, j]); deg[i]++; deg[j]++; } } return E; })();
 const s4Has = (i, j) => S4ED.some(([a, b]) => (a === i && b === j) || (a === j && b === i));
 // L0 改连的几条：[边序号, 新的另一端]
 const S4REW = [5, 13, 22, 31].filter(e => e < S4ED.length).map(e => { const [i, j] = S4ED[e]; let best = -1, bd = 1e9;
@@ -74,9 +81,9 @@ const S4REW = [5, 13, 22, 31].filter(e => e < S4ED.length).map(e => { const [i, 
 
 // 旋转：绕 Y 转 a，再绕 X 转 b
 function s4Rot(p, a, b) { const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b); const x = p[0] * ca + p[2] * sa, z = -p[0] * sa + p[2] * ca; return [x, p[1] * cb - z * sb, p[1] * sb + z * cb]; }
-const s4Ang = tau => .35 + tau * .045;
+const s4Ang = tau => .35 + tau * .055;
 const S4TILT = .2;
-const s4Cam = tau => ({ x: 330 + 50 * Math.sin(tau * .13), y: 30 + 24 * Math.sin(tau * .11 + 1), z: -1500, f: 1150 });
+const s4Cam = tau => ({ x: 200 + 90 * Math.sin(tau * .13), y: 30 + 40 * Math.sin(tau * .11 + 1), z: -1500, f: 1250 });
 
 // 生理叹息的呼吸量 0..1：吸（大）→ 再吸（补一小口）→ 呼（长），做一遍半。时间对着语音：「连吸」「两口气」「再用嘴慢慢地、长长地呼出去」
 function s4Breath(tau) {
@@ -117,6 +124,8 @@ function s4RingPt(th) { return s4Rot([S4RR * Math.sin(th), -S4RR * Math.cos(th),
 function s4RingW(k, tau) { return s4RingPt(s4RingTh(tau) + k * TAU / 12); }
 
 // 背景的远星（视差）
+// 近处飘过的几粒星尘（离镜头近，镜头一漂就移得多：视差）
+const S4NEAR = Array.from({ length: 16 }, (_, k) => [(hash(k, 56) - .5) * 1900, (hash(k, 57) - .5) * 1100, -1050 + hash(k, 58) * 500, hash(k, 59)]);
 const S4DUST = Array.from({ length: 170 }, (_, k) => [(hash(k, 51) - .5) * 5200, (hash(k, 52) - .5) * 3000, 900 + hash(k, 53) * 3800, hash(k, 54)]);
 
 // ===================== 小画具 =====================
@@ -137,34 +146,33 @@ function s4Line(c, a, b, o = {}) { const { p = 1, al = 1, col = S4C.white, w = n
 // 取线段 a→b 上比例 u 的点
 const s4L = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u)];
 
-// 白线小人（侧面，坐在桌前）。d 低头 0..1，lift 屏幕垫高 0..1，gz 视线终点（null 用屏幕），al 透明度。返回 { eye, scr }
-function s4Figure(c, tau, d, lift, gz, al, books) {
-  if (al <= 0) return null; c.save(); c.globalAlpha *= al; const o = { w: 4, color: s4W(.95), amp: .7 }, sd = 4300;
-  const X = 300, Y = 0;
+// 白线小人（侧面，坐在桌前）。d 低头 0..1，lift 屏幕垫高 0..1，gz 视线被拽向 { p, k }，books 三本垫书各自往右抽出去的量 0..1。返回 { eye, scr, head }
+function s4Figure(c, tau, d, lift, gz, books) {
+  const o = { w: 4, color: s4W(.95), amp: .7 }, sd = 4300, X = 300, DY = 745;
   // 凳子、桌子
-  rline(c, [[X + 30, Y + 770], [X + 150, Y + 770]], { ...o, seed: sd }); rline(c, [[X + 45, Y + 770], [X + 30, Y + 880]], { ...o, seed: sd + 1 }); rline(c, [[X + 135, Y + 770], [X + 150, Y + 880]], { ...o, seed: sd + 2 });
-  rline(c, [[X + 270, Y + 700], [X + 700, Y + 700]], { ...o, seed: sd + 3 }); rline(c, [[X + 300, Y + 700], [X + 300, Y + 880]], { ...o, seed: sd + 4 }); rline(c, [[X + 670, Y + 700], [X + 670, Y + 880]], { ...o, seed: sd + 5 });
+  rline(c, [[X + 30, DY + 40], [X + 150, DY + 40]], { ...o, seed: sd }); rline(c, [[X + 45, DY + 40], [X + 30, 885]], { ...o, seed: sd + 1 }); rline(c, [[X + 135, DY + 40], [X + 150, 885]], { ...o, seed: sd + 2 });
+  rline(c, [[X + 250, DY], [X + 720, DY]], { ...o, seed: sd + 3 }); rline(c, [[X + 280, DY], [X + 280, 885]], { ...o, seed: sd + 4 }); rline(c, [[X + 690, DY], [X + 690, 885]], { ...o, seed: sd + 5 });
   // 身体：背随低头弯
-  const hip = [X + 95, Y + 755], sh = [X + 110 + 34 * d, Y + 590 + 14 * d], head = [X + 132 + 58 * d, Y + 530 + 36 * d];
-  rline(c, [hip, [X + 90 + 14 * d, Y + 670], sh], { ...o, smooth: true, seed: sd + 6 });
-  rline(c, [hip, [X + 215, Y + 765], [X + 222, Y + 875], [X + 250, Y + 875]], { ...o, seed: sd + 7 });
-  rline(c, [sh, [X + 190 + 10 * d, Y + 668], [X + 310, Y + 690]], { ...o, seed: sd + 8 });
+  const hip = [X + 95, DY + 25], sh = [X + 112 + 40 * d, DY - 160 + 22 * d], head = [X + 136 + 66 * d, DY - 222 + 46 * d];
+  rline(c, [hip, [X + 88 + 16 * d, DY - 70], sh], { ...o, smooth: true, seed: sd + 6 });
+  rline(c, [hip, [X + 215, DY + 35], [X + 222, 880], [X + 252, 880]], { ...o, seed: sd + 7 });
+  rline(c, [sh, [X + 196 + 10 * d, DY - 72], [X + 300, DY - 8]], { ...o, seed: sd + 8 });
   rline(c, [sh, head], { ...o, seed: sd + 9 });
   rline(c, circPts(head[0], head[1], 38, 28), { ...o, close: true, seed: sd + 10 });
-  // 书垫（白线的三本书，lift 时从右边滑进来）
-  const bh = 36; let top = Y + 700;
-  books.forEach((bx, k) => { if (bx === null) return; const y1 = Y + 700 - bh * k, y0 = y1 - bh; rline(c, rectPts(X + 440 + bx + (k % 2) * 8, y0, 190 - k * 12, bh), { ...o, w: 3, close: true, seed: sd + 20 + k }); });
-  top -= bh * 3 * lift;
+  // 三本垫书（抽出去时往右滑、淡掉）
+  const bh = 52; books.forEach((u, k) => { if (u >= 1) return; const y1 = DY - bh * k, y0 = y1 - bh; c.save(); c.globalAlpha *= 1 - u;
+    rline(c, rectPts(X + 430 + u * (260 + k * 60) + (k % 2) * 10, y0, 200 - k * 14, bh), { ...o, w: 3, close: true, seed: sd + 20 + k }); c.restore(); });
+  const top = DY - bh * 3 * lift;
   // 笔记本电脑（侧面）：底座 + 翻起来的屏幕
   const bx0 = X + 450, bx1 = X + 610; rline(c, [[bx0, top], [bx1, top]], { ...o, w: 5, seed: sd + 30 });
-  const lid = [[bx1 - 6, top], [bx1 - 38, top - 160]]; rline(c, lid, { ...o, w: 6, seed: sd + 31 });
-  const scr = [bx1 - 24, top - 88];
+  rline(c, [[bx1 - 6, top], [bx1 - 34, top - 130]], { ...o, w: 6, seed: sd + 31 });
+  const scr = [bx1 - 22, top - 70];
   // 眼睛和视线
   const eye = [head[0] + 20, head[1] - 4 + 4 * d], closed = d > .6;
   if (closed) rline(c, [[eye[0] - 7, eye[1]], [eye[0], eye[1] + 4], [eye[0] + 7, eye[1]]], { ...o, w: 3, seed: sd + 40 }); else { c.fillStyle = s4W(); c.beginPath(); c.arc(eye[0], eye[1], 4.5, 0, TAU); c.fill(); }
   const tgt = gz && gz.k > 0 ? s4L(scr, gz.p, gz.k) : scr;
   if (!closed || (gz && gz.k > 0)) rline(c, [[eye[0] + 10, eye[1]], tgt], { w: 2.5, color: s4W(.8), dash: [3, 12], seed: sd + 41, amp: .3 });
-  c.restore(); return { eye, scr, head, top };
+  return { eye, scr, head, top };
 }
 // 手机：白线轮廓，on 亮屏，moon 专注模式（屏幕压暗 + 金月牙），dot 红点
 function s4Phone(c, x, y, s, o = {}) { const { dot = 0, moon = 0, al = 1, rot = 0 } = o; if (al <= 0 || s <= .01) return;
@@ -195,11 +203,14 @@ function s4Quiz(c, x, y, k, tau, rx) { if (k <= .01) return; pop(c, x, y, k, () 
 // ===================== 帕秋莉：每句的表演 =====================
 function s4Char(c, tau, L) {
   const t = s4T, ln = k => tau >= t(k), talk = L.talking ? L.mouth : 0;
-  let o = { x: 1500, y: 862, h: 520, pose: 'lecture', mood: L.mood || 'normal', look: -.3, facing: -1, tilt: 0 };
+  // 每句换个位置：句首突然漂过去，然后停住
+  const xs = [1500, 1470, 1400, 1560, 1500, 1560, 1470, 1590, 1520, 1450]; let x = xs[0];
+  for (let k = 1; k < xs.length; k++) x = lerp(x, xs[k], sm(t(k) - .25, t(k) + .3, tau, easeIO));
+  let o = { x, y: 862, h: 520, pose: 'lecture', mood: L.mood || 'normal', look: -.3, facing: -1, tilt: 0 };
   if (!ln(1)) { o.gesture = tau < s4At(0, .6) ? .4 : .6 + .4 * Math.sin(twos(tau) * 2); }
   if (ln(1) && !ln(2)) { const f = (tau - t(1)); if (f < s4At(1, .5) - t(1)) { o.pose = 'hide'; o.mood = 'flustered'; o.look = -.6; } else { o.pose = 'point'; o.mood = 'normal'; o.look = -.8; } }
   if (ln(2) && !ln(3)) { if (tau < s4At(2, .62)) { o.pose = 'cross'; o.mood = 'pout'; } else { o.pose = 'point'; o.mood = 'smug'; o.look = -.7; } }
-  if (ln(3) && !ln(4)) { o.pose = 'sit'; o.y = 700; o.x = 1520; o.mood = tau < s4At(3, .3) ? 'normal' : 'sleepy'; o.tilt = .12 * sm(s4At(3, .45), s4At(3, .75), tau); }
+  if (ln(3) && !ln(4)) { o.pose = 'sit'; o.y = 712; o.mood = tau < s4At(3, .3) ? 'normal' : 'sleepy'; o.tilt = .12 * sm(s4At(3, .45), s4At(3, .75), tau); }
   if (ln(4) && !ln(5)) { if (tau < s4At(4, .62)) { o.pose = 'point'; o.look = -.8; o.mood = 'normal'; } else { o.pose = 'cross'; o.mood = 'pout'; } }
   if (ln(5) && !ln(6)) { if (tau < s4At(5, .55)) { o.pose = 'hide'; o.mood = 'flustered'; o.x += 4 * Math.sin(twos(tau) * 40); } else { o.pose = 'lecture'; o.mood = 'normal'; o.gesture = .9; } }
   if (ln(6) && !ln(7)) { const b = s4Breath(tau); o.pose = 'stand'; o.h = 520 * (1 + .035 * b); o.tilt = -.08 * b; o.mood = b < .5 && tau > s4At(6, .5) ? 'smile' : 'normal'; }
@@ -208,7 +219,7 @@ function s4Char(c, tau, L) {
   if (ln(9)) { if (tau < s4At(9, .7)) { o.pose = 'point'; o.look = -.8; o.mood = 'normal'; } else { o.pose = 'cross'; o.mood = 'smug'; } }
   // 飘着：轻轻上下（坐在大星上时跟着星）
   const bob = 7 * Math.sin(twos(tau) * 1.5);
-  const drop = 1 - sm(.7, 1.5, tau, easeOutBack);
+  const drop = 1 - sm(1.0, 1.7, tau, easeOutBack);
   o.y += bob - drop * 900;
   c.save(); c.filter = 'brightness(.9) saturate(.85)';
   const r = drawPatchouli(c, { ...o, mouth: talk, blink: o.mood === 'sleepy' && tau > s4At(3, .6) && tau < t(4) ? 1 : blinkAt(tau, 4), t: tau });
@@ -221,15 +232,16 @@ function s4Scene(c, tau, L) {
   // ---- 纸：进场时蓝晒液一刷一刷盖过夜色 ----
   const dev = sm(S4IN, S4IN + 1.1, tau);
   if (dev < 1) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06);
-    c.save(); const cl = new Path2D(); for (let k = 0; k < 9; k++) { const y0 = k * H / 9 - 6, e = sm(S4IN + k * .07, S4IN + .55 + k * .07, tau, easeOut), x1 = lerp(-120, W + 160, e);
-      const pts = [[-10, y0], [x1, y0], [x1 + 40 * noise1(k * 3.3, 5), y0 + H / 18], [x1 - 20, y0 + H / 9 + 12], [-10, y0 + H / 9 + 12]]; cl.addPath(polyPath(pts)); }
+    // 一笔一笔从左往右刷：每笔的前端斜着、毛糙（刷毛）
+    c.save(); const cl = new Path2D(), nb = 12, bh = H / nb; for (let k = 0; k < nb; k++) { const y0 = k * bh - 8, e = sm(S4IN + (k * 5 % nb) * .045, S4IN + .6 + (k * 5 % nb) * .045, tau, easeOut), x1 = lerp(-260, W + 260, e);
+      const pts = [[-10, y0]]; for (let j = 0; j <= 8; j++) { const v = j / 8; pts.push([x1 + 90 * (.5 - v) + 30 * noise1(j * 1.7 + k * 5, 5), y0 + v * (bh + 16)]); } pts.push([-10, y0 + bh + 16]); cl.addPath(polyPath(pts)); }
     c.clip(cl); c.drawImage(S4SHEET, 0, 0); c.restore(); }
   else c.drawImage(S4SHEET, 0, 0);
 
   // ---- L3：夜，更深的蓝从右边盖过半张星图 ----
   const nk = sm(s4At(3, .3), s4At(3, .5), tau, easeOut) * (1 - sm(s4T(4) - .1, s4T(4) + .5, tau, easeIO));
-  if (nk > 0) { const x0 = lerp(W + 60, 820, nk), pts = [[x0, -10]]; for (let i = 0; i <= 24; i++) { const u = i / 24; pts.push([x0 + 26 * noise1(u * 9, 11) + (i % 2) * 8, u * H]); } pts.push([x0, H + 10], [W + 10, H + 10], [W + 10, -10]);
-    c.save(); c.globalAlpha *= .82; cutPaper(c, pts, S4C.night, { seed: 4700, step: 30, shadow: false, grain: .1, edge: false }); c.restore();
+  if (nk > 0) { const C0 = proj(S.off, cam), x0 = lerp(W + 60, (C0 ? C0[0] : 820) + 10, nk), pts = [[x0, -10]]; for (let i = 0; i <= 24; i++) { const u = i / 24; pts.push([x0 + 26 * noise1(u * 9, 11) + (i % 2) * 8, u * H]); } pts.push([x0, H + 10], [W + 10, H + 10], [W + 10, -10]);
+    c.save(); c.clip(S4EDGE); c.globalAlpha *= .85; cutPaper(c, pts, S4C.night, { seed: 4700, step: 30, shadow: false, grain: .1, edge: false }); c.restore();
     drawMoonIcon(c, x0 + 700 - 120, 190, 34 * sm(s4At(3, .5), s4At(3, .6), tau, easeOutBack), S4C.gold, -.4); }
 
   // ---- 远星 ----
@@ -237,6 +249,9 @@ function s4Scene(c, tau, L) {
   for (let k = 0; k < S4DUST.length; k++) { const d = S4DUST[k], p = proj(s4Rot(d, s4Ang(tau) * .35, 0), cam); if (!p || dustA <= 0) continue;
     const tw = .55 + .45 * Math.sin(twos(tau) * (1 + d[3] * 2) + k), r = clamp(1.8 * p[2] * 2.2, .8, 2.6);
     c.fillStyle = s4W(.5 * tw * dustA); c.beginPath(); c.arc(p[0], p[1], r, 0, TAU); c.fill(); }
+
+  for (let k = 0; k < S4NEAR.length; k++) { const d = S4NEAR[k], p = proj([d[0], d[1], d[2]], cam); if (!p || dustA <= 0) continue;
+    c.fillStyle = s4W(.22 * dustA); c.beginPath(); c.arc(p[0], p[1], 2 + 1.8 * p[2], 0, TAU); c.fill(); }
 
   // ---- 神经元星的投影 ----
   const PJ = []; for (let i = 0; i < S4N; i++) PJ.push(proj(s4StarW(i, tau, S), cam));
@@ -261,7 +276,7 @@ function s4Scene(c, tau, L) {
     c.restore(); }
 
   // ---- 连线 ----
-  const baseA = S.lines * (1 - .75 * sm(s4T(9) + .2, s4T(9) + 1, tau));
+  const baseA = S.lines * (1 - .9 * sm(s4T(9) + .2, s4T(9) + 1, tau));
   const drawIn = i => sm(s4T(0) - .6 + (i % 15) * .1, s4T(0) + .3 + (i % 15) * .1, tau);
   const rewT = k => s4At(0, .6 + k * .07);
   if (baseA > 0) S4ED.forEach(([i, j], e) => {
@@ -348,12 +363,16 @@ function s4Scene(c, tau, L) {
   if (tau > s4T(5) && tau < s4T(7) + .3) { const a = 1 - sm(s4T(7) - .3, s4T(7) + .2, tau);
     const C = proj([S.off[0], S.off[1], S.off[2]], cam), b = tau > s4T(6) - .3 ? s4Breath(tau) : 0;
     fade(c, a, () => {
-      // 星云的雾：几团淡白，跟着呼吸鼓起来
-      if (C) for (let k = 0; k < 7; k++) { const ang = k * 2.4 + s4Ang(tau), rr = (60 + 40 * hash(k, 61)) * (1 + 1.1 * b) * C[2], cx = C[0] + Math.cos(ang) * rr * .9, cy = C[1] + Math.sin(ang) * rr * .5;
-        c.fillStyle = s4W(.045 + .03 * b); c.beginPath(); c.ellipse(cx, cy, rr * 1.6, rr, ang * .3, 0, TAU); c.fill(); }
+      // 星云：一团细星尘 + 三圈等高线，跟着呼吸鼓起来、收回去
+      if (C) { const ap = sm(s4At(5, .3), s4At(5, .45), tau), tense = sm(s4At(5, .3), s4At(5, .4), tau) * (1 - sm(s4T(6), s4T(6) + .6, tau)), rot = s4Ang(tau) * .6;
+        for (let k = 0; k < 90; k++) { const an = hash(k, 81) * TAU + rot * (.5 + hash(k, 82)), rr = Math.sqrt(hash(k, 83)) * 170 * (1 + .6 * b) * C[2];
+          c.fillStyle = s4W(.4 * ap * (.5 + .5 * hash(k, 84))); c.beginPath(); c.arc(C[0] + Math.cos(an) * rr * 1.2, C[1] + Math.sin(an) * rr * .85, 1.2 + hash(k, 85) * 1.6, 0, TAU); c.fill(); }
+        for (let i = 0; i < 3; i++) { const R = (120 + 50 * i) * (1 + .6 * b) * C[2], pts = [];
+          for (let j = 0; j < 60; j++) { const th = j / 60 * TAU, jit = tense * 6 * noise1(twos(tau) * 14 + j * .7, 90 + i); const rr = R * (1 + .13 * noise1(th * 1.6 + i * 4 + rot, 70 + i)) + jit; pts.push([C[0] + Math.cos(th) * rr * 1.2, C[1] + Math.sin(th) * rr * .85]); }
+          rline(c, pts, { close: true, w: [3, 2.2, 1.6][i], color: s4W([.75, .5, .3][i] * ap), seed: 5600 + i, amp: .4, dash: i === 2 ? [6, 12] : null }); } }
       s4Txt(c, '生理叹息', 150, 250, tau, s4At(5, .72), { size: 64 });
       if (tau > s4T(6) - .2 && C) { const ph = s4BreathPh(tau), base = sm(s4T(6), s4T(6) + .3, tau);
-        const lab = [['吸', C[0] - 380, C[1] - 170, 76], ['再吸', C[0] - 150, C[1] - 290, 60], ['呼——', C[0] + 250, C[1] + 250, 76]];
+        const lab = [['吸', C[0] - 430, C[1] - 150, 80], ['再吸', C[0] - 250, C[1] - 300, 60], ['呼——', C[0] + 250, C[1] + 290, 80]];
         lab.forEach(([s, x, y, size], k) => { const seen = sm(k === 0 ? s4At(6, .1) : k === 1 ? s4At(6, .24) : s4At(6, .4), (k === 0 ? s4At(6, .1) : k === 1 ? s4At(6, .24) : s4At(6, .4)) + .2, tau);
           if (seen <= 0) return; zh(c, s, x, y, { size, color: s4W(base * (.3 + .7 * ph[k])), p: k === 2 ? writeP(tau, s4At(6, .4), s, .45) : 1 }); });
       }
@@ -366,14 +385,14 @@ function s4Scene(c, tau, L) {
     const down = sm(s4At(7, .42), s4At(7, .55), tau, easeIO) * (1 - sm(s4At(7, .78), s4At(7, .9), tau, easeOutBack)), lift = 1 - down;
     // 书：往下时从右边抽走，最后塞回来
     const out = sm(s4At(7, .4), s4At(7, .48), tau, easeIn) * (1 - sm(s4At(7, .74), s4At(7, .86), tau, easeOut));
-    const books = [0, 1, 2].map(k => out * (560 + k * 60));
+    const books = [0, 1, 2].map(k => clamp(out * 1.3 - k * .15, 0, 1));
     // L8：消息把视线拽走 → 专注模式 → 手机被弹远
     const t8 = s4T(8), pop8 = sm(t8 + .1, t8 + .35, tau, easeOutBack), steal = sm(s4At(8, .2), s4At(8, .3), tau, easeOutElastic) * (1 - sm(s4At(8, .6), s4At(8, .7), tau, easeOut));
     const moon = sm(s4At(8, .5), s4At(8, .6), tau), fly = sm(s4At(8, .8), s4At(8, .95), tau, easeIn);
     const px = lerp(1130, 1330, fly), py = lerp(520, 170, fly) - 8 * Math.abs(Math.sin(twos(tau) * 12)) * (1 - moon) * sm(t8 + .3, t8 + .4, tau), ps = lerp(1, .06, fly);
     const phoneOn = tau > t8 && tau < s4T(9) + .5;
     fade(c, figA, () => {
-      const F = s4Figure(c, tau, down * (1 - steal * .5), lift, phoneOn ? { p: [px - 50, py], k: steal } : null, 1, books);
+      const F = s4Figure(c, tau, down * (1 - steal * .5), lift, phoneOn ? { p: [px - 50, py], k: steal } : null, books);
       if (F) { // 视线正常时：屏幕旁 ✓ / 低头时 zzz
         const awake = tau < s4At(7, .42) || tau > s4At(7, .86);
         if (tau < t8 && awake && tau > s4T(7) + .5) check(c, F.scr[0] + 60, F.scr[1] - 40, 40, { color: s4W(.9), p: sm(tau < s4At(7, .42) ? s4T(7) + .5 : s4At(7, .86), (tau < s4At(7, .42) ? s4T(7) + .5 : s4At(7, .86)) + .3, tau), w: 5 });
@@ -405,7 +424,7 @@ function s4Scene(c, tau, L) {
 
   // ---- 帕秋莉 + L3 她坐的大星 ----
   const bigK = sm(s4T(3) - .3, s4T(3) + .2, tau, easeOutBack) * (1 - sm(s4T(4) - .1, s4T(4) + .3, tau, easeIn));
-  if (bigK > 0) { const by = lerp(1150, 790, bigK) + 7 * Math.sin(twos(tau) * 1.5); cutPaper(c, starPts(1520, by, 150, 5, .5, .1), alpha(S4C.white, .92), { seed: 5500, step: 14, grain: .06 }); }
+  if (bigK > .001) { const by = lerp(1150, 800, bigK) + 7 * Math.sin(twos(tau) * 1.5); cutPaper(c, starPts(1560, by, 130, 5, .5, .1), alpha(S4C.white, .92), { seed: 5500, step: 14, grain: .06 }); }
   s4Char(c, tau, L);
   if (tau > s4At(3, .6) && tau < s4T(4)) for (let k = 0; k < 3; k++) { const u = (tau * .7 + k / 3) % 1; zh(c, 'z', 1600 + u * 60, 330 - u * 110, { size: 30 + k * 10, color: s4W(.9 * Math.sin(u * Math.PI)) }); }
   s4Header(c, tau);
@@ -418,7 +437,7 @@ const S4PATH = (() => { const t = s4T(2) + 2, R = S4ST.map((s, i) => [s4Rot(s, s
   const quit = R.filter(([p]) => p[1] > X[1] + 120 && p[0] < X[0]).sort((a, b) => (b[0][1] - a[0][1]) - (b[0][0] - a[0][0]) * .2)[0] || R[0];
   const retry = R.filter(([p]) => p[1] < X[1] - 120 && p[0] > X[0] - 100).sort((a, b) => a[0][1] - b[0][1])[0] || R[1];
   return { quit: quit[1], retry: retry[1] }; })();
-const S4MARK = (() => { const t = s4At(3, .6); return S4ST.map((s, i) => [s4Rot(s, s4Ang(t), S4TILT), i]).filter(([p]) => p[0] > 120 && p[2] < 250).sort((a, b) => a[0][1] - b[0][1]).slice(0, 5).map(x => x[1]); })();
+const S4MARK = (() => { const t = s4At(3, .6); return S4ST.map((s, i) => [s4Rot(s, s4Ang(t), S4TILT), i]).filter(([p]) => p[0] > 90 && p[2] < 300).sort((a, b) => a[0][1] - b[0][1]).filter((_, k) => k % 2 === 0).slice(0, 5).map(x => x[1]); })();
 
 scene({ order: 4, key: 'focus', title: '专注', dur: S4DUR, lines: S4LINES, noFlip: true,
   fn(c, tau, L) {
