@@ -86,7 +86,7 @@ function s3Lift(s, e) {
   return -e.d * (1 - easeSine((s - e.xe) / (e.xr - e.xe)));
 }
 const S3PH = k => 3150 + 430 * k, S3PA = k => 200 + 90 * k, S3FOG = [170, 260, 350, 440, 530];
-const S3ST = { s0: 8950, w: 165, r: 112, n: 7 }, S3SEND = S3ST.s0 + S3ST.n * S3ST.w + 170;   // 台阶；线轨到台阶顶再往前一点就收笔
+const S3ST = { s0: 8950, w: 165, r: 112, n: 7 }, S3SEND = S3ST.s0 + S3ST.n * S3ST.w + 230;   // 台阶；线轨到台阶顶再往前一点就收笔
 const s3Tk = k => s3T(3) + 1.25 + k * .95;              // 第 k 个手机峰：小车到峰顶的时刻
 const s3Step = i => i === 0 ? s3T(7) + 2.3 : s3T(8) + .3 + (i - 1) * .85;   // 第 i 级台阶落脚（0..6）
 // 这一刻线轨的形状
@@ -144,7 +144,7 @@ const S3CAMK = (() => { const T = s3T; return [
   [T(7) + .4, [1150, 420, 320, .8, 520, 800]],
   [T(7) + 1.8, [1000, 300, 160, .85, 600, 820]],
   [T(9), [1000, 300, 160, .85, 600, 820]],
-  [T(9) + 1.4, [1450, 420, 650, .6, 1150, 620]],
+  [T(9) + 1.4, [1750, 250, 750, .55, 1250, 420]],
 ]; })();
 function s3LookCam(pos, tgt, f = S3F) { const dx = tgt[0] - pos[0], dy = tgt[1] - pos[1], dz = tgt[2] - pos[2], yaw = Math.atan2(dx, dz), dzr = dx * Math.sin(yaw) + dz * Math.cos(yaw);
   return { x: pos[0], y: pos[1], z: pos[2], yaw, pitch: Math.atan2(dy, dzr), f }; }
@@ -189,7 +189,7 @@ function s3Seg(c, a, b, w, color, al = 1) { if (!a || !b) return; c.globalAlpha 
 function s3Floor(c, cam, al) {
   if (al <= 0) return; c.save(); c.strokeStyle = P.g2; c.lineCap = 'round';
   const zn = cam.z / S3K + 60, zf = zn + 7000, xc = Math.round(cam.x / S3K / 170) * 170;
-  for (let x = xc - 2040; x <= xc + 2040; x += 170) { const a = s3Pj([x, 0, zn], cam), b = s3Pj([x, 0, zf], cam); if (!a || !b) continue;
+  for (let x = xc - 2040; x <= xc + 2040; x += 170) { let a = null; for (const z of [zn - 1600, zn - 900, zn - 400, zn]) if ((a = s3Pj([x, 0, z], cam))) break; const b = s3Pj([x, 0, zf], cam); if (!a || !b) continue;
     const g = c.createLinearGradient(a[0], a[1], b[0], b[1]); g.addColorStop(0, alpha(P.g2, .32 * al)); g.addColorStop(1, alpha(P.g2, 0));
     c.strokeStyle = g; c.lineWidth = clamp(1.6 * a[2], .6, 2); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
   const hy = CY - cam.f * Math.tan(cam.pitch); c.globalAlpha = al * .3; c.strokeStyle = P.g2; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, hy); c.lineTo(W, hy); c.stroke();
@@ -197,8 +197,8 @@ function s3Floor(c, cam, al) {
 }
 // 线轨：采样、帘子（到基线的竖线 / 低谷的浅红）、线本身（近粗远细）
 function s3Samples(tau, sh, cam, s1 = 99999) {
-  const out = [], a = cam.z / S3K - 400;
-  for (let s = a; s < Math.min(a + 9000, s1, S3SEND); s += s < a + 1800 ? 6 : s < a + 4000 ? 12 : 24) { const w = s3W(s, sh, tau); out.push({ s, w, p: s3Pj(w, cam), q: s3Pj([w[0], 0, s], cam) }); }
+  const out = [], cz = cam.z / S3K, a = cz - 2600;
+  for (let s = a; s < Math.min(cz + 9000, s1, S3SEND); s += Math.abs(s - cz) < 1800 ? 6 : Math.abs(s - cz) < 4000 ? 12 : 24) { const w = s3W(s, sh, tau); out.push({ s, w, p: s3Pj(w, cam), q: s3Pj([w[0], 0, s], cam) }); }
   return out;
 }
 function s3Curtain(c, S, al, grey = 0) {
@@ -393,12 +393,12 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
     zh(c, '对策二', 130, 200, { size: 48, color: P.ink, p: writeP(tau, T(7) + .2, '对策二', .12), al: 1 - outro });
     // 台阶上的火花（留在台阶上，L9 变灰时熄灭）
     for (let i = 0; i < S3ST.n; i++) { const t0 = s3Step(i); if (tau < t0) continue; const { s0, w, r } = S3ST, s = s0 + (i + .5) * w, p = s3Pj([s3X(s), -(i + 1) * r, s], cam); if (!p) continue;
-      s3Burst(c, p[0] - 40 * p[2], p[1] - 20, tau, t0, 11, p[2] * 1.2, 1, 390 + i);
-      const keep = (1 - grey) * (1 - outro); for (let j = 0; j < 4; j++) s3Spark(c, p[0] + (hash(j, i) - .5) * 260 * p[2], p[1] - 8 - hash(j, i + 7) * 14, (9 + hash(j, i + 3) * 6) * p[2] * sm(t0 + .5, t0 + .9, tau), keep, hash(j, i + 5) * 3); }
+      s3Burst(c, p[0] - 40 * p[2], p[1] - 30, tau, t0, 14, p[2] * 1.35, 1, 390 + i);
+      const keep = (1 - grey) * (1 - outro); for (let j = 0; j < 5; j++) s3Spark(c, p[0] + (hash(j, i) - .5) * 300 * p[2], p[1] - 10 - hash(j, i + 7) * 16, (13 + hash(j, i + 3) * 9) * p[2] * sm(t0 + .5, t0 + .9, tau, easeOutBack), keep, hash(j, i + 5) * 3); }
     // 台阶顶：大餐；目光虚线
-    { const { s0, w, r, n } = S3ST, s = s0 + n * w + 85, p = s3Pj([s3X(s), -n * r, s], cam), k = sm(T(9) + .2, T(9) + .6, tau, easeOutBack);
-      if (p && k > 0) { s3Glyph(c, 'dish', p[0], p[1], p[2] * 1.5 * S3K * k, tau, { al: 1 - outro });
-        zh(c, '硬熬', 820, 720, { size: 44, color: P.g2, p: writeP(tau, T(9) + 2.4, '硬熬', .15), al: 1 - sm(end - .6, end - .1, tau) }); } }
+    { const { s0, w, r, n } = S3ST, s = s0 + n * w + 130, p = s3Pj([s3X(s), -n * r, s], cam), k = sm(T(9) + .2, T(9) + .6, tau, easeOutBack);
+      if (p && k > 0) { s3Glyph(c, 'dish', p[0], p[1], p[2] * 1.05 * S3K * k, tau, { al: 1 - outro });
+        const q = s3Pj([s3X(s0 + 2.5 * w), -3 * r, s0 + 2.5 * w], cam); if (q) zh(c, '硬熬', q[0] - 150, q[1] - 70, { size: 48, color: P.g2, p: writeP(tau, T(9) + 2.4, '硬熬', .15), al: 1 - sm(end - .6, end - .1, tau) }); } }
     // ---------------- 帕秋莉 ----------------
     const cs = s3CartScreen(tau, sh, cam), flags = [sm(T(1) + 1.9, T(1) + 2.3, tau, easeOutBack), sm(T(1) + 2.7, T(1) + 3.1, tau, easeOutBack)];
     const cartIn = sm(T(1) + 1.8, T(1) + 2.3, tau, easeOutBack), gestureV = .6 + .4 * Math.sin(tau * 1.3);
@@ -433,7 +433,7 @@ scene({ order: 3, key: 'dopamine', title: '动力', dur: S3DUR, lines: S3LINES, 
         cutPaper(c, [[bx + bw / 2 - 70, by + 30], [bx + bw / 2 - 30, by + 30], [PA.head[0] - 70, PA.head[1] - 60]], '#f7f3ea', { seed: 399, step: 10, shadow: false });
         zh(c, '我正在变强', bx, by + 14, { size: 46, align: 'center', color: P.ink, p: writeP(tau, T(8) + .4, '我正在变强', .1) }); }); }
     // L9：目光虚线——只盯着大餐
-    if (PA && tau > T(9) + .7) { const { s0, w, r, n } = S3ST, p = s3Pj([s3X(s0 + n * w + 85), -n * r, s0 + n * w + 85], cam);
+    if (PA && tau > T(9) + .7) { const { s0, w, r, n } = S3ST, p = s3Pj([s3X(s0 + n * w + 130), -n * r, s0 + n * w + 130], cam);
       if (p) rline(c, [[PA.head[0] + 50, PA.head[1] - 10], [p[0] - 40 * p[2], p[1] - 70 * p[2]]], { w: 3, color: P.ink2, dash: [3, 14], p: sm(T(9) + .8, T(9) + 1.5, tau), seed: 395, al: 1 - sm(end - .6, end - .1, tau) }); }
     // ---------------- 出场：夜色降临，火花升起布满夜空 ----------------
     if (tau > end - .4) {
