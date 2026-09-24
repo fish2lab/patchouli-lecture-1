@@ -86,8 +86,8 @@ const S4TILT = .2;
 // 镜头：一直慢漂（视差）；几个节拍上推近、抬高俯看，停住—突然动—再停住
 function s4Cam(tau) {
   const push = key(tau, [[s4At(1, .3), 0], [s4At(1, .45), 1], [s4T(2) + .2, 1], [s4T(2) + .8, 0], [s4At(5, .25), 0], [s4At(5, .4), .6], [s4T(6) - .3, .6], [s4T(6) + .5, .3], [s4E(6), .3], [s4E(6) + .5, 0]]);
-  const up = key(tau, [[s4T(4) - .3, 0], [s4T(4) + .6, 1], [s4At(5, .2), 1], [s4At(5, .45), 0], [s4T(9) - .2, 0], [s4T(9) + 1.2, .5]]);
-  return { x: 200 + 90 * Math.sin(tau * .13) - 60 * push, y: 30 + 40 * Math.sin(tau * .11 + 1) - 520 * up, z: -1500 + 330 * push, f: 1250, pitch: .3 * up };
+  const up = key(tau, [[s4T(4) - .3, 0], [s4T(4) + .6, 1], [s4At(5, .2), 1], [s4At(5, .45), 0], [s4T(9) - .2, 0], [s4T(9) + 1.2, .6]]);
+  return { x: 200 + 90 * Math.sin(tau * .13) - 60 * push, y: 30 + 40 * Math.sin(tau * .11 + 1) - 300 * up, z: -1500 + 330 * push - 150 * up, f: 1250, pitch: .2 * up };
 }
 
 // 生理叹息的呼吸量 0..1：吸（大）→ 再吸（补一小口）→ 呼（长），做一遍半。时间对着语音：「连吸」「两口气」「再用嘴慢慢地、长长地呼出去」
@@ -104,7 +104,7 @@ function s4BreathPh(tau) { const u = tau - s4T(6), v = voiceOf(S4LINES[6][2]), d
 // 星云这一刻的形态：缩放、偏移（退到远处）、抖
 function s4CloudState(tau) {
   const t5 = s4T(5), t6 = s4T(6), t7 = s4T(7), t9 = s4T(9);
-  let sc = key(tau, [[s4At(5, .25), 1], [s4At(5, .45), .42]], easeOutBack);
+  let sc = key(tau, [[s4T(4) - .3, 1], [s4T(4) + .5, .82], [s4At(5, .25), .82], [s4At(5, .45), .42]], easeIO);
   if (tau >= t6 - .3) sc = lerp(.42, key(tau, [[s4E(6) - .2, .42], [s4E(6) + .4, 1]]), sm(s4E(6) - .2, s4E(6) + .4, tau)) + .42 * s4Breath(tau) * (1 - sm(s4E(6) - .2, s4E(6) + .4, tau));
   const back = key(tau, [[t7 - .25, 0], [t7 + .45, 1], [t9 - .1, 1], [t9 + .7, 0]]);
   const off = [lerp(0, 420, back), lerp(0, -560, back), lerp(0, 2600, back)];
@@ -209,7 +209,7 @@ function s4Quiz(c, x, y, k, tau, rx) { if (k <= .01) return; pop(c, x, y, k, () 
 function s4Char(c, tau, L) {
   const t = s4T, ln = k => tau >= t(k), talk = L.talking ? L.mouth : 0;
   // 每句换个位置：句首突然漂过去，然后停住
-  const xs = [1500, 1470, 1400, 1560, 1500, 1560, 1470, 1590, 1520, 1450]; let x = xs[0];
+  const xs = [1500, 1470, 1400, 1560, 1640, 1560, 1470, 1590, 1560, 1480]; let x = xs[0];
   for (let k = 1; k < xs.length; k++) x = lerp(x, xs[k], sm(t(k) - .25, t(k) + .3, tau, easeIO));
   let o = { x, y: 862, h: 520, pose: 'lecture', mood: L.mood || 'normal', look: -.3, facing: -1, tilt: 0 };
   if (!ln(1)) { o.gesture = tau < s4At(0, .6) ? .4 : .6 + .4 * Math.sin(twos(tau) * 2); }
@@ -265,7 +265,7 @@ function s4Scene(c, tau, L) {
 
   // ---- L4：绕星云的一圈轨道：90 实线 + 20 虚线 ----
   const orbA = sm(s4T(4) - .1, s4T(4) + .3, tau) * (1 - sm(s4At(5, .25), s4At(5, .4), tau));
-  const orbP = (th) => { const q = s4Rot([600 * Math.cos(th), 0, 600 * Math.sin(th)], s4Ang(tau) * .3 + .6, S4TILT + .32); return proj([q[0] + S.off[0], q[1] + S.off[1], q[2] + S.off[2]], cam); };
+  const orbP = (th) => { const q = s4Rot([480 * Math.cos(th), 0, 480 * Math.sin(th)], s4Ang(tau) * .3 + .6, S4TILT + .32); return proj([q[0] + S.off[0], q[1] + S.off[1], q[2] + S.off[2]], cam); };
   const S4K90 = 90 / 110 * TAU, th0 = Math.PI * .55;
   if (orbA > 0) { c.save(); c.globalAlpha *= orbA;
     const p90 = sm(s4At(4, .05), s4At(4, .3), tau), p20 = sm(s4At(4, .38), s4At(4, .55), tau);
@@ -277,12 +277,12 @@ function s4Scene(c, tau, L) {
     const bu = (tau - s4At(4, .3)) * .6, bth = th0 + (bu % 1 < .82 ? bu % 1 / .82 * S4K90 : S4K90 + (bu % 1 - .82) / .18 * (TAU - S4K90));
     if (tau > s4At(4, .3)) { const q = orbP(bth); if (q) s4Star(c, q[0], q[1], 6, S4C.white, .6); }
     const m90 = orbP(th0 + S4K90 * .5), m20 = orbP(th0 + S4K90 + (TAU - S4K90) * .5);
-    if (m90) { zh(c, '90', m90[0] - 40, m90[1] + 110, { size: 96, color: s4W(), p: writeP(tau, s4At(4, .12), '90', .15) }); s4Txt(c, '分钟 · 学', m90[0] + 70, m90[1] + 110, tau, s4At(4, .2), { size: 36 }); }
+    if (m90) { zh(c, '90', m90[0] - 250, m90[1] + 20, { size: 96, color: s4W(), p: writeP(tau, s4At(4, .12), '90', .15) }); s4Txt(c, '分钟 · 学', m90[0] - 240, m90[1] + 70, tau, s4At(4, .2), { size: 34 }); }
     if (m20) { zh(c, '20', m20[0] - 30, m20[1] - 70, { size: 72, color: s4W(.9), p: writeP(tau, s4At(4, .42), '20', .15) }); s4Txt(c, '分钟 · 歇', m20[0] + 50, m20[1] - 70, tau, s4At(4, .48), { size: 32 }); }
     c.restore(); }
 
   // ---- 连线 ----
-  const baseA = S.lines * (1 - .9 * sm(s4T(9) + .2, s4T(9) + 1, tau));
+  const baseA = S.lines * (1 - sm(s4T(9) + .2, s4T(9) + 1, tau));
   const drawIn = i => sm(s4T(0) - .6 + (i % 15) * .1, s4T(0) + .3 + (i % 15) * .1, tau);
   const rewT = k => s4At(0, .6 + k * .07);
   if (baseA > 0) S4ED.forEach(([i, j], e) => {
@@ -342,7 +342,7 @@ function s4Scene(c, tau, L) {
   // ---- 星 ----
   const order = PJ.map((p, i) => [p ? p[2] : 0, i]).sort((a, b) => a[0] - b[0]);
   for (const [, i] of order) { const q = PJ[i]; if (!q) continue;
-    const sz = S4ST[i][3], rk = S4RING.indexOf(i), ringOn = rk >= 0 ? sm(s4T(9), s4T(9) + .8, tau) : 0, dimR = sm(s4T(9) + .2, s4T(9) + 1, tau) * (rk < 0 ? .7 : 0);
+    const sz = S4ST[i][3], rk = S4RING.indexOf(i), ringOn = rk >= 0 ? sm(s4T(9), s4T(9) + .8, tau) : 0, dimR = sm(s4T(9) + .2, s4T(9) + 1, tau) * (rk < 0 ? .85 : 0);
     let r = (2.2 + 3.4 * sz) * q[2] * 1.45 * (1 + .5 * ringOn), col = S4C.white, gl = sz > .95 ? .3 : 0;
     const gk = goldOff(i); if (gk > 0) { col = mix(S4C.white, S4C.gold, gk); r *= 1 + .5 * gk; gl = Math.max(gl, gk * .8); }
     if (i === xi && tau > s4At(1, .55) && tau < s4T(3) + .5) { const kk = sm(s4At(1, .55), s4At(1, .62), tau, easeOutBack); r *= 1 + .6 * kk; }
@@ -395,7 +395,7 @@ function s4Scene(c, tau, L) {
     // L8：消息把视线拽走 → 专注模式 → 手机被弹远
     const t8 = s4T(8), pop8 = sm(t8 + .1, t8 + .35, tau, easeOutBack), steal = sm(s4At(8, .2), s4At(8, .3), tau, easeOutElastic) * (1 - sm(s4At(8, .6), s4At(8, .7), tau, easeOut));
     const moon = sm(s4At(8, .5), s4At(8, .6), tau), fly = sm(s4At(8, .8), s4At(8, .95), tau, easeIn);
-    const px = lerp(1130, 1330, fly), py = lerp(520, 170, fly) - 8 * Math.abs(Math.sin(twos(tau) * 12)) * (1 - moon) * sm(t8 + .3, t8 + .4, tau), ps = lerp(1, .06, fly);
+    const px = lerp(1140, 1330, fly), py = lerp(620, 170, fly) - 8 * Math.abs(Math.sin(twos(tau) * 12)) * (1 - moon) * sm(t8 + .3, t8 + .4, tau), ps = lerp(1, .06, fly);
     const phoneOn = tau > t8 && tau < s4T(9) + .5;
     fade(c, figA, () => {
       const F = s4Figure(c, tau, down * (1 - steal * .5), lift, phoneOn ? { p: [px - 50, py], k: steal } : null, books);
@@ -403,8 +403,9 @@ function s4Scene(c, tau, L) {
         const awake = tau < s4At(7, .42) || tau > s4At(7, .86);
         if (tau < t8 && awake && tau > s4T(7) + .5) check(c, F.scr[0] + 60, F.scr[1] - 40, 40, { color: s4W(.9), p: sm(tau < s4At(7, .42) ? s4T(7) + .5 : s4At(7, .86), (tau < s4At(7, .42) ? s4T(7) + .5 : s4At(7, .86)) + .3, tau), w: 5 });
         if (down > .6) for (let k = 0; k < 3; k++) { const u = (tau * .8 + k / 3) % 1; zh(c, 'z', F.head[0] + 40 + u * 50, F.head[1] - 50 - u * 90, { size: 26 + k * 8, color: s4W(.85 * Math.sin(u * Math.PI)) }); }
-        s4Txt(c, '↑ 清醒', 150, 250, tau, s4T(7) + .3, { size: 44, al: 1 - sm(s4At(7, .4), s4At(7, .46), tau) * .6 });
-        s4Txt(c, '↓ 犯困', 150, 320, tau, s4At(7, .46), { size: 44, al: 1 - sm(s4At(7, .8), s4At(7, .86), tau) * .6 });
+        const lo = 1 - sm(t8 - .2, t8 + .2, tau);
+        s4Txt(c, '↑ 清醒', 150, 250, tau, s4T(7) + .3, { size: 44, al: lo * (1 - sm(s4At(7, .4), s4At(7, .46), tau) * .6 + sm(s4At(7, .8), s4At(7, .86), tau) * .6) });
+        s4Txt(c, '↓ 犯困', 150, 320, tau, s4At(7, .46), { size: 44, al: lo * (1 - sm(s4At(7, .8), s4At(7, .86), tau) * .6) });
       }
       if (phoneOn) { s4Phone(c, px, py, pop8 * ps, { dot: (1 - moon) * sm(t8 + .3, t8 + .45, tau, easeOutBack), moon, rot: -.08 + fly * 2.5 });
         if (moon > 0 && fly < .3) s4Txt(c, '专注模式', px + 70, py + 10, tau, s4At(8, .55), { size: 38, al: 1 - fly * 3 }); }
@@ -417,6 +418,9 @@ function s4Scene(c, tau, L) {
   if (rA > 0) { const ang = s4RingTh(tau), n = 72, pts = [];
     for (let i = 0; i <= n; i++) { const w = s4RingPt(ang + i / n * TAU), q = proj([w[0] + S.off[0], w[1] + S.off[1], w[2] + S.off[2]], cam); if (q) pts.push([q[0], q[1]]); }
     c.save(); c.globalAlpha *= rA; rline(c, pts, { w: 2.5, color: s4W(.75), seed: 5400, amp: .4 });
+    // 24 个小时刻度（星与星之间各一道短刻）
+    for (let hh = 0; hh < 24; hh++) { if (hh % 2 === 0) continue; const w0 = s4RingPt(ang + hh / 24 * TAU), w1 = w0.map(v => v * .95), q0 = proj([w0[0] + S.off[0], w0[1] + S.off[1], w0[2] + S.off[2]], cam), q1 = proj([w1[0] + S.off[0], w1[1] + S.off[1], w1[2] + S.off[2]], cam);
+      if (q0 && q1) rline(c, [[q0[0], q0[1]], [q1[0], q1[1]]], { w: 2, color: s4W(.55 * sm(s4T(9) + 1 + hh * .03, s4T(9) + 1.3 + hh * .03, tau)), seed: 5410 + hh, amp: .2 }); }
     // 红的那格：0 点到 1 格（2 小时）
     const red = sm(s4At(9, .55), s4At(9, .75), tau), rp = []; for (let i = 0; i <= 12; i++) { const w = s4RingPt(ang + i / 12 * TAU / 12 * red), q = proj([w[0] + S.off[0], w[1] + S.off[1], w[2] + S.off[2]], cam); if (q) rp.push([q[0], q[1]]); }
     if (red > 0) rline(c, rp, { w: 9, color: S4C.red, seed: 5401, amp: .5 });
