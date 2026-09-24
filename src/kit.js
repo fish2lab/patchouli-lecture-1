@@ -323,3 +323,33 @@ function popup(c, foldY, k, fn) { if (k <= .001) return; c.save(); c.translate(0
 function vellum(c, pts, o = {}) { return cutPaper(c, pts, o.color || '#f4f1ea', { step: 20, grain: .05, blur: 4, ...o, al: (o.al ?? 1) * .55 }); }
 // spin：绕 (x, y) 转 a 弧度后画 fn（转盘）
 function spin(c, x, y, a, fn) { c.save(); c.translate(x, y); c.rotate(a); c.translate(-x, -y); fn(); c.restore(); }
+
+// ===================== 立体与交接（第二版：图画展览会式编排） =====================
+// 全片像《图画展览会》：魔导书是「漫步」主题（开场、总结、以及段与段之间），每一页是一幅风格不同的「画」，各有立体感和空间感。
+// proj：简单透视投影。cam = { x, y, z 相机位置, yaw 左右转, pitch 俯仰, f 焦距（默认 900）}。返回 [sx, sy, scale] 或 null（在相机后面）
+function proj(p, cam) {
+  const { x = 0, y = 0, z = -1000, yaw = 0, pitch = 0, f = 900 } = cam;
+  let dx = p[0] - x, dy = p[1] - y, dz = p[2] - z;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw); [dx, dz] = [dx * cy - dz * sy, dx * sy + dz * cy];
+  const cp = Math.cos(pitch), sp = Math.sin(pitch); [dy, dz] = [dy * cp - dz * sp, dy * sp + dz * cp];
+  if (dz < 10) return null; const k = f / dz; return [CX + dx * k, CY + dy * k, k];
+}
+// parallax：多层视差。layers = [{ depth, draw(c) }]，depth 越大越远；camX/camY 是镜头平移，zoom 推拉。远的层移动得少、缩放得少
+function parallax(c, layers, camX = 0, camY = 0, zoom = 1) {
+  for (const L of layers.slice().sort((a, b) => b.depth - a.depth)) { const k = 1 / (1 + L.depth), z = 1 + (zoom - 1) * k;
+    c.save(); c.translate(CX, CY); c.scale(z, z); c.translate(-CX - camX * k, -CY - camY * k); L.draw(c); c.restore(); }
+}
+// ---- 段与段的交接画面：前一段最后 ≥0.15 秒、后一段最前 ≥0.15 秒都只画同一个交接函数，拼起来看不出接缝 ----
+const NIGHT_BG = '#1d1a22';
+// 睡眠 → 吃饭：夜色里正中一轮淡色圆盘（月亮 → 盘子）
+function handoffDisc(c) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06);
+  cutPaper(c, circPts(CX, CY, 300, 72), '#ede6d6', { seed: 2001, step: 26, blur: 20, sx: 0, sy: 6 }); }
+// 吃饭 → 动力：纸面上一根横贯画面的线（桌布上的线被拉直）
+function handoffThread(c) { c.fillStyle = P.paper; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .12);
+  rline(c, [[-20, CY], [W + 20, CY]], { w: 3, color: '#6b4f55', seed: 2002, amp: .3 }); }
+// 动力 → 专注：夜色里升起的金色火花（火花 → 星星），位置确定
+const HANDOFF_SPARKS = Array.from({ length: 60 }, (_, k) => [hash(k, 31) * W, hash(k, 32) * H * .9, 1.5 + hash(k, 33) * 3.5]);
+function handoffSparks(c) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06);
+  for (const [x, y, r] of HANDOFF_SPARKS) { c.fillStyle = alpha(P.moon, .9); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); } }
+// 专注 → 运动、运动 → 总结：空白的魔导书跨页（spread）
+function handoffBook(c, t = 0) { spread(c, t); }
