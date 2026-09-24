@@ -630,13 +630,13 @@ function pchChibiBody(c, rg, o) {
 // 仰躺时铺在地上的头发（头部坐标，发顶方向是 -y）
 function pchLieHair(c, rg) {
   const t = rg.t, sw = Math.sin(t * .9) * 3, pts = [];
-  const rim = [[-128, 30], [-162, -50], [-176, -150], [-156, -236], [-100, -290], [-24, -306], [52, -300], [116, -272], [164, -212], [178, -126], [162, -40], [132, 50]];
+  const rim = [[-112, 30], [-136, -50], [-150, -150], [-140, -240], [-96, -300], [-24, -322], [52, -316], [110, -284], [144, -214], [152, -126], [138, -40], [114, 50]];
   rim.forEach((p, i) => { pts.push([p[0] + (i % 2 ? 6 : -4) + sw * (i / 12 - .5), p[1] + (i % 2 ? 10 : 0), i % 2 ? 1 : 0]); });
   // 沿身体两侧往下的发梢
-  pts.push([118, 96], [104, 150, 1], [92, 110], [80, 160, 1], [70, 80], [-70, 80], [-82, 156, 1], [-94, 108], [-106, 146, 1], [-118, 92]);
+  pts.push([106, 96], [96, 150, 1], [86, 110], [76, 160, 1], [68, 80], [-68, 80], [-78, 156, 1], [-88, 108], [-98, 146, 1], [-106, 92]);
   pchShape(c, pts, { fill: PCH_C.hairBack, w: 3, j: rg.jb, sd: 341 + rg.tk, under: () => {
-    pchFillPts(c, [[-104, -60], [-146, -150], [-96, -262], [0, -288], [96, -262], [146, -150], [104, -60], [0, -150]], PCH_C.hair, .8);
-    for (let k = -4; k <= 4; k++) { const a = -Math.PI / 2 + k * .32; pchLine(c, [[Math.cos(a) * 100, -110 + Math.sin(a) * 100], [Math.cos(a) * 130 + sw, -110 + Math.sin(a) * 140], [Math.cos(a) * 146 + sw * 1.5, -110 + Math.sin(a) * 160]], 1.6, PCH_C.hairShade, 0, 0, .7); }
+    pchFillPts(c, [[-94, -60], [-124, -150], [-90, -270], [0, -300], [90, -270], [124, -150], [94, -60], [0, -150]], PCH_C.hair, .8);
+    for (let k = -4; k <= 4; k++) { const a = -Math.PI / 2 + k * .32; pchLine(c, [[Math.cos(a) * 90, -110 + Math.sin(a) * 110], [Math.cos(a) * 112 + sw, -110 + Math.sin(a) * 150], [Math.cos(a) * 124 + sw * 1.5, -110 + Math.sin(a) * 175]], 1.6, PCH_C.hairShade, 0, 0, .7); }
   } });
 }
 
@@ -666,22 +666,22 @@ function drawPatchouliChibi(c, o = {}) {
     const hp = pchShape(c, [[-60, -150], [0, -104], [50, -66 - br], [100, -54], [134, -48, 1], [112, -45], [126, -38, 1], [96, -42], [72, -38, 1], [40, -48], [0, -56], [-36, -70]], { fill: PCH_C.hair, w: 2.6, j: rg.jb, sd: 308 + rg.tk });
     pchClip(c, hp, () => { pchLine(c, [[-20, -110], [40, -64], [100, -50]], 1.4, PCH_C.hairShade, 0, 0, .8); pchLine(c, [[-10, -84], [50, -56], [90, -46]], 1.4, PCH_C.hairShade, 0, 0, .8); });
     // 远侧手臂在头后面，近侧手臂在脸前
-    const gA = pchArmGeo({ S: [-18, -40], T: [-172, -9], bend: 1, l1: 80, l2: 76, k: .42, hand: 'nub', mir: true }), gB = pchArmGeo({ S: [4, -40], T: [-26, -9], bend: -1, l1: 22, l2: 20, k: .42, hand: 'nub' });
+    const gA = pchArmGeo({ S: [-18, -40], T: [-172, -17], bend: 1, l1: 80, l2: 76, k: .42, hand: 'nub', mir: true }), gB = pchArmGeo({ S: [4, -40], T: [-26, -17], bend: -1, l1: 22, l2: 20, k: .42, hand: 'nub' });
     pchArmFull(c, gA, rg, 311);
-    c.save(); c.translate(-80, -10); c.rotate(-.12); c.scale(HK, HK);
+    c.save(); c.translate(-80, -14); c.rotate(-.12); c.scale(HK, HK);
     const hm = here(); head = hm(0, -95);
-    pchHead(c, rg, { ...headO, lockE: 34 }); c.restore();
+    pchHead(c, rg, { ...headO, lockE: 14 }); c.restore();
     pchArmFull(c, gB, rg, 321);
     const hmap = here(); hands = [gA.Wr, gB.Wr].map(p => hmap(p[0], p[1]));
   } else if (pose === 'lie') {
     // 仰躺抱书（俯视，参考 2-book-lying）：站姿转 -90°，头在左、微微侧向上；头发在地上铺开
     const br = Math.sin(t * 1.6) * 1.2, LS = 1.1;
-    c.save(); c.scale(LS, LS); c.translate(150, -128); c.rotate(-Math.PI / 2);
-    c.save(); c.translate(0, -112); c.rotate(.35); c.scale(HK, HK);
+    c.save(); c.scale(LS, LS); c.translate(150, -96); c.rotate(-Math.PI / 2);
+    c.save(); c.translate(0, -112); c.rotate(.2); c.scale(HK, HK);
     pchLieHair(c, rg);
     c.restore();
     const r = pchChibiBody(c, rg, { armL: { S: [-26, -96], T: [-14, -60 + br], bend: 1, l1: 26, l2: 24, hand: 'nub' }, armR: { S: [26, -96], T: [16, -72 + br], bend: -1, l1: 26, l2: 24, hand: 'nub' }, front: true, dressLen: 56, feet: [[-17, 56], [17, 56]] });
-    c.save(); c.translate(0, -112); c.rotate(.35); c.scale(HK, HK);
+    c.save(); c.translate(0, -112); c.rotate(.2); c.scale(HK, HK);
     const hm = here(); head = hm(0, -95);
     pchHead(c, rg, { ...headO, look: [0, 0] }); c.restore();
     pchBookCover(c, 0, -64 + br, 52, 62, .06, rg, false, 331);
