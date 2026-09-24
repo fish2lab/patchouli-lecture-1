@@ -308,7 +308,7 @@ function spread(c, t = 0, o = {}) {
 }
 // pageHeader：书页左上角的页眉（一弯剪纸月牙 + 手写页名），代替参考片的展签
 function pageHeader(c, text, tau, t0 = 0, o = {}) {
-  const { t1 = Infinity, x = BOOK.L.x + 50, y = BOOK.L.y + 64 } = o, k = Math.min(sm(t0, t0 + .4, tau), 1 - sm(t1, t1 + .3, tau)); if (k <= 0) return;
+  const { t1 = 1e9, x = BOOK.L.x + 50, y = BOOK.L.y + 64 } = o, k = Math.min(sm(t0, t0 + .4, tau), 1 - sm(t1, t1 + .3, tau)); if (!(k > 0)) return;
   c.save(); c.globalAlpha *= k;
   drawMoonIcon(c, x, y - 14, 16, P.moon, -.5);
   zh(c, text, x + 30, y, { size: 36, color: P.ink2, p: writeP(tau, t0 + .1, text, .06) });
