@@ -45,12 +45,12 @@ const CH_SHEETS = {
     });
   } },
   // 头部放大（约 500px 高）的全部表情
-  moods: { w: 1800, h: 1260, draw(c, t) {
-    chPaper(c, 1800, 1260);
+  moods: { w: 2280, h: 1260, draw(c, t) {
+    chPaper(c, 2280, 1260);
     const moods = ['normal', 'smug', 'pout', 'flustered', 'annoyed', 'sleepy', 'surprised', 'smile'], mo = +(Q.get('mouth') || 0);
-    moods.forEach((m, i) => { const cx = 225 + (i % 4) * 450, top = 20 + Math.floor(i / 4) * 620, hh = 1226;
-      c.save(); c.beginPath(); c.rect(cx - 225, top, 450, 560); c.clip();
-      drawPatchouli(c, { x: cx, y: top + 30 + 1221, h: hh, pose: 'stand', mood: m, t, mouth: mo, blink: Q.has('t') ? 0 : blinkAt(t, i + 2) });
+    moods.forEach((m, i) => { const cx = 285 + (i % 4) * 570, top = 20 + Math.floor(i / 4) * 620, hh = 1210;
+      c.save(); c.beginPath(); c.rect(cx - 285, top, 570, 560); c.clip();
+      drawPatchouli(c, { x: cx, y: top + 36 + 1181, h: hh, pose: 'stand', mood: m, t, mouth: mo, blink: Q.has('t') ? 0 : blinkAt(t, i + 2) });
       c.restore();
       zh(c, m, cx, top + 598, { size: 30, align: 'center', color: P.ink2 }); });
   } },
@@ -84,8 +84,9 @@ function chDraw(t) { for (const [c, S] of chCvs) { c.save(); S.draw(c, t); c.res
 window.__chDraw = chDraw;
 // 性能：画一次 drawPatchouli 的平均毫秒（1920×1080 画布，h=520）
 window.__chBench = n => { const cv = document.createElement('canvas'); cv.width = 1920; cv.height = 1080; const c = cv.getContext('2d'); const poses = ['stand', 'lecture', 'point', 'hide', 'cross', 'sit', 'peek', 'tired', 'lift', 'lie'], out = {};
-  for (const p of poses) { const t0 = performance.now(); for (let i = 0; i < n; i++) drawPatchouli(c, { x: 900, y: 900, t: i / 30, mouth: .5, pose: p, mood: i % 2 ? 'pout' : 'normal' }); out[p] = +((performance.now() - t0) / n).toFixed(2); }
-  c.getImageData(0, 0, 1, 1); return out; };
+  c.getImageData(0, 0, 1, 1);
+  for (const p of poses) { const t0 = performance.now(); for (let i = 0; i < n; i++) drawPatchouli(c, { x: 900, y: 900, t: i / 30, mouth: .5, pose: p, mood: i % 2 ? 'pout' : 'normal' }); c.getImageData(0, 0, 1, 1); out[p] = +((performance.now() - t0) / n).toFixed(2); }
+  return out; };
 document.fonts.load(`40px ${ZH}`, '帕秋莉哼').then(() => document.fonts.ready).then(start, start);
 function start() {
   if (chFixed !== null) { chDraw(chFixed); window.__ready = true; return; }

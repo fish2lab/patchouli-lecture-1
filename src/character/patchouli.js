@@ -124,7 +124,7 @@ const PCH_G = (() => {
   g.bookMoon = pchCut(pchCrescent(8, 3.4).map(([x, y]) => [x * Math.cos(-2.2) - y * Math.sin(-2.2) + 4, x * Math.sin(-2.2) + y * Math.cos(-2.2)]), 52, 3, .2, false);
   // ---- 头（头坐标：脖子关节为原点） ----
   g.face = pchCut([[0, -6], [12, -8], [25, -15], [35, -28], [41, -46], [43, -70], [42, -96], [37, -118], [0, -127], [-37, -118], [-42, -96], [-43, -70], [-41, -46], [-35, -28], [-25, -15], [-12, -8]], 53, 7, .5);
-  g.cheekPuff = pchCut(ellPts(36, -27, 9, 8.5, 16), 54, 5, .3);
+  g.cheekPuff = pchCut(ellPts(31, -23, 8, 7.5, 16), 54, 5, .3);
   // 后发：从帽下一直垂到小腿，两侧框住身体，发梢剪成几道尖
   const bSide = pchOpen([[58, -140], [64, -104], [66, -50], [69, 0], [68, 50], [62, 100], [56, 145], [52, 172]], 5);
   const bTips = [[50, 196], [44, 180], [38, 200], [32, 174], [16, 160], [0, 152], [-16, 162], [-31, 172], [-37, 198], [-44, 178], [-51, 194], [-54, 168]];
@@ -174,7 +174,7 @@ function pchMouthPts(type, open) {
   switch (type) {
     case 'smirk': return [[[-4.5, .4], [0, -.2], [3, -1], [5.4, -3.4], [4.6, .1], [2, 1.3], [-2, 1.4]], PCH_K.mouth];
     case 'smile': return [[[-4.6, -1], [0, -.3], [4.6, -1], [2.8, 2.2], [0, 3], [-2.8, 2.2]], PCH_K.mouthIn];
-    case 'wave': { const top = [], bot = []; for (let k = 0; k <= 8; k++) { const x = -6 + k * 1.5, y = Math.sin(k * Math.PI / 2) * 1.1; top.push([x, y - .8]); bot.unshift([x, y + .8]); } return [[...top, ...bot], PCH_K.mouth]; }
+    case 'wave': { const top = [], bot = []; for (let k = 0; k <= 12; k++) { const x = -6 + k, y = Math.sin(k / 12 * TAU * 1.25) * .9; top.push([x, y - .65]); bot.unshift([x, y + .65]); } return [[...top, ...bot], PCH_K.mouth]; }
     case 'wobble': { const top = [], bot = []; for (let k = 0; k <= 8; k++) { const x = -5 + k * 1.25, y = Math.sin(k * Math.PI / 2) * .9; top.push([x, y - .6]); bot.unshift([x, y + 1.8 + Math.sin(k / 8 * Math.PI) * 1.2]); } return [[...top, ...bot], PCH_K.mouthIn]; }
     case 'pout': return [[[-4.2, 1.4], [0, -1.2], [4.2, 1.4], [3.4, 2.4], [0, .6], [-3.4, 2.4]], PCH_K.mouth];
     case 'o': return [ellPts(0, 1.5, 2.8, 3.6, 12), PCH_K.mouthIn];
@@ -217,7 +217,7 @@ function pchPaint(c, items, sh, env, gr = true) {
     if (it.edge !== false) { c.strokeStyle = pchEdge(it.col); c.lineWidth = env.lw; c.stroke(it.p); }
     c.restore();
   }
-  if (gr && env.pat) { c.save(); c.clip(all); c.globalAlpha *= .11; c.fillStyle = env.pat; c.fillRect(env.x - 3000, env.y - 3000, 6000, 6000); c.restore(); }
+  if (gr && env.pat) { c.save(); c.globalAlpha *= .11; c.fillStyle = env.pat; c.fill(all); c.restore(); }   // 纸纹：直接用纹理填同一条路径（不用 clip，快）
 }
 const PCH_SH = { big: { blur: 5, sx: 2.4, sy: 3.4, al: .3 }, mid: { blur: 3.5, sx: 1.8, sy: 2.4, al: .3 }, tiny: { blur: 1.2, sx: .8, sy: 1, al: .3 } };
 
@@ -251,7 +251,7 @@ function drawPatchouli(c, o = {}) {
   // 画的环境：投影随 s 略放大，边线约 1px
   const sk = Math.sqrt(clamp(s, .4, 3)), T0 = c.getTransform(), dev = Math.hypot(T0.a, T0.b) || 1;
   let pat = null;
-  try { pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix([frame[0] * .7, frame[1] * .7, frame[2] * .7, frame[3] * .7, frame[4], frame[5]])); } catch (e) { pat = null; }
+  try { pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix([1, 0, 0, 1, Math.round(x), Math.round(y)])); } catch (e) { pat = null; }
   const env = { sk: sk * dev * (1 + .08 * Math.sin(tt * .8)), lw: 1 / (s * dev), pat, x, y };
   const it = (p, m, col, edge) => ({ p, m, col, edge });
   const paint = (items, sh, gr) => pchPaint(c, items, sh, env, gr);
@@ -295,7 +295,7 @@ function drawPatchouli(c, o = {}) {
   let bookM = null;
   if (ps.book) bookM = pchTR(ug, ps.book[0], ps.book[1], ps.book[2] + .01 * Math.sin(tt * 1.1));
   else if (ps.hang) bookM = pchTR(AB.l, 0, 92, -.08 + .05 * Math.sin(tt * 1.6), -1, 1);  // tired：书吊在后手指尖下
-  const sleeve = arms => { if (!arms.length) return; paint(arms.map(A => it(G.armU, A.u, PCH_K.robe)), PCH_SH.mid); paint(arms.map(A => it(G.armL, A.l, PCH_K.robe)), PCH_SH.big); };
+  const sleeve = arms => { if (arms.length) paint([...arms.map(A => it(G.armU, A.u, PCH_K.robe)), ...arms.map(A => it(G.armL, A.l, PCH_K.robe))], PCH_SH.big); };
   const hands = arms => { const items = []; for (const A of arms) { items.push(it(G.cuff, A.l, PCH_K.trim)); if (A.hand !== 'none') items.push(it(A.hand === 'point' ? G.handPoint : A.hand === 'grip' ? G.handGrip : G.handTips, A.l, PCH_K.skin)); } paint(items, PCH_SH.mid, false); };
   const drawBook = () => { if (!bookM) return;
     paint([it(G.pages, bookM, PCH_K.pages), it(G.book, bookM, PCH_K.book), it(G.spine, bookM, PCH_K.bookSpine)], PCH_SH.big);
