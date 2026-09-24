@@ -32,7 +32,7 @@ function s2at(i, sub) { const [t0, , text] = S2LINES[i], v = voiceOf(text), n = 
 // ===================== 镜头、透视、光 =====================
 // 相机在桌面正上方 S2CAM 高处（zoom 越大越低）。世界坐标 = 桌面上的像素（zoom 1 时和屏幕一样大）。
 // 高出桌面 z 的点离画面中心更远（透视），所以画面边上的东西会露出侧面。顶光略偏左上：影子往右下落，离桌面越高落得越远越虚。
-const S2CAM = 1600, S2LX = .2, S2LY = .32;
+const S2CAM = 1250, S2LX = .2, S2LY = .32;
 const S2OX = [0, 1920, 3840, 5760, 7680];       // 五个工位的世界 x 起点
 const S2END = { y: 830, zoom: 2.2 };             // 出场：镜头压向桌布的缝线
 function s2cam(t) {
@@ -42,7 +42,7 @@ function s2cam(t) {
     [e2 + .05, [2880, 540, 1]], [e2 + 1, [4800, 540, 1]],
     [e7 + .05, [4800, 540, 1]], [e7 + 1.05, [6720, 540, 1]],
     [e10 + .05, [6720, 540, 1]], [e10 + 1, [8640, 540, 1]],
-    [e11 + .3, [8640, 540, 1]], [S2DUR - .45, [8640, S2END.y, S2END.zoom]]];
+    [e11 + .3, [8640, 540, 1]], [S2DUR - .8, [8640, S2END.y, S2END.zoom]]];
   const [x, y, z] = key(t, K); return { x, y, z };
 }
 const s2k = (C, z = 0) => S2CAM / (S2CAM / C.z - z);
@@ -86,11 +86,20 @@ function s2arc(pts, n) { const q = resample(pts, 3), d = [0]; for (let i = 1; i 
 function s2offset(pts, d) { return pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], tx = b[0] - a[0], ty = b[1] - a[1], l = Math.hypot(tx, ty) || 1; return [p[0] - ty / l * d, p[1] + tx / l * d]; }); }
 
 // ===================== 桌布 =====================
+// 亚麻经纬纹理：载入时生成一次（确定性）
+const S2WEAVE = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'), r = rng(2901);
+  for (let i = 0; i < 128; i += 4) { g.fillStyle = `rgba(90,70,50,${.025 + r() * .03})`; g.fillRect(0, i, 128, 1.4); g.fillStyle = `rgba(90,70,50,${.02 + r() * .03})`; g.fillRect(i + 2, 0, 1.4, 128); }
+  for (let k = 0; k < 40; k++) { g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(r() * 128, r() * 128, 3 + r() * 6, 1); }
+  return cv; })();
 // 亚麻色桌布（和 handoffThread 的纸同色），纸纹随镜头移动；几道叠过的折痕让横移有参照。
 function s2cloth(c, C, crease = 1) {
   c.fillStyle = P.paper; c.fillRect(0, 0, W, H);
   c.save(); c.globalAlpha = .12; const pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix().translate(((CX - C.x) % 256 + 256) % 256, ((CY - C.y) % 256 + 256) % 256)); c.fillStyle = pat; c.fillRect(0, 0, W, H); c.restore();
+  // 顶灯：中间亮、四周略暗（出场时退掉，和 handoffThread 的纯纸面接上）
+  if (crease > 0) { const g = c.createRadialGradient(CX, CY * .9, 200, CX, CY, W * .72); g.addColorStop(0, 'rgba(255,250,235,.10)'); g.addColorStop(1, 'rgba(60,40,25,.20)'); c.save(); c.globalAlpha = crease; c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore(); }
   if (crease <= 0) return; const k = s2k(C, 0);
+  // 亚麻的经纬（很淡）
+  c.save(); c.globalAlpha = .5 * crease; const wv = c.createPattern(S2WEAVE, 'repeat'); wv.setTransform(new DOMMatrix().translate(CX - C.x * k, CY - C.y * k).scale(k)); c.fillStyle = wv; c.fillRect(0, 0, W, H); c.restore();
   c.save(); c.globalAlpha = crease;
   for (let gx = -640; gx < 11000; gx += 640) { const [sx] = s2p(C, gx, 0); if (sx < -20 || sx > W + 20) continue;
     c.fillStyle = 'rgba(80,60,40,.05)'; c.fillRect(sx - 3 * k, 0, 3 * k, H); c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(sx, 0, 2 * k, H); }
@@ -101,7 +110,7 @@ function s2cloth(c, C, crease = 1) {
 // ===================== 道具 =====================
 const S2C = {
   plate: mix(P.paper, '#ffffff', .25), well: mix(P.paper, P.g1, .3), cheese: mix(P.cap, P.moon, .42), kraft: P.paperEdge, kraftIn: mix(P.paperEdge, P.paper, .45),
-  tea: mix(P.paperEdge, P.ink2, .35), coffee: mix(P.ink, P.paperEdge, .28), milktea: mix(P.paperEdge, P.cap, .45), gut: P.blush, thread: '#6b4f55', steel: mix(P.g1, P.cap, .3),
+  tea: mix(P.paperEdge, P.ink2, .35), coffee: mix(P.ink, P.paperEdge, .28), milktea: mix(P.paperEdge, P.cap, .45), gut: P.blush, thread: '#6b4f55', steel: mix(P.g1, P.g2, .35),
 };
 // 盘子：一圈紫色细边的纸盘（handoffDisc 的圆盘就是它）
 function s2plate(c, C, x, y, r) {
@@ -261,7 +270,7 @@ function s2bug(c, C, x, y, a, type, col, s = 1, seed = 1) {
 }
 // 炎症：金色小纸火苗
 function s2flame(c, C, x, y, s, t, seed) { if (s <= .01) return; const f = Math.floor(t * 12) % 2, w = f ? 1 : .86;
-  s2prism(c, C, s2tf([[0, -26], [9 * w, -8], [11, 4], [0, 12], [-11, 4], [-9 * w, -8]], x, y, 0, s), 5, P.moon, { seed, step: 5, sh: .2, gr: .05 });
+  s2prism(c, C, s2tf([[0, -34], [6 * w, -16], [13, -24 * w], [14, -2], [11, 8], [0, 14], [-11, 8], [-14, -4], [-12, -20 / w], [-5, -12]], x, y, 0, s), 6, P.moon, { seed, step: 5, sh: .25, gr: .05 });
   s2prism(c, C, s2tf([[0, -8], [5, 2], [0, 8], [-5, 2]], x, y + 2, 0, s), 1, mix(P.moon, '#ffffff', .5), { z0: 5, seed: seed + 1, step: 4, sh: 0, gr: 0 }); }
 
 // ===================== 帕秋莉：站在桌上的小剪纸人偶 =====================
@@ -278,13 +287,16 @@ function s2patK() {
     [a(1, '一组只在'), { pose: 'point', look: .9 }],
     [T(2) - .1, { pose: 'stand', look: .7 }],
     [a(2, '限时组'), { pose: 'point', look: .9 }],
+    [a(2, '更健康') - .3, { x: 1260, pose: 'stand', look: .9, dur: .6 }],
     [a(2, '更健康') + .5, { pose: 'cross', mood: 'smug', look: .5 }],
     [E(2) + .05, { st: 2, x: 1720, pose: 'stand', dur: .95 }],
     [T(3), { pose: 'point', look: .9 }],
     [T(4), { pose: 'lecture', look: .3 }],
     [T(5), { pose: 'cross', mood: 'annoyed', look: -.6 }],
-    [a(5, '你懂的'), { pose: 'point', mood: 'annoyed', look: .9 }],
-    [a(5, '你懂的') + .75, { pose: 'cross', mood: 'pout', look: -.5 }],
+    [a(5, '你懂的') - .35, { x: 1640, pose: 'stand', mood: 'annoyed', look: .9, dur: .4 }],
+    [a(5, '你懂的') + .2, { pose: 'point', mood: 'annoyed', look: .9 }],
+    [a(5, '你懂的') + .85, { pose: 'cross', mood: 'pout', look: -.5 }],
+    [s2E(5) + .1, { x: 1720, pose: 'stand', look: .6, dur: .4 }],
     [T(6), { pose: 'lecture', look: .6 }],
     [a(6, '倒时差') + .3, { pose: 'point', mood: 'annoyed', look: .9 }],
     [T(7) - .1, { pose: 'lecture', look: .4 }],
@@ -297,6 +309,7 @@ function s2patK() {
     [a(9, '菌群更多样'), { pose: 'point', look: .9 }],
     [a(9, '炎症') + .4, { pose: 'cross', mood: 'smug', look: .4 }],
     [T(10), { pose: 'lecture', look: .6 }],
+    [a(10, '点外卖') - .2, { x: 1600, pose: 'lecture', look: .8, dur: .45 }],
     [a(10, '少点奶茶'), { pose: 'point', mood: 'smug', look: .9 }],
     [E(10) + .05, { st: 4, x: 1400, pose: 'stand', dur: .95 }],
     [T(11), { pose: 'stand', mood: 'normal', look: .5, tilt: .03 }],
@@ -376,11 +389,11 @@ function s2stB(c, C, t) {
   // 纸条：随时吃 / 8 小时
   if (t > q0 + .2) s2slip(c, C, ox + 440, 720 + s2mv(t, q0 + .2, .35, 200, 0), 190, 64, '随时吃', { size: 38, a: -.02, seed: 2330 });
   if (t > q8 - .1) s2slip(c, C, ox + 900, 722 + s2mv(t, q8 - .1, .35, 200, 0), 210, 76, '8 小时', { size: 54, a: .02, seed: 2331 });
-  if (t > hp) { const [sx, sy] = s2p(C, ox + 1010, 722, 2); check(c, sx, sy, 56 * s2k(C, 2), { p: sm(hp, hp + .3, t), seed: 2332 }); }
+  if (t > hp) { const [sx, sy] = s2p(C, ox + 1050, 716, 2); check(c, sx, sy, 56 * s2k(C, 2), { p: sm(hp, hp + .3, t), seed: 2332 }); }
 }
 // C：手风琴折页时间带
 const S2H = h => 150 + (h - 7) * 75;          // 小时 → 工位 C 里的 x（7:00 → 150，凌晨 1:36 → 1545）
-const S2ROW = { y: 290, h: 96, gap: 108 };
+const S2ROW = { y: 470, h: 96, gap: 110 };
 function s2strip(c, C, ox, y, o = {}) {
   const { u = 1, day = '', al = 1 } = o, x0 = ox + 100, x1 = ox + S2H(25.6), len = (x1 - x0) * u; if (al <= 0) return;
   c.save(); c.globalAlpha *= al;
@@ -390,11 +403,11 @@ function s2strip(c, C, ox, y, o = {}) {
     // 夜里那一截（24 点以后）是深色纸
     const n0 = s2p(C, ox + S2H(24), 0, 3)[0]; c.fillStyle = P.night2; c.fillRect(n0, sy0 - 2, W, sy1 - sy0 + 4);
     // 折痕：每小时一道，山折谷折交替明暗
-    for (let h = 7; h < 25.6; h++) { const xa = s2p(C, ox + S2H(h), 0, 3)[0], xb = s2p(C, ox + S2H(h + 1), 0, 3)[0]; if (h % 2) { c.fillStyle = 'rgba(60,40,30,.05)'; c.fillRect(xa, sy0, xb - xa, sy1 - sy0); }
-      c.fillStyle = 'rgba(60,40,30,.12)'; c.fillRect(xa - .5, sy0, 1.2, sy1 - sy0); }
+    for (let h = 7; h < 25.6; h++) { const xa = s2p(C, ox + S2H(h), 0, 3)[0], xb = s2p(C, ox + S2H(h + 1), 0, 3)[0]; if (h % 2) { c.fillStyle = 'rgba(60,40,30,.025)'; c.fillRect(xa, sy0, xb - xa, sy1 - sy0); }
+      c.fillStyle = 'rgba(60,40,30,.09)'; c.fillRect(xa - .5, sy0, 1.2, sy1 - sy0); }
     c.fillStyle = 'rgba(60,40,30,.12)'; const tx = s2p(C, ox + 150, 0, 3)[0]; c.fillRect(tx - 1, sy0, 2, sy1 - sy0);
     c.restore();
-    for (const h of [7, 12, 18, 24]) s2txt(c, C, String(h), ox + S2H(h) + 6, y + S2ROW.h - 12, 3, 24, { color: h === 24 ? P.g1 : P.ink2 });
+    for (const h of [7, 12, 18, 24]) s2txt(c, C, String(h), ox + S2H(h) + 6, y + 25, 3, 23, { color: h === 24 ? P.g1 : P.ink2 });
     if (day) s2txt(c, C, day, ox + 125, y + S2ROW.h / 2 + 12, 3, 34, { align: 'center', color: P.ink });
   }
   // 还没展开的那一叠（手风琴）
@@ -403,10 +416,10 @@ function s2strip(c, C, ox, y, o = {}) {
 }
 // 一行的遮条（早上 1 小时、睡前 2–3 小时）
 function s2covers(c, C, ox, y, t, o = {}) {
-  const { m = 1, e = 1, al = 1, eo = 0 } = o; if (al <= 0) return;
+  const { m = 1, e = 1, al = 1, eo = 0, eal = 1 } = o; if (al <= 0) return;
   if (m > 0) s2prism(c, C, rectPts(ox + S2H(7) - 3, y - 6 - (1 - m) * 200, S2H(8) - S2H(7) + 3, S2ROW.h + 12, 2), 3, P.g1, { z0: 3, seed: 2420, step: 20, al: al * Math.min(1, m * 3), side: mix(P.g1, P.ink, .3) });
-  if (e > 0) { const dy = -(1 - e) * 200 + eo; vellum(c, s2P(C, rectPts(ox + S2H(21), y - 6 + dy, S2H(22) - S2H(21), S2ROW.h + 12, 2), 6), { seed: 2421, al: al * Math.min(1, e * 3) * 1.2 });
-    s2prism(c, C, rectPts(ox + S2H(22), y - 6 + dy, S2H(24) - S2H(22), S2ROW.h + 12, 2), 3, P.g1, { z0: 3, seed: 2422, step: 20, al: al * Math.min(1, e * 3), side: mix(P.g1, P.ink, .3) }); }
+  if (e > 0 && eal > 0) { const dy = -(1 - e) * 200 + eo; c.save(); c.globalAlpha *= eal; vellum(c, s2P(C, rectPts(ox + S2H(21), y - 6 + dy, S2H(22) - S2H(21), S2ROW.h + 12, 2), 6), { seed: 2421, al: al * Math.min(1, e * 3) * 1.2 });
+    s2prism(c, C, rectPts(ox + S2H(22), y - 6 + dy, S2H(24) - S2H(22), S2ROW.h + 12, 2), 3, P.g1, { z0: 3, seed: 2422, step: 20, al: al * Math.min(1, e * 3), side: mix(P.g1, P.ink, .3) }); c.restore(); }
 }
 // 每天三顿饭的时刻（碗）：稳定前各天乱跳，稳定后对齐
 const S2MEAL = [9, 12.5, 18.5];
@@ -420,43 +433,42 @@ function s2mealOff(i, j, t) {
 }
 function s2planeX(t) { const g = s2at(6, '倒时差'); return lerp(-150, 1900, clamp((t - g + .1) / .9, 0, 1)); }
 function s2stC(c, C, t) {
-  const ox = S2OX[2], a = s2at, t3 = s2T(3), t4 = s2T(4), t5 = s2T(5), t6 = s2T(6), t7 = s2T(7);
+  const ox = S2OX[2], a = s2at, t3 = s2T(3), t6 = s2T(6), t7 = s2T(7), sg = a(7, '一勺糖'), js = a(7, '就算');
   const u = sm(t3 - .45, t3 + .9, t, x => x);
-  // 五天：其余四条从第一条底下抽出来，L8 前收回去
-  const out = i => i ? Math.min(sm(t6 + .1 + i * .1, t6 + .45 + i * .1, t, easeOut), 1 - sm(t7 - .3 + (4 - i) * .06, t7 + .05 + (4 - i) * .06, t, easeIO)) : 1;
-  const rows = [4, 3, 2, 1, 0];
-  for (const i of rows) { const k = out(i); if (i && k <= 0) continue; const y = S2ROW.y + i * S2ROW.gap * k, day = t > t6 ? '一二三四五'[i] : '';
+  // 五天：其余四条从第一条底下抽出来，上下散开成一周；L8 前收回去
+  const ex = i => Math.min(sm(t6 + .1 + Math.abs(i - 2) * .08, t6 + .5 + Math.abs(i - 2) * .08, t, easeOut), 1 - sm(t7 - .35 + (4 - i) * .05, t7 + .05 + (4 - i) * .05, t, easeIO));
+  const rowY = i => S2ROW.y + (i - 2) * S2ROW.gap * ex(i), y0 = rowY(0), gone = sm(js + .35, js + .7, t, easeIn);
+  for (const i of [4, 3, 2, 1, 0]) { const k = ex(i); if (i && k <= 0) continue; const y = rowY(i), day = k > .5 ? '一二三四五'[i] : '';
     s2strip(c, C, ox, y, { u: i ? 1 : u, day });
-    if (u >= 1) s2covers(c, C, ox, y, t, { m: sm(a(3, '起床后') - .1, a(3, '起床后') + .35, t, easeOut), e: sm(a(4, '睡前') - .1, a(4, '睡前') + .35, t, easeOut), eo: i === 0 ? -34 * sm(a(7, '就算'), a(7, '就算') + .25, t, easeOutBack) : 0 });
-    // 三顿饭
+    if (u >= 1) s2covers(c, C, ox, y, t, { m: sm(a(3, '起床后') - .1, a(3, '起床后') + .35, t, easeOut), e: sm(a(4, '睡前') - .1, a(4, '睡前') + .35, t, easeOut), eo: i === 0 ? -520 * gone : 0, eal: i === 0 ? 1 - gone : 1 });
+    // 三顿饭（碗）
     const mt = a(4, '不再进食');
-    S2MEAL.forEach((h, j) => { if (t < mt + j * .14) return; const d = s2mealOff(i, j, t), z = s2drop(t, mt + j * .14, 180), yy = y + 40 + (i === 4 && s2planeX(t) > S2H(h) + 40 && t < a(6, '倒时差') + 1.55 ? [18, -16, 12][j] : 0);
-      s2bowl(c, C, ox + S2H(h + d), yy, 24, { z0: z }); });
+    S2MEAL.forEach((h, j) => { if (t < mt + j * .14) return; const d = s2mealOff(i, j, t), z = s2drop(t, mt + j * .14, 180), hit = i === 4 && s2planeX(t) > S2H(h) + 40 && t < a(6, '倒时差') + 1.55;
+      s2bowl(c, C, ox + S2H(h + d), y + 58 + (hit ? [22, -18, 16][j] : 0), 26, { z0: z }); });
   }
-  // 太阳、月亮贴纸
-  if (t > a(3, '起床后') + .3) { const z = s2drop(t, a(3, '起床后') + .3, 160); s2prism(c, C, starPts(ox + S2H(7) + 36, 262, 30, 10, .62), 3, P.moon, { z0: z, seed: 2430, step: 5, sh: .25 }); s2prism(c, C, circPts(ox + S2H(7) + 36, 262, 17, 16), 2, mix(P.moon, '#ffffff', .25), { z0: z + 3, seed: 2431, step: 5, sh: 0 }); }
-  if (t > a(4, '睡前') + .3) { const z = s2drop(t, a(4, '睡前') + .3, 160); s2prism(c, C, crescentPts(ox + S2H(24) + 34, 262, 26, -.5, 48), 3, P.moon, { z0: z, seed: 2432, step: 5, sh: .25 }); }
+  // 太阳、月亮贴纸（贴在第一天那条上）
+  if (t > a(3, '起床后') + .3) { const z = s2drop(t, a(3, '起床后') + .3, 160); s2prism(c, C, starPts(ox + S2H(7) + 36, y0 - 26, 30, 10, .62), 3, P.moon, { z0: z, seed: 2430, step: 5, sh: .25 }); s2prism(c, C, circPts(ox + S2H(7) + 36, y0 - 26, 17, 16), 2, mix(P.moon, '#ffffff', .25), { z0: z + 3, seed: 2431, step: 5, sh: 0 }); }
+  if (t > a(4, '睡前') + .3) { const z = s2drop(t, a(4, '睡前') + .3, 160); s2prism(c, C, crescentPts(ox + S2H(24.9), y0 + 54, 24, -.5, 48), 3, P.moon, { z0: z, seed: 2432, step: 5, sh: .25 }); }
   // 纸条：1 小时 / 2–3 小时（五天那句收走）
   const slipA = 1 - sm(t6 - .2, t6 + .1, t);
-  if (t > a(3, '1 小时') - .1) s2slip(c, C, ox + S2H(7.5) + 20, 200 - (1 - slipA) * 300 + s2mv(t, a(3, '1 小时') - .1, .35, -220, 0), 170, 70, '1 小时', { size: 46, a: -.03, seed: 2440 });
-  if (t > a(4, '2 到 3') - .1) s2slip(c, C, ox + S2H(22.5), 200 - (1 - slipA) * 300 + s2mv(t, a(4, '2 到 3') - .1, .35, -220, 0), 230, 70, '2–3 小时', { size: 46, a: .025, seed: 2441 });
-  // 凌晨一点：炸鸡外卖从天而降，盖一个墨色 ×，被帕秋莉用魔法弹出桌外
-  const bt = a(5, '炸鸡') - .2, bx = a(5, '你懂的') + .25;
-  if (t > bt && t < bx + 1) { const z = s2drop(t, bt, 380, .4), fly = sm(bx, bx + .6, t, easeIn), x = ox + S2H(25) + fly * 700, y = 200 - fly * 500;
-    s2bag(c, C, x, y, .12 + fly * 2.5, z); if (fly <= 0) s2cross(c, C, x, y + 10, 96, z + 38, a(5, '嗯'), t); }
-  // 倒时差：一架纸飞机从第五天上面掠过
-  const px = s2planeX(t); if (px > -140 && px < 1880) s2plane(c, C, ox + px, S2ROW.y + 4 * S2ROW.gap + 30 + Math.sin(px / 180) * 20, .1 * Math.cos(px / 180), 70);
-  // 饮料：白水、茶、黑咖啡立在睡前那段上方，一勺糖倒进咖啡
-  const dA = 1 - sm(s2E(7) + .05, s2E(7) + .35, t);
-  [['water', a(7, '白水'), 1235], ['tea', a(7, '茶'), 1325], ['coffee', a(7, '不加糖'), 1420]].forEach(([k, t0, x], i) => { if (t < t0 - .15) return;
-    s2cup(c, C, ox + x, 214 - (1 - dA) * 400, k, { z0: s2drop(t, t0 - .15, 200) });
-    const ck = a(7, '不算') + i * .15, [sx, sy] = s2p(C, ox + x, 136 - (1 - dA) * 400, 0);
-    if (t > ck && !(k === 'coffee' && t > a(7, '就算'))) check(c, sx, sy, 50, { p: sm(ck, ck + .25, t), seed: 2450 + i }); });
-  const sg = a(7, '一勺糖');
-  if (t > sg - .5 && dA > 0) { const u2 = s2mv(t, sg - .5, .5, 0, 1), tilt = sm(sg + .2, sg + .5, t), x = ox + lerp(1760, 1500, u2), y = lerp(-40, 150, u2) - (1 - dA) * 400;
+  if (t > a(3, '1 小时') - .1 && slipA > 0) s2slip(c, C, ox + S2H(7.5) + 20, y0 - 110 - (1 - slipA) * 400 + s2mv(t, a(3, '1 小时') - .1, .35, -260, 0), 170, 70, '1 小时', { size: 46, a: -.03, seed: 2440 });
+  if (t > a(4, '2 到 3') - .1 && slipA > 0) s2slip(c, C, ox + S2H(22.5), y0 - 110 - (1 - slipA) * 400 + s2mv(t, a(4, '2 到 3') - .1, .35, -260, 0), 230, 70, '2–3 小时', { size: 46, a: .025, seed: 2441 });
+  // 凌晨一点：炸鸡外卖从天而降落在夜里那截上，盖一个墨色 ×，被帕秋莉一脚踢出桌外
+  const bt = a(5, '炸鸡') - .2, bk = a(5, '你懂的') + .3;
+  if (t > bt && t < bk + 1) { const z = s2drop(t, bt, 420, .4), fly = sm(bk, bk + .5, t, easeIn), x = ox + S2H(25) + fly * 900, y = y0 + 40 - fly * 700 + Math.sin(fly * Math.PI) * -100;
+    s2bag(c, C, x, y, .12 + fly * 4, z + fly * 200); if (fly <= 0) s2cross(c, C, x, y + 10, 96, z + 38, a(5, '嗯'), t); }
+  // 倒时差：一架纸飞机从第五天上面掠过，把碗撞歪
+  const px = s2planeX(t); if (px > -140 && px < 1880) s2plane(c, C, ox + px, rowY(4) + 40 + Math.sin(px / 180) * 24, .12 * Math.cos(px / 180), 70);
+  // 饮料：白水、茶、黑咖啡立在睡前那段上方；一勺糖倒进咖啡
+  const dA = 1 - sm(s2E(7) + .05, s2E(7) + .35, t), cy = y0 - 86 - (1 - dA) * 500;
+  [['water', a(7, '白水'), 1236], ['tea', a(7, '茶'), 1330], ['coffee', a(7, '不加糖'), 1428]].forEach(([k, t0, x], i) => { if (t < t0 - .15) return;
+    s2cup(c, C, ox + x, cy, k, { z0: s2drop(t, t0 - .15, 200) });
+    const ck = a(7, '不算') + i * .15, [sx, sy] = s2p(C, ox + x, cy - 92, 0);
+    if (t > ck && !(k === 'coffee' && t > js)) check(c, sx, sy, 50, { p: sm(ck, ck + .25, t), seed: 2450 + i }); });
+  if (t > sg - .5 && dA > 0) { const u2 = s2mv(t, sg - .5, .5, 0, 1), tilt = sm(sg + .2, sg + .5, t), away = sm(js + .6, js + 1, t, easeIn), x = ox + lerp(1780, 1520, u2) + away * 300, y = cy - 70 + lerp(-300, 0, u2) - away * 300;
     s2spoon(c, C, x, y, -.5 - tilt * .6, 110, 1 - tilt);
-    for (let j = 0; j < 8; j++) { const b = sg + .3 + j * .03, v = clamp((t - b) / .3, 0, 1); if (v <= 0) continue; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ox + 1420 + (hash(j, 8) - .5) * 30, 214 + (hash(j, 9) - .5) * 26 - (1 - dA) * 400, j), 3, '#f7f3ea', { z0: lerp(110, 46, v), seed: 2460 + j, step: 4, sh: .12, gr: 0 }); }
-    if (t > a(7, '就算')) s2cross(c, C, ox + 1420, 214 - (1 - dA) * 400, 70, 60, a(7, '就算'), t); }
+    for (let j = 0; j < 8; j++) { const b = sg + .3 + j * .03, v = clamp((t - b) / .3, 0, 1); if (v <= 0) continue; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ox + 1428 + (hash(j, 8) - .5) * 30, cy + (hash(j, 9) - .5) * 26, j), 3, '#f7f3ea', { z0: lerp(110, 46, v), seed: 2460 + j, step: 4, sh: .12, gr: 0 }); }
+    if (t > js) s2cross(c, C, ox + 1428, cy, 70, 60, js, t); }
 }
 // D：衍纸肠道 + 小菌 + 发酵食品
 function s2stD(c, C, t) {
@@ -516,10 +528,12 @@ function s2stD(c, C, t) {
 }
 // E：折起来的便条 + 桌布上的缝线（出场）
 function s2stE(c, C, t) {
-  const ox = S2OX[4], a = s2at, t11 = s2T(11), e11 = s2E(11), pull = sm(e11 + .55, S2DUR - .5, t, easeIO);
+  const ox = S2OX[4], a = s2at, t11 = s2T(11), e11 = s2E(11), pull = sm(e11 + .55, S2DUR - .85, t, easeIO);
   // 缝线：一段段穿进桌布的平针线，被拉直
-  const x0 = ox - 400, x1 = ox + 2600, yy = S2END.y, k = s2k(C, 0);
-  { const a0 = s2p(C, x0, yy), a1 = s2p(C, x1, yy), w = lerp(3 * k, 3, pull), dash = 36 * k, gap = 22 * k * (1 - pull);
+  const pt = s2patAt(t), drag = t > e11 + .45, x0 = ox + 30, x1 = drag ? Math.min(ox + 2600, pt.wx + 10) : ox + 2600, yy = S2END.y, k = s2k(C, 0);
+  if (drag && pull < 1) { const f = s2p(C, x1, yy), hp = s2p(C, pt.wx, pt.wy), kk = s2k(C, 0); c.save(); c.strokeStyle = S2C.thread; c.lineWidth = 3 * kk; c.lineCap = 'round'; c.beginPath(); c.moveTo(...f); c.quadraticCurveTo(f[0] - 10 * kk, hp[1] - 120 * kk, hp[0] - 14 * kk, hp[1] - (210 + pt.hop) * kk); c.stroke(); c.restore(); }
+  if (pull >= 1) { const sy = s2p(C, 0, yy)[1]; rline(c, [[-20, sy], [W + 20, sy]], { w: 3, color: S2C.thread, seed: 2002, amp: .3 }); }
+  else { const a0 = s2p(C, x0, yy), a1 = s2p(C, x1, yy), w = lerp(3 * k, 3, pull), dash = 36 * k, gap = 22 * k * (1 - pull);
     c.save(); c.strokeStyle = S2C.thread; c.lineWidth = w; c.lineCap = 'round'; if (gap > .5) c.setLineDash([dash, gap]); c.lineDashOffset = -pull * 400 * k;
     c.beginPath(); c.moveTo(a0[0], a0[1]); for (let i = 1; i <= 60; i++) { const u = i / 60, wx = lerp(x0, x1, u), wy = yy + Math.sin(u * 40) * 3 * (1 - pull); const p = s2p(C, wx, wy); c.lineTo(p[0], p[1]); } c.stroke(); c.restore();
     if (gap > .5) { c.save(); c.globalAlpha = (1 - pull) * .5; c.strokeStyle = 'rgba(60,40,30,.25)'; c.lineWidth = 1; for (let wx = x0; wx < x1; wx += 58) { const p = s2p(C, wx - 11, yy); c.beginPath(); c.arc(p[0], p[1], 1.6 * k, 0, TAU); c.stroke(); } c.restore(); } }
@@ -549,7 +563,7 @@ scene({ order: 2, key: 'diet', title: '吃饭', dur: S2DUR, lines: S2LINES, noFl
     // 进场：前 0.2 秒只画交接圆盘；出场：最后 0.2 秒只画交接线
     if (tau < .2) { handoffDisc(c); return; }
     if (tau > S2DUR - .2) { handoffThread(c); return; }
-    const t = twos(tau), C = s2cam(t), endK = sm(S2DUR - .9, S2DUR - .45, t);
+    const t = twos(tau), C = s2cam(t), endK = sm(S2DUR - 1.4, S2DUR - .8, t);
     s2cloth(c, C, 1 - endK);
     for (const [i, f] of [[0, s2stA], [1, s2stB], [2, s2stC], [3, s2stD], [4, s2stE]]) { const [lx] = s2p(C, S2OX[i], 0), [rx] = s2p(C, S2OX[i] + 1920, 0); if (rx < -300 || lx > W + 300) continue; f(c, C, t); }
     s2pat(c, C, t, tau, L);
