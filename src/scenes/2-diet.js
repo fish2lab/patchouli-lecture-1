@@ -241,9 +241,9 @@ function s2jar(c, C, x, y, o = {}) {
     for (let i = 0; i < 7; i++) { const a = i * 2.1, rr = (i % 3) * 14 * k; c.beginPath(); c.ellipse(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr, 11 * k, 6 * k, a, 0, TAU); c.fill(); } }
   else { const L = 170, body = s2tf(rectPts(-L / 2, -r, L, r * 2, r * .7), x, y, 0); s2prism(c, C, body, 60, mix(P.cap, P.g1, .3), { seed: 2121, step: 12, side: mix(P.g1, P.green, .25) });
     const m = s2p(C, x - L / 2 + 6, y, 60), k = s2k(C, 60); c.fillStyle = mix(fill, P.ink, .2); c.beginPath(); c.ellipse(m[0], m[1], 14 * k, r * .8 * k, 0, 0, TAU); c.fill(); }
-  if (lid > 0) { const lx = x + lidX, ly = y + lidY, pts = []; for (let i = 0; i < 60; i++) { const a = i / 60 * TAU; pts.push([lx + Math.cos(a) * (r + 16 + 5 * Math.sin(a * 12)), ly + Math.sin(a) * (r + 16 + 5 * Math.sin(a * 12))]); }
+  if (lid > 0) { const lx = x + lidX, ly = y + lidY, pts = []; for (let i = 0; i < 60; i++) { const a = i / 60 * TAU; pts.push([lx + Math.cos(a) * (r - 2 + 4 * Math.sin(a * 12)), ly + Math.sin(a) * (r - 2 + 4 * Math.sin(a * 12))]); }
     s2prism(c, C, pts, 3, P.stripe, { z0: lidX || lidY ? 0 : 74, seed: 2122, step: 8, sh: .2 });
-    const [sx, sy] = s2p(C, lx, ly, (lidX || lidY ? 0 : 74) + 3), k = s2k(C, 77); c.strokeStyle = P.purple; c.lineWidth = 3 * k; c.beginPath(); c.arc(sx, sy, (r - 4) * k, 0, TAU); c.stroke(); }
+    const [sx, sy] = s2p(C, lx, ly, (lidX || lidY ? 0 : 74) + 3), k = s2k(C, 77); c.strokeStyle = P.purple; c.lineWidth = 3 * k; c.beginPath(); c.arc(sx, sy, (r - 16) * k, 0, TAU); c.stroke(); }
 }
 
 // ===================== 衍纸肠道 =====================
@@ -293,7 +293,7 @@ function s2patK() {
     [T(3), { pose: 'point', look: .9 }],
     [T(4), { pose: 'lecture', look: .3 }],
     [T(5), { pose: 'cross', mood: 'annoyed', look: -.6 }],
-    [a(5, '你懂的') - .35, { x: 1640, pose: 'stand', mood: 'annoyed', look: .9, dur: .4 }],
+    [a(5, '你懂的') - .35, { x: 1680, pose: 'stand', mood: 'annoyed', look: .9, dur: .4 }],
     [a(5, '你懂的') + .2, { pose: 'point', mood: 'annoyed', look: .9 }],
     [a(5, '你懂的') + .85, { pose: 'cross', mood: 'pout', look: -.5 }],
     [s2E(5) + .1, { x: 1720, pose: 'stand', look: .6, dur: .4 }],
@@ -329,10 +329,12 @@ function s2patAt(t) {
   return { ...cur, pose: d > .5 ? 'stand' : cur.pose, facing: wx > px ? 1 : wx < px ? -1 : cur.facing, wx: lerp(px, wx, e), wy: lerp(prev.y, cur.y, e), hop, walking: true, tilt: (Math.sin(u * steps * Math.PI * 2) * .05) };
 }
 function s2pat(c, C, t, tau, L) {
+  const ent = t < 1.45 ? 0 : t < 1.8 ? (t - 1.45) / .35 : 1; if (ent <= 0) return;
   const s = s2patAt(t), [sx, sy] = s2p(C, s.wx, s.wy, 0), k = s2k(C, 0), hh = 520 * k, sit = s.pose === 'sit';
+  if (ent < 1) s.hop += (1 - ent * ent) * 340;
   // 脚下的影子（顶光：一小团，偏右下；跳起来时影子变淡变小）
-  const fy = sit ? sy + 150 * k : sy, sa = .3 * (1 - s.hop / 60);
-  c.save(); c.filter = `blur(${6 * k}px)`; c.fillStyle = `rgba(40,26,22,${sa})`; c.beginPath(); c.ellipse(sx + 16 * k, fy + 6 * k, 70 * k * (1 - s.hop / 120), 16 * k, 0, 0, TAU); c.fill(); c.restore();
+  const fy = sit ? sy + 150 * k : sy, sa = .3 * Math.max(.2, 1 - s.hop / 60);
+  c.save(); c.filter = `blur(${6 * k}px)`; c.fillStyle = `rgba(40,26,22,${sa})`; c.beginPath(); c.ellipse(sx + 16 * k, fy + 6 * k, 70 * k * Math.max(.4, 1 - s.hop / 120), 16 * k, 0, 0, TAU); c.fill(); c.restore();
   const talking = L.talking && L.line;
   drawPatchouli(c, { x: sx, y: sy - s.hop * k, h: hh, pose: s.pose, facing: s.facing ?? -1, look: s.look ?? .5, tilt: s.tilt || 0, mood: s.mood || L.mood || 'normal', mouth: talking ? L.mouth : 0, blink: blinkAt(tau, 2), t: tau, gesture: .55 + .35 * Math.sin(tau * 1.3) });
 }
@@ -355,8 +357,8 @@ function s2stA(c, C, t) {
   if (t > f0 + .45) { const x = ox + 745 + egg * .2, y = 572 + egg * .1; s2prism(c, C, s2tf([[-40, -8], [-22, -30], [8, -34], [36, -18], [40, 10], [22, 30], [-10, 32], [-36, 18]], x, y, .2), 3, '#f7f3ea', { z0: 8, seed: 2230, step: 8, sh: .15 });
     s2prism(c, C, circPts(x + 4, y - 2, 16, 18), 6, P.moon, { z0: 11, seed: 2231, step: 5, sh: .2 }); }
   // 什么时候吃：时钟一顿一顿挪进来，指针转两圈停在 12 点
-  const c0 = a(0, '什么时候吃') - .3, cx = s2mv(t, c0, .5, 1560, 1185), sp = s2mv(t, c0 + .3, 1, 0, 1);
-  s2clock(c, C, ox + cx, 500, 118, { h: 16, hands: [lerp(-2.2, 0, sp), lerp(-TAU * 2 + .9, 0, sp)] });
+  const c0 = a(0, '什么时候吃') - .3, cx = s2mv(t, c0, .5, 2150, 1185), sp = s2mv(t, c0 + .3, 1, 0, 1);
+  if (t > c0) s2clock(c, C, ox + cx, 500, 118, { h: 16, hands: [lerp(-2.2, 0, sp), lerp(-TAU * 2 + .9, 0, sp)] });
   // 同样重要：两根筷子一根一根落下，摆成「=」
   const e0 = a(0, '同样重要');
   [[478, 0], [522, .22]].forEach(([y, d], i) => { if (t < e0 + d) return; const z = s2drop(t, e0 + d, 200);
@@ -407,7 +409,7 @@ function s2strip(c, C, ox, y, o = {}) {
       c.fillStyle = 'rgba(60,40,30,.09)'; c.fillRect(xa - .5, sy0, 1.2, sy1 - sy0); }
     c.fillStyle = 'rgba(60,40,30,.12)'; const tx = s2p(C, ox + 150, 0, 3)[0]; c.fillRect(tx - 1, sy0, 2, sy1 - sy0);
     c.restore();
-    for (const h of [7, 12, 18, 24]) s2txt(c, C, String(h), ox + S2H(h) + 6, y + 25, 3, 23, { color: h === 24 ? P.g1 : P.ink2 });
+    for (const h of [7, 12, 18, 24]) if (ox + S2H(h) + 20 < x0 + len) s2txt(c, C, String(h), ox + S2H(h) + 6, y + 25, 3, 23, { color: h === 24 ? P.g1 : P.ink2 });
     if (day) s2txt(c, C, day, ox + 125, y + S2ROW.h / 2 + 12, 3, 34, { align: 'center', color: P.ink });
   }
   // 还没展开的那一叠（手风琴）
@@ -538,22 +540,22 @@ function s2stE(c, C, t) {
     c.beginPath(); c.moveTo(a0[0], a0[1]); for (let i = 1; i <= 60; i++) { const u = i / 60, wx = lerp(x0, x1, u), wy = yy + Math.sin(u * 40) * 3 * (1 - pull); const p = s2p(C, wx, wy); c.lineTo(p[0], p[1]); } c.stroke(); c.restore();
     if (gap > .5) { c.save(); c.globalAlpha = (1 - pull) * .5; c.strokeStyle = 'rgba(60,40,30,.25)'; c.lineWidth = 1; for (let wx = x0; wx < x1; wx += 58) { const p = s2p(C, wx - 11, yy); c.beginPath(); c.arc(p[0], p[1], 1.6 * k, 0, TAU); c.stroke(); } c.restore(); } }
   // 便条：折成四分之一的一张纸，一顿一顿打开
-  const n0 = t11 - .2, o1 = sm(n0 + .3, n0 + .55, t, easeOut), o2 = sm(n0 + .7, n0 + .95, t, easeOut), nx = ox + 760, ny = 360, nw = 520, nh = 380, fa = 1 - sm(e11 + .15, e11 + .5, t);
+  const n0 = t11 - .2, o1 = sm(n0 + .3, n0 + .55, t, easeOut), o2 = sm(n0 + .7, n0 + .95, t, easeOut), nx = ox + 800, ny = 420, nw = 580, nh = 420, fa = 1 - sm(e11 + .15, e11 + .5, t);
   if (t > n0 && fa > 0) { const z = s2drop(t, n0, 220), w = nw * lerp(.5, 1, o1), hh = nh * lerp(.5, 1, o2);
     c.save(); c.globalAlpha *= 1; const lift = (1 - fa) * -700;
     s2prism(c, C, rectPts(nx - w / 2, ny - hh / 2 + lift, w, hh, 3), 3, P.cap, { z0: z, seed: 2701, step: 26 });
     // 折痕
     const kk = s2k(C, z + 3), m0 = s2p(C, nx, ny - hh / 2 + lift, z + 3), m1 = s2p(C, nx, ny + hh / 2 + lift, z + 3), h0 = s2p(C, nx - w / 2, ny + lift, z + 3), h1 = s2p(C, nx + w / 2, ny + lift, z + 3);
     c.strokeStyle = 'rgba(60,40,30,.18)'; c.lineWidth = 1.5 * kk; if (o1 > .9) { c.beginPath(); c.moveTo(...m0); c.lineTo(...m1); c.stroke(); } if (o2 > .9) { c.beginPath(); c.moveTo(...h0); c.lineTo(...h1); c.stroke(); }
-    if (o2 >= 1) { const pin = s2p(C, nx, ny - nh / 2 + 18 + lift, z + 3); brassPin(c, pin[0], pin[1], 9 * kk);
-      const cz = z + 3; s2prism(c, C, [[-10, -34], [10, -34], [10, -10], [34, -10], [34, 10], [10, 10], [10, 34], [-10, 34], [-10, 10], [-34, 10], [-34, -10], [-10, -10]].map(([u, v]) => [nx - 170 + u, ny - 100 + lift + v]), 3, P.green, { z0: cz, seed: 2710, step: 8, sh: .2 });
-      s2txt(c, C, '胃不好', nx - 110, ny - 84 + lift, cz, 46, { color: P.ink, p: writeP(t, n0 + 1, '胃不好', .08) });
-      s2txt(c, C, '有进食困扰', nx - 200, ny + 10 + lift, cz, 46, { color: P.ink, p: writeP(t, a(11, '进食方面'), '有进食困扰', .08) });
-      s2txt(c, C, '→ 先问医生', nx - 200, ny + 112 + lift, cz, 52, { color: P.ink, p: writeP(t, a(11, '先问医生'), '→ 先问医生', .08) });
-      if (t > a(11, '先问医生') + .5) { const u0 = s2p(C, nx - 170, ny + 130 + lift, cz), u1 = s2p(C, nx + 160, ny + 130 + lift, cz); rline(c, [u0, u1], { w: 3, color: P.green, p: sm(a(11, '先问医生') + .5, a(11, '先问医生') + .8, t), seed: 2711 }); } }
+    if (o2 >= 1) {
+      const cz = z + 3; s2prism(c, C, [[-10, -34], [10, -34], [10, -10], [34, -10], [34, 10], [10, 10], [10, 34], [-10, 34], [-10, 10], [-34, 10], [-34, -10], [-10, -10]].map(([u, v]) => [nx - 190 + u * 1.25, ny - 56 + lift + v * 1.25]), 3, P.green, { z0: cz, seed: 2710, step: 8, sh: .2 });
+      s2txt(c, C, '胃不好', nx - 120, ny - 80 + lift, cz, 50, { color: P.ink, p: writeP(t, n0 + 1, '胃不好', .08) });
+      s2txt(c, C, '有进食困扰', nx - 120, ny + 2 + lift, cz, 50, { color: P.ink, p: writeP(t, a(11, '进食方面'), '有进食困扰', .08) });
+      s2txt(c, C, '→ 先问医生', nx - 210, ny + 128 + lift, cz, 60, { color: P.ink, p: writeP(t, a(11, '先问医生'), '→ 先问医生', .08) });
+      if (t > a(11, '先问医生') + .5) { const u0 = s2p(C, nx - 150, ny + 148 + lift, cz), u1 = s2p(C, nx + 200, ny + 148 + lift, cz); rline(c, [u0, u1], { w: 3, color: P.green, p: sm(a(11, '先问医生') + .5, a(11, '先问医生') + .8, t), seed: 2711 }); } }
     c.restore(); }
   // 别硬饿：一只小饭团被推到便条旁边
-  const og = a(11, '别硬饿'); if (t > og && fa > 0) { const x = ox + s2mv(t, og, .4, 1250, 1110), y = 420 - (1 - fa) * 700;
+  const og = a(11, '别硬饿'); if (t > og && fa > 0) { const x = ox + s2mv(t, og, .45, 1300, 1080), y = 590 - (1 - fa) * 700;
     s2prism(c, C, [[0, -46], [30, -30], [46, 22], [34, 40], [-34, 40], [-46, 22], [-30, -30]].map(([u, v]) => [x + u, y + v]), 16, '#f7f3ea', { seed: 2720, step: 8, side: mix(P.cap, P.g1, .6) });
     s2prism(c, C, rectPts(x - 26, y + 8, 52, 34, 3), 2, P.ink2, { z0: 16, seed: 2721, step: 8, sh: .12 }); }
 }
