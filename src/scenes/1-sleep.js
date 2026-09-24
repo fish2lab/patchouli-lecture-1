@@ -34,7 +34,7 @@ const S1B = (() => { const t = S1T, e = S1E, w = S1W; return {
   yawn: w(3, .5), glass: w(3, .3),                              // 困意、倒计时
   door: w(4, .18), walk0: w(4, .3), walk1: w(4, .52), num4: w(4, .5), gag: e(4) - 1.15,
   pane: t(5) + .35, tag5: w(5, .66),
-  spin0: t(6) + .15, spin1: t(6) + 1.55, num6: w(6, .2), wedge: w(6, .3),
+  spin0: t(6) + .15, spin1: t(6) + 1.55, num6: w(6, .2), wedge: w(6, .3), curtain: w(6, .68),
   off0: t(7) + .15, phone: w(7, .3), yank: w(7, .72),
   dim: w(8, .43), warm: w(8, .57), lamp: w(8, .72), back: w(8, .92),
   props: t(9) + .05, bean: w(9, .06), toss: w(9, .2), bump: w(9, .45), pm: w(9, .52), trial: w(9, .78),
@@ -76,7 +76,7 @@ function s1Clock(tau) {
   return key(tau, [[0, 3.6], [b.notch, 3.6], [b.notch + .2, 4.6], [b.light - .15, 4.6], [b.light + .45, 5.7],
     [b.sun0, 5.7], [b.wake, 7.2], [b.spin0, 7.9], [b.spin1, 23.2], [b.yank, 23.45], [b.yank + .42, 13],
     [b.back, 13], [b.back + 1.15, 23.7], [b.pm - .1, 23.7], [b.pm + 1.0, 39],
-    [b.trial, 39], [b.trial + .45, 37.3], [b.trial + 1.0, 41], [b.trial + 1.5, 38.6],
+    [b.trial, 39], [b.trial + .45, 37.4], [b.trial + 1.0, 40.1], [b.trial + 1.5, 38.6],
     [S1T(10) + .15, 38.6], [b.ribbon - .15, 51], [b.yankR, 51], [b.day, 62], [b.night - .1, 62], [b.night + .85, 73]]);
 }
 // s1Night：夜的程度 0..1（太阳越低越暗）
@@ -95,7 +95,7 @@ function s1Cam(tau) {
   const win = s1Aim(kw, S1Z.dorm, 2.4, [800, 470]), win2 = s1Aim(kw, S1Z.dorm, 2.5, [820, 470]), door = s1Aim([840, 760], S1Z.ground, 1.35, [820, 590]);
   const cam = key(tau, [[0, wide], [b.found, [0, 10, 1.02]], [t(1) + .1, [0, 10, 1.03]], [b.tick + .9, [-30, -150, 1.06]], [b.light, [-40, -150, 1.07]],
     [b.sun0, [-40, -150, 1.07]], [b.sun0 + 1.4, win], [S1E(2), win], [t(3) + 1.0, [-60, -30, 1.18]], [t(4) + .1, [-60, -30, 1.18]], [b.walk0, door], [b.gag, door], [b.gag + .5, [60, -20, 1.2]],
-    [t(5) + .1, [60, -20, 1.2]], [b.pane - .1, win], [t(6), win], [b.spin0 + .9, [0, -70, 1.0]], [b.off0, [0, -70, 1.0]], [b.phone, win2], [b.yank - .05, win2], [b.yank + .5, [0, -40, 1.04]], [S1T(8) + .2, [0, -40, 1.04]], [b.dim - .1, win], [b.back, win], [b.back + 1.1, [0, -30, 1.05]],
+    [t(5) + .1, [60, -20, 1.2]], [b.pane - .1, win], [t(6), win], [b.spin0 + .9, [0, -70, 1.0]], [b.curtain - .6, [0, -70, 1.0]], [b.curtain + .3, s1Aim(kw, S1Z.dorm, 1.5, [860, 500])], [b.off0 + .1, s1Aim(kw, S1Z.dorm, 1.5, [860, 500])], [b.phone, win2], [b.yank - .05, win2], [b.yank + .5, [0, -40, 1.04]], [S1T(8) + .2, [0, -40, 1.04]], [b.dim - .1, win], [b.back, win], [b.back + 1.1, [0, -30, 1.05]],
     [t(9), [30, 0, 1.0]], [t(9) + .6, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm - .2, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm + .4, [30, 0, 1.0]], [b.pm + 1, [0, -60, 1.04]], [t(10) + .2, [0, -60, 1.04]], [b.ribbon + .6, [0, -170, 1.08]], [b.yankR, [0, -150, 1.08]],
     [b.day + .5, [-20, -80, 1.1]], [b.night + .2, [-20, -80, 1.1]], [b.file, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])], [b.exit0, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])]]);
   if (tau <= b.exit0) return cam;
@@ -258,6 +258,11 @@ function s1Dorm(c, tau, st) {
         c.fillStyle = alpha(S1C.amber, .45); c.beginPath(); c.moveTo(wx + 12, ly + 10); c.lineTo(wx + 26, ly + 10); c.lineTo(wx + 40, ly + 40); c.lineTo(wx - 2, ly + 40); c.fill(); }
       if (st.kid) s1KidIn(c, wx, wy + 6, st.kid, st.tau, kidCol, { k: st.kidK, glow: st.phoneGlow });
       // 存档：纸片飞进来时窗里闪一下金光
+      // 窗帘：一张半透明的纸（L6「别让强光照进眼睛」时拉下来），屋里的光和小人的影子透过它
+      if (st.curtain > 0) { const ch = S1WH * st.curtain, cc = mix(glass, lit > 0 ? st.kidCol : glass, clamp(lit, 0, 1) * .85);
+        c.fillStyle = alpha(mix(cc, S1C.white, .12), .62); c.fillRect(x, y, S1WW, ch);
+        c.strokeStyle = alpha(kidCol, .25); c.lineWidth = 1.5; for (const fx of [.25, .5, .75]) { c.beginPath(); c.moveTo(x + S1WW * fx, y); c.lineTo(x + S1WW * fx + 2, y + ch); c.stroke(); }
+        c.fillStyle = kidCol; c.fillRect(x, y + ch - 3, S1WW, 3); }
       if (st.flash > 0) { c.fillStyle = alpha(S1C.lamp, st.flash * .7); c.fillRect(x, y, S1WW, S1WH); }
       c.restore(); }
     // 窗洞的内侧阴影（上、左）+ 窗棂
@@ -293,9 +298,9 @@ function s1Ground(c, tau, st) {
   // 走出宿舍的小人（出了门就站在地面这一层上）
   // 一辆共享单车停在门口；路灯（夜里亮）
   s1Bike(c, 1185, 822, mix(s1Pal('dorm', nk), P.ink, .45));
-  const lp = mix(s1Pal('dorm', nk), P.ink, .45); cutPaper(c, [[1362, 834], [1368, 604], [1374, 604], [1380, 834]], lp, { seed: 545, step: 20, blur: 8, sx: -3, sy: -2 });
-  cutPaper(c, [[1350, 610], [1392, 610], [1384, 594], [1358, 594]], lp, { seed: 546, step: 8, blur: 6 });
-  if (st.nk > .3) { c.fillStyle = alpha(S1C.lamp, (st.nk - .3) * 1.3 * (1 - st.dark)); c.beginPath(); c.moveTo(1356, 610); c.lineTo(1386, 610); c.lineTo(1371, 624); c.fill(); }
+  const lp = mix(s1Pal('dorm', nk), P.ink, .45); cutPaper(c, [[1322, 834], [1328, 650], [1334, 650], [1340, 834]], lp, { seed: 545, step: 20, blur: 8, sx: -3, sy: -2 });
+  cutPaper(c, [[1310, 656], [1352, 656], [1344, 640], [1318, 640]], lp, { seed: 546, step: 8, blur: 6 });
+  if (st.nk > .3) { c.fillStyle = alpha(S1C.lamp, (st.nk - .3) * 1.3 * (1 - st.dark)); c.beginPath(); c.moveTo(1316, 656); c.lineTo(1346, 656); c.lineTo(1331, 670); c.fill(); }
 }
 function s1Bike(c, x, y, col) { const o = { w: 4, color: col, amp: .4 };
   for (const dx of [-30, 30]) rline(c, circPts(x + dx, y - 18, 17, 20), { ...o, close: true, seed: 547 + dx });
@@ -466,7 +471,7 @@ function s1Patchouli(c, tau, L) {
 function s1State(tau) {
   const b = S1B, t = S1T, T = s1Clock(tau), nk = s1Night(T), cam = s1Cam(tau), kidW = S1WINS[S1KW];
   const st = { tau, T, nk, cam, tick: sm(b.tick, b.tick + 1.6, tau, easeIO), sunSpin: 0, sunEye: false, lit: 0, kidLit: 0, kidCol: S1C.lamp, kid: 'sleep', kidK: 1,
-    phoneGlow: S1C.phone, lampY: null, dark: sm(b.exit0, b.exit0 + .9, tau), door: 0, walker: null, wedge: 0, wedgeA: 1, rib: 0, ribA: 1, props: 0, flash: 0 };
+    phoneGlow: S1C.phone, lampY: null, curtain: 0, dark: sm(b.exit0, b.exit0 + .9, tau), door: 0, walker: null, wedge: 0, wedgeA: 1, rib: 0, ribA: 1, props: 0, flash: 0 };
   // 困惑的太阳：被拽回白天后转半圈，再转回来
   if (tau > b.yank + .35 && tau < b.back + .5) { st.sunSpin = Math.PI * (sm(b.yank + .45, b.yank + .9, twos(tau), easeOutBack) - sm(b.yank + 1.9, b.yank + 2.3, twos(tau))) * .5 + .12 * Math.sin(twos(tau) * 7) * sm(b.yank + .4, b.yank + .6, tau) * (1 - sm(b.yank + 2.3, b.yank + 2.5, tau)); st.sunEye = true; }
   // 夜里宿舍亮灯：L6 转到深夜后亮起，L7 熄灯
@@ -491,6 +496,8 @@ function s1State(tau) {
   if (tau > S1T(10) && (tau < S1T(11) || tau > b.night + .6)) { st.kidLit = .32; st.kidCol = mix(S1C.moon, P.purple, .25); }   // 夜里月光照进窗，看得见睡着的小人
   if (tau > b.file) { let f = 0; for (let k = 0; k < 5; k++) { const ta = b.file + .55 + k * .3; f = Math.max(f, Math.exp(-Math.max(0, tau - ta) * 7) * (tau > ta ? 1 : 0)); } st.flash = f; }
   // 门和走出去的小人
+  st.curtain = sm(b.curtain, b.curtain + .45, tau, easeOutBack);
+  if (tau > b.spin1 - .3 && tau < b.off0 + .5) { st.kidLit = Math.max(st.kidLit, sm(b.spin1 - .3, b.spin1, tau) * (1 - sm(b.off0 + .3, b.off0 + .36, tau))); st.kidCol = S1C.lamp; }
   st.door = sm(b.door, b.door + .4, tau, easeOutBack) * (1 - sm(t(5) + .1, t(5) + .4, tau));
   if (tau > b.walk0 && tau < t(5) + .3) { const u = sm(b.walk0, b.walk1, tau, easeIO), back = sm(t(5), t(5) + .3, tau);
     st.walker = { x: lerp(S1DORM.door[0], 790, u) + back * 270, w: twos(tau), arms: sm(b.walk1 + .1, b.walk1 + .4, tau, easeOutBack) * (1 - back), inside: u < .12 || back > .5 }; }
@@ -545,7 +552,7 @@ function s1Box(c, tau, L, full = true) {
   const ez = tau > b.exit0 ? cam[2] / s1Cam(b.exit0)[2] : 1, exitT = fn => { if (ez > 8) return; c.save(); c.translate(CX, CY); c.scale(ez, ez); c.translate(-CX, -CY); fn(); c.restore(); };
   exitT(() => {
   // 顶檐上吊下来的东西
-  s1Glass(c, tau, 700, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
+  s1Glass(c, tau, 600, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
   s1Sign(c, tau, '生物钟', b.tick + .2, b.light - .2, { x: 1330, seed: 766 });
   s1Sign(c, tau, '皮质醇', b.cort, S1T(3) + .2, { x: 1350, seed: 760 });
   s1Sign(c, tau, '2–10 分钟', b.num4, S1T(6) - .1, { x: 1330, size: 84, seed: 761 });
