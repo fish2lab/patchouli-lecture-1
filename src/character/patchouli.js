@@ -515,8 +515,9 @@ function pchPoseFull(pose, g, t, bookOn) {
     q.Lf = { T: [-138, -756 - wv - hop], bend: -1, hand: 'open', hAng: -.2, mir: true };
     q.capL = q.capR = 16;
   } else if (pose === 'tired') {
-    q.ub = 12 + br * .6; q.hy = 14; q.hx = 4; q.tilt = .14; q.look = [1, 4]; q.lids = .3; q.rot = Math.sin(t * .9) * .012;
-    q.R = { T: [72, -390 + br], bend: 1, hand: 'relax' }; q.Lf = { T: [-72, -390 + br], bend: -1, hand: 'relax', mir: true };
+    // 驼背：上身往下塌、肩膀耷拉、头往前低，手臂无力地垂在身前，整个人慢慢晃
+    q.ub = 16 + br * .6; q.sh = 6; q.hy = 20; q.hx = 5; q.tilt = .17; q.look = [1, 5]; q.lids = .32; q.rot = Math.sin(t * .9) * .015;
+    q.R = { T: [50, -386 + br], bend: 1, hand: 'relax', hAng: .15 }; q.Lf = { T: [-50, -386 + br], bend: -1, hand: 'relax', hAng: .15, mir: true };
   } else if (pose === 'shrug') {
     q.sh = -8; q.hy = 4; q.tilt = -.1; q.look = [1, -1];
     q.R = { T: [168, -514 + br], bend: 1, hand: 'open', hAng: -.3 }; q.Lf = { T: [-168, -514 + br], bend: -1, hand: 'open', hAng: -.3, mir: true };
