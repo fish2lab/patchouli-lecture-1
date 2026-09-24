@@ -212,8 +212,8 @@ function s4Lungs(c, cx, cy, v, o = {}) {
   const bron = side => [[cx, cy - 108], [cx + side * 40, cy - 88], [cx + side * 72, cy - 58]];
   // 两叶肺
   for (const side of [-1, 1]) {
-    const sx = 1 + .24 * v, sy = 1 + .15 * v, ax = cx + side * 42, ay = cy - 122;
-    const base = [[0, 0], [60, -42], [140, -24], [192, 60], [204, 200], [176, 322], [96, 360], [26, 322], [6, 222], [24, 130]];
+    const sx = 1 + .24 * v, sy = 1 + .15 * v, ax = cx + side * 40, ay = cy - 96;
+    const base = [[8, -40], [50, -112], [92, -118], [140, -56], [180, 60], [204, 190], [206, 290], [150, 318], [80, 300], [20, 316], [2, 250], [18, 150], [2, 40]];
     const pts = base.map(([px, py]) => [ax + side * px * sx, ay + py * sy]);
     const path = rshape(c, pts, { fill: pinkS, w: 5, seed: 90 + side, t, smooth: true });
     hatch(c, path, [ax - 260, ay - 60, 520, 520], { gap: 16, al: .12, seed: 93 + side, t, color: P.ribbonRed });
@@ -221,11 +221,11 @@ function s4Lungs(c, cx, cy, v, o = {}) {
     rshape(c, ellPts(ax + side * 128 * sx, ay + 40 * sy, 20, 44, 16, side * .5), { fill: alpha('#fff', .55), stroke: false, seed: 95, t });
     // 里面的小支气管
     const inner = (px, py) => [ax + side * px * sx, ay + py * sy];
-    rline(c, [inner(30, 70), inner(80, 150), inner(110, 250)], { w: 4, color: alpha(P.ribbonRed, .45), seed: 96 + side, t, smooth: true });
+    rline(c, [inner(30, 40), inner(80, 130), inner(120, 250)], { w: 4, color: alpha(P.ribbonRed, .45), seed: 96 + side, t, smooth: true });
     rline(c, [inner(80, 150), inner(140, 170)], { w: 3.5, color: alpha(P.ribbonRed, .45), seed: 98 + side, t });
     rline(c, [inner(55, 110), inner(120, 90)], { w: 3.5, color: alpha(P.ribbonRed, .45), seed: 99 + side, t });
     // 脸
-    const e = inner(110, 180), er = 9;
+    const e = inner(112, 170), er = 9;
     if (happy > .5) rline(c, [[e[0] - 14, e[1] + 4], [e[0], e[1] - 8], [e[0] + 14, e[1] + 4]], { w: 5, color: P.ink, seed: 100 + side, t });
     else { c.fillStyle = P.ink; c.beginPath(); c.ellipse(e[0], e[1], er, er * 1.25, 0, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(e[0] + 3, e[1] - 4, 3, 0, TAU); c.fill(); }
     c.fillStyle = alpha(P.ribbonRed, .35); c.beginPath(); c.ellipse(e[0] + side * 20, e[1] + 28, 16, 8, 0, 0, TAU); c.fill();
@@ -308,7 +308,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         }
         // L2：「学会了放弃」的灰线 1–3，长出来再倒回
         const g0 = s[2] + 1.1, gUp = sm(g0, g0 + 1, tau), gDown = sm(s[2] + 2.75, s[2] + 3.4, tau), gp = gUp * (1 - gDown);
-        if (gp > 0) edges.push({ a: 1, b: 3, p: gp, col: P.gray, w: 9, bend: .08 });
+        if (gp > 0) edges.push({ a: 1, b: 3, p: gp, col: P.gray, w: 13, bend: .08 });
         // L3 夜里：旗子变成结实的连线（在夜里那一份画，见下）
         // 金色：L1 挫败信号后一个个亮起；L2 末尾「再坚持」再闪一次；L3 渐褪
         const glow = i => {
@@ -349,7 +349,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           const fk = 1 - sm(s[3] + 2.9, s[3] + 3.3, tau);
           const nEdges = S4E.filter(([a, b]) => !((a === 2 && b === 5) || (a === 3 && b === 7))).map(([a, b]) => ({ a, b }));
           [[0, 2], [2, 6], [6, 8]].forEach(([a, b], k) => nEdges.push({ a, b, p: sm(s[3] + 3.0 + k * .25, s[3] + 3.6 + k * .25, tau), col: P.moon, w: 11, bend: .05, pulse: true }));
-          s4Net(c, tau, { box: [1355, 290, 420, 390], r: 16, dark: true, app: () => sm(s[3] + 1.9, s[3] + 2.3, tau, x => x), edges: nEdges,
+          s4Net(c, tau, { box: [1355, 270, 420, 330], r: 16, dark: true, app: () => sm(s[3] + 1.9, s[3] + 2.3, tau, x => x), edges: nEdges,
             flags: flagN.map(n => ({ n, k: fk })), glow: i => flagN.includes(i) ? sm(s[3] + 3.4, s[3] + 3.9, tau) * .8 : 0 });
           c.restore();
         });
@@ -365,7 +365,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           zh(c, '错题本', 935, 360, { size: 40, align: 'center', color: P.ink2 });
           zh(c, '3x + 5 = 20', 800, 440, { size: 40, color: P.ink });
           zh(c, 'x = 3', 830, 530, { size: 48, color: P.ink, p: writeP(tau, s[1] + .5, 'x = 3', .09) });
-          cross(c, 890, 510, 150, { p: sm(slam - .2, slam, tau), t: tau, w: 16 });
+          cross(c, 885, 515, 100, { p: sm(slam - .2, slam, tau), t: tau, w: 14 });
           c.restore();
           // 挫败：一团乱线 + 小闪电
           const sk = sm(s[1] + 1.5, s[1] + 2.3, tau);
@@ -400,7 +400,9 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           if (tau > s[2] + 4.2) check(c, 1190, 250, 70, { t: tau, p: sm(s[2] + 4.2, s[2] + 4.5, tau) });
         });
         const glK = sm(s[2] + 1.9, s[2] + 2.2, tau, easeOutBack) * (1 - sm(s[2] + 2.8, s[2] + 3.1, tau));
-        if (glK > 0 && pos) { const a = pos(1), b = pos(3); s4Label(c, '学会了放弃', (a[0] + b[0]) / 2 - 20, (a[1] + b[1]) / 2 + 10, { size: 36, fill: P.gray, color: '#fff', t: tau, k: glK }); }
+        if (glK > 0 && pos) { const a = pos(1), b = pos(3), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+          fade(c, glK, () => rline(c, [[mx - 8, my], [mx - 60, 200]], { w: 3, color: P.gray, dash: [8, 8], t: tau, seed: 195 }));
+          s4Label(c, '学会了放弃', mx - 60, 180, { size: 38, fill: P.gray, color: '#fff', t: tau, k: glK }); }
       }
 
       // ---------- L4 90 + 20 ----------
@@ -418,7 +420,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         if (gp > 0) { rshape(c, rectPts(xm + 6, y0, (x1 - xm - 6) * gp, bh, 14), { fill: P.green, w: 4.5, t: tau, seed: 215 });
           zh(c, '歇', (xm + x1) / 2 + 3, y0 + 66, { size: 60, align: 'center', color: '#fff', al: sm(s[4] + 2.3, s[4] + 2.6, tau) });
           zh(c, '20 分钟', (xm + x1) / 2, y0 + bh + 60, { size: 44, align: 'center', color: P.green, p: writeP(tau, s[4] + 2.4, '20 分钟') });
-          arrow(c, [(xm + x1) / 2, y0 + bh + 80], [(xm + x1) / 2 - 40, 560], { p: sm(s[4] + 2.8, s[4] + 3.1, tau), color: P.green, w: 5, bend: -20, t: tau, seed: 218, head: 18 }); }
+        }
         // 歇的时候：闭眼 ✓ 散步 ✓ 手机 ✗
         const ic = [[1000, s[4] + 3.0], [1300, s[4] + 3.4], [1600, s[4] + 3.9]];
         zh(c, '怎么歇？', 800, 600, { size: 44, color: P.green, p: writeP(tau, s[4] + 2.9, '怎么歇？') });
@@ -426,13 +428,13 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           const pk = sm(t0, t0 + .4, tau, easeOutBack); if (pk <= 0) return;
           pop(c, x, 700, pk, () => {
             if (k === 0) s4Student(c, { x, y: 770, h: 170, t: tau, mood: 'calm', color: P.teal });
-            if (k === 1) { s4Student(c, { x: x + Math.sin(tau * 1.2) * 20, y: 770, h: 170, t: tau, walk: tau * 8, color: P.orange, mood: 'happy' });
+            if (k === 1) { s4Student(c, { x: x + Math.sin(tau * 1.2) * 12, y: 770, h: 170, t: tau, walk: tau * 8, color: P.orange, mood: 'happy' });
               for (let j = 0; j < 3; j++) rline(c, [[x - 80, 680 + j * 22], [x - 55 - j * 6, 680 + j * 22]], { w: 3, color: P.faint, t: tau, seed: 230 + j }); }
             if (k === 2) s4Phone(c, x - 38, 610, 76, 140, { lit: .5 + .5 * (Math.floor(tau * 3) % 2), badge: true, t: tau });
             zh(c, ['闭眼休息', '散散步', '刷手机'][k], x, 818, { size: 38, align: 'center', color: k === 2 ? P.red : P.ink });
           });
           const mk = sm(t0 + .35, t0 + .7, tau);
-          if (k < 2) check(c, x + 80, 610, 64, { t: tau, p: mk }); else cross(c, x, 680, 150, { t: tau, p: sm(s[4] + 4.5, s[4] + 4.9, tau), w: 14 });
+          if (k < 2) check(c, x + 95, 590, 64, { t: tau, p: mk }); else cross(c, x, 680, 150, { t: tau, p: sm(s[4] + 4.5, s[4] + 4.9, tau), w: 14 });
         });
       });
 
@@ -477,22 +479,23 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           rshape(c, rectPts(1140, 410, 26, 136, 6), { fill: P.ink, w: 4, t: tau, seed: 306 });
           const gl = c.createLinearGradient(1140, 0, 1010, 0); gl.addColorStop(0, alpha(P.sky, .45)); gl.addColorStop(1, alpha(P.sky, 0));
           c.fillStyle = gl; c.beginPath(); c.moveTo(1140, 420); c.lineTo(1030, 380); c.lineTo(1030, 580); c.lineTo(1140, 536); c.fill();
-          const lookK = pull * .45;
+          const lookK = pull * .6;
           const st = s4Student(c, { x: 880, y: 782, h: 330, view: 'side', t: tau, color: P.teal, look: lookK, eye: pull > .5 ? 'open' : 'sparkle', hand: [36, -57] });
+          // L8 手机：先放在手边（比视线低），开专注模式后滑到桌子另一头
+          const slide = sm(n0 + 3.0, n0 + 3.8, tau), px = lerp(1036, 1390, slide);
           // 视线：看屏幕（金色）/ 被手机拽走（红色）
-          const toScreen = 1 - pull, ph = [1330, 520];
+          const toScreen = 1 - pull, ph = [px + 24, 540];
           if (toScreen > .05) rline(c, [st.eye, [1136, st.eye[1] + 4]], { w: 4, color: P.moon, dash: [14, 12], t: tau, seed: 307, al: toScreen * sm(s[7] + .5, s[7] + .8, tau) });
           if (pull > .05) rline(c, [st.eye, ph], { w: 4, color: P.red, dash: [14, 12], t: tau, seed: 308, al: pull });
-          // L8 手机
           if (tau > n0) {
-            const slide = sm(n0 + 3.0, n0 + 3.8, tau), px = lerp(1300, 1700, slide), pa = sm(n0 + .1, n0 + .4, tau, easeOutBack);
+            const pa = sm(n0 + .1, n0 + .4, tau, easeOutBack);
             const blink = tau < n0 + 2.7 && Math.floor((tau - n0) * 4) % 2 === 0;
-            pop(c, px + 30, 590, pa, () => s4Phone(c, px, 472, 60, 118, { lit: focusOn > .5 ? 0 : blink ? 1 : .35, badge: focusOn < .5, moon: focusOn > .5, t: tau, rot: slide * .25, al: 1 - slide * .45 }));
-            if (focusOn < .5 && tau > n0 + .15) { const bb = sm(n0 + .15, n0 + .45, tau, easeOutBack) * (blink ? 1 : .9);
-              pop(c, 1330, 410, bb, () => { bubble(c, 1270, 370, 150, 70, { tail: [1320, 460], t: tau, fill: '#fff' }); zh(c, '叮！', 1345, 420, { size: 44, align: 'center', color: P.red }); }); }
+            if (slide > 0 && slide < 1) for (let j = 0; j < 3; j++) rline(c, [[px - 20 - j * 14, 530 + j * 22], [px - 70 - j * 24, 530 + j * 22]], { w: 3, color: P.faint, t: tau, seed: 312 + j });
+            pop(c, px + 24, 592, pa, () => s4Phone(c, px, 506, 48, 86, { lit: focusOn > .5 ? 0 : blink ? 1 : .35, badge: focusOn < .5, moon: focusOn > .5, t: tau, rot: slide * .15, al: 1 - slide * .35 }));
+            if (focusOn < .5 && tau > n0 + .15) { const bb = sm(n0 + .15, n0 + .45, tau, easeOutBack) * (blink ? 1.06 : 1);
+              pop(c, 1105, 330, bb, () => { bubble(c, 1030, 290, 150, 72, { tail: [1066, 470], t: tau, fill: '#fff' }); zh(c, '叮！', 1108, 342, { size: 44, align: 'center', color: P.red }); }); }
             const ar = sm(n0 + .5, n0 + 1.0, tau) * (1 - sm(n0 + 2.6, n0 + 2.9, tau));
-            if (ar > 0) arrow(c, [1250, 440], [st.eye[0] + 40, st.eye[1] - 40], { p: ar >= 1 ? 1 : ar, color: P.red, w: 6, bend: 50, t: tau, seed: 310 });
-            if (slide > 0 && slide < 1) for (let j = 0; j < 3; j++) rline(c, [[px - 30 - j * 14, 500 + j * 30], [px - 70 - j * 20, 500 + j * 30]], { w: 3, color: P.faint, t: tau, seed: 312 + j });
+            if (ar > 0) arrow(c, [1028, 320], [st.eye[0] - 10, st.eye[1] - 70], { p: ar >= 1 ? 1 : ar, color: P.red, w: 6, bend: 30, t: tau, seed: 310 });
           }
         }));
         // 左上标签 ✓
@@ -531,7 +534,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
           rshape(c, circPts(1470 + on * 36, 232, 15, 14), { fill: '#fff', w: 3, t: tau, seed: 332 });
           sparkle(c, 1190, 180, 10 + 3 * Math.sin(tau * 8), { color: P.moon });
         });
-        if (tau > n0 - .1) s4Head(c, tau, '手机放远点', n0 + 3.2, s[9] + .1, { x: 1580, y: 700, size: 44 });
+        if (tau > n0 - .1) s4Head(c, tau, '手机放远点', n0 + 3.3, s[9] + .1, { x: 1440, y: 440, size: 44 });
       }
 
       // ---------- L9 一天 24 小时 ----------
@@ -542,7 +545,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         const x0 = 800, x1 = 1760, y0 = 400, bh = 86, hx = hh => x0 + (x1 - x0) * hh / 24;
         const dp = sm(t9 + .4, t9 + 1.6, tau, easeOut);
         if (dp > 0) {
-          c.save(); c.beginPath(); c.rect(x0 - 10, y0 - 60, (x1 - x0 + 20) * dp, bh + 130); c.clip();
+          c.save(); c.beginPath(); c.rect(x0 - 30, y0 - 60, (x1 - x0 + 60) * dp, bh + 130); c.clip();
           rshape(c, rectPts(x0, y0, hx(7) - x0, bh, 12), { fill: P.night3, w: 4, t: tau, seed: 401 });
           rshape(c, rectPts(hx(7), y0, hx(23) - hx(7), bh, 4), { fill: mix(P.paper, P.sky, .55), w: 4, t: tau, seed: 402 });
           rshape(c, rectPts(hx(23), y0, x1 - hx(23), bh, 12), { fill: P.night3, w: 4, t: tau, seed: 403 });
@@ -561,7 +564,7 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         }
         const lk = sm(t9 + 3.0, t9 + 3.4, tau, easeOutBack);
         if (lk > 0) {
-          rline(c, [[hx(21), y0 + bh + 72], [hx(21), 610]], { w: 4, color: P.orange, t: tau, seed: 430, p: sm(t9 + 2.9, t9 + 3.2, tau) });
+          rline(c, [[hx(21), y0 + bh + 14], [hx(21), 612]], { w: 4, color: P.orange, t: tau, seed: 430, p: sm(t9 + 2.9, t9 + 3.2, tau) });
           pop(c, hx(21) - 60, 660, lk, () => { rshape(c, rectPts(hx(21) - 250, 612, 380, 100, 22), { fill: '#fff', stroke: P.orange, w: 5, t: tau, seed: 431 });
             zh(c, '≤ 2 小时', hx(21) - 60, 682, { size: 64, align: 'center', color: P.ink }); });
           zh(c, '有研究建议', hx(21) - 60, 772, { size: 34, align: 'center', color: P.ink2, p: writeP(tau, t9 + 3.6, '有研究建议') });
@@ -606,9 +609,10 @@ scene({ order: 4, key: 'focus', title: '专注', dur: seqEnd(S4LINES) + 1.2, lin
         const first = phases.find(p => p[2] === j)[0], k = sm(first, first + .3, tau, easeOutBack); if (k <= 0) return;
         const on = ph === j, big = on ? 1.18 : 1, x = 360;
         let pw = 1; if (j === 2 && on) pw = .34 + .66 * sm(cur[0], cur[0] + 2.2, tau, x => x);
-        pop(c, x, y - 40, k * big, () => {
-          zh(c, ['①', '②', '③'][j], x - 150, y - 10, { size: 40, align: 'center', color: on ? P.moon : P.faint });
-          zh(c, w, x + 20, y, { size: 118, align: 'center', color: on ? P.moon : P.paper, al: on ? 1 : .45, p: pw, outline: on ? P.ink : null, ow: 10 });
+        pop(c, 170, y - 40, k * big, () => {
+          rshape(c, circPts(170, y - 42, 30, 20), { fill: on ? P.moon : P.night3, stroke: on ? P.ink : P.faint, w: 3, t: tau, seed: 520 + j });
+          zh(c, String(j + 1), 170, y - 29, { size: 38, align: 'center', color: on ? P.ink : P.faint });
+          zh(c, w, 225, y, { size: 118, color: on ? P.moon : P.paper, al: on ? 1 : .45, p: pw, outline: on ? P.ink : null, ow: 10 });
         });
       });
       // 角落里跟着一起做的 Q 版帕秋莉
