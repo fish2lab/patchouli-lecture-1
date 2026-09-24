@@ -1,8 +1,14 @@
 'use strict';
-// 第 2 段：吃饭。
-// 画面：L1 天平「吃什么 = 什么时候吃」→ L2–L3 满屏小鼠实验（两个笼子、钟、奶酪、跑轮）
-//      → L4–L6 一天的进食时间轴 + 跟着时间走的小胃 → L7 时间轴变成周一到周五（稳定 vs 倒时差）
-//      → L8 不算开饭的饮料 → L9–L10 肠道和小菌、多样性刻度 → L11 这样吃 → L12 医生便签。
+// 第 2 段：吃饭（第二版 · 俯拍桌面定格动画，见 docs/分镜v2.md 顶部表格）。
+//   镜头从正上方看一张铺着亚麻桌布的长桌。桌上的东西是剪纸做的，但像真东西：多层纸叠出侧边（有厚度、透视下露出侧面），
+//   顶光（略偏左上）投下清楚的影子；所有东西一拍两帧地被「挪动」（twos），像定格动画。帕秋莉是站在桌上的小剪纸人偶。
+//   镜头沿长桌横移，五个「工位」：
+//   A 盘子 + 时钟 + 两根筷子摆成「=」       L1
+//   B 两只纸箱鼠笼、24 小时小钟、奶酪       L2–L3（2012 小鼠实验）
+//   C 手风琴折页时间带（7:00→凌晨）          L4–L8（起床 1 小时、睡前 2–3 小时、炸鸡外卖、五天对齐、饮料和一勺糖）
+//   D 衍纸（quilling）肠道迷宫、小菌、发酵罐  L9–L11
+//   E 折起来的便条、桌布上的缝线             L12 → 线被拉直横贯画面
+// 进场：handoffDisc（夜色里的圆盘）= 桌上的盘子，开灯、镜头拉远。出场：桌布上一根线被拉直 → handoffThread。
 // 顶层名字一律带本段前缀 S2 / s2。
 const S2LINES = seq(1.0, [
   ['第二页：吃饭。吃什么重要，什么时候吃同样重要。', { hold: .5 }],
@@ -13,751 +19,560 @@ const S2LINES = seq(1.0, [
   ['凌晨一点的炸鸡外卖……嗯，你懂的。', { mood: 'annoyed', hold: .9 }],
   ['更重要的是：每天吃饭的时间要稳定，别让肠胃天天倒时差。', { hold: 1.1 }],
   ['白水、茶、不加糖的咖啡不算“开饭”；一勺糖就算。', { hold: .9 }],
-  ['再说说肠道里的小居民：菌群。越多样，一般越健康。', { hold: .8 }],
+  ['再说说肠道里的小居民：菌群。越多样，一般越健康。', { pause: .5, hold: .8 }],
   ['实验里，每天吃天然发酵食品的人，菌群更多样，炎症指标也降了。', { hold: 1.1 }],
   ['无糖酸奶、泡菜、纳豆都算。点外卖加份蔬菜粗粮，少点奶茶。', { mood: 'smile', hold: 1.1 }],
-  ['胃不好、或者有进食方面困扰的同学，先问医生，别硬饿。', { hold: 1.1 }],
+  ['胃不好、或者有进食方面困扰的同学，先问医生，别硬饿。', { pause: .5, hold: 1.1 }],
 ]);
-const S2DUR = seqEnd(S2LINES) + 1.0;
-const S2T = i => S2LINES[i][0], S2E = i => S2LINES[i][1];
-// 第 i 句的第 n 个字大约什么时候说到（和 mouthAt 的节奏一致：每字 0.16 秒）
-const s2ch = (i, n) => S2LINES[i][0] + n * .16;
-// 满屏镜头的进出：in0→in1 推进魔导书页，out0→out1 拉回讲台
-const S2FS = { in0: S2T(1) - .72, in1: S2T(1) - .04, out0: S2E(2) + .05, out1: S2E(2) + .75 };
-// 黑板标题：[出现, 消失, 文字]
-const S2TITLES = [
-  [.45, S2FS.in0 - .05, '吃饭'],
-  [S2FS.out1 - .05, S2T(6) - .02, '什么时候吃 · 入门版'],
-  [S2T(6), S2T(7) - .02, '时间要稳定'],
-  [S2T(7), S2T(8) - .02, '什么不算“开饭”'],
-  [S2T(8), S2T(10) - .02, '肠道里的小居民'],
-  [S2T(10), S2T(11) - .02, '这样吃'],
-  [S2T(11), S2DUR - .6, '一句提醒'],
-];
-const S2BX = 1285;                   // 魔导书页中线
-const s2lin = x => x;
-// 弹出进度：t0 起 d 秒 easeOutBack；t1 前 0.22 秒干脆缩没
-const s2pop = (tau, t0, d = .45) => tau < t0 ? 0 : easeOutBack(clamp((tau - t0) / d, 0, 1));
-const s2k = (tau, t0, t1, d = .45) => s2pop(tau, t0, d) * (1 - sm(t1 - .22, t1, tau, easeIn));
+const s2T = i => S2LINES[i][0], s2E = i => S2LINES[i][1];
+const S2DUR = seqEnd(S2LINES) + 2.1;
+// s2at：第 i 句里说到 sub 这几个字的时刻（按语音时长把字均匀摊开）
+function s2at(i, sub) { const [t0, , text] = S2LINES[i], v = voiceOf(text), n = text.length, d = v ? v.d : n * .16, k = Math.max(0, text.indexOf(sub)); return t0 + k / n * d; }
 
-// ===================== 通用小道具 =====================
-function s2Title(c, tau) {
-  for (const [a, b, text] of S2TITLES) {
-    if (tau < a || tau > b) continue;
-    const al = 1 - sm(b - .2, b, tau), p = writeP(tau, a, text, .06), w = zhWidth(c, text, 52);
-    fade(c, al, () => {
-      zh(c, text, S2BX, 144, { size: 52, align: 'center', p });
-      rline(c, [[S2BX - w / 2 - 20, 166], [S2BX + w / 2 + 20, 166]], { w: 3, color: P.paperEdge, seed: 16, t: tau, p: sm(a + .15, a + .6, tau) });
-    });
-  }
+// ===================== 镜头、透视、光 =====================
+// 相机在桌面正上方 S2CAM 高处（zoom 越大越低）。世界坐标 = 桌面上的像素（zoom 1 时和屏幕一样大）。
+// 高出桌面 z 的点离画面中心更远（透视），所以画面边上的东西会露出侧面。顶光略偏左上：影子往右下落，离桌面越高落得越远越虚。
+const S2CAM = 1250, S2LX = .2, S2LY = .32;
+const S2OX = [0, 1920, 3840, 5760, 7680];       // 五个工位的世界 x 起点
+const S2END = { y: 830, zoom: 2.2 };             // 出场：镜头压向桌布的缝线
+function s2cam(t) {
+  const e0 = s2E(0), e2 = s2E(2), e7 = s2E(7), e10 = s2E(10), e11 = s2E(11);
+  const K = [[0, [720, 500, 2]], [.3, [720, 500, 2]], [1.6, [960, 540, 1]],
+    [e0 + .05, [960, 540, 1]], [e0 + .52, [1920, 560, .92]], [e0 + 1, [2880, 540, 1]],
+    [e2 + .05, [2880, 540, 1]], [e2 + .52, [3840, 560, .92]], [e2 + 1, [4800, 540, 1]],
+    [e7 + .05, [4800, 540, 1]], [e7 + .55, [5760, 560, .92]], [e7 + 1.05, [6720, 540, 1]],
+    [e10 + .05, [6720, 540, 1]], [e10 + .52, [7680, 560, .92]], [e10 + 1, [8640, 540, 1]],
+    [e11 + .3, [8640, 540, 1]], [S2DUR - .8, [8640, S2END.y, S2END.zoom]]];
+  const [x, y, z] = key(t, K); return { x, y, z };
 }
-// 盖章：u 是 0..1 的线性进度（从大砸下来）
-function s2Stamp(c, x, y, text, color, u, rot, t, size = 50) {
-  if (u <= 0) return;
-  const w = zhWidth(c, text, size) + 64, h = size + 40, sc = 1 + .9 * (1 - easeOut(clamp(u, 0, 1)));
-  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc); c.globalAlpha *= sm(0, .35, u);
-  rshape(c, rectPts(-w / 2, -h / 2, w, h, 16), { fill: alpha('#ffffff', .8), stroke: color, w: 6, seed: 101, t });
-  rline(c, rectPts(-w / 2 + 10, -h / 2 + 10, w - 20, h - 20, 10), { close: true, w: 2.5, color, seed: 102, t });
-  zh(c, text, 0, size * .36, { size, align: 'center', color });
-  c.restore();
-}
-function s2Star(c, x, y, r, rot, color, t, al = 1) {
-  if (r <= 0 || al <= 0) return;
-  rshape(c, starPts(x, y, r, 5, .48, rot), { fill: color, stroke: mix(color, P.ink, .45), w: 2.5, seed: 7, t, al });
-}
-function s2Bracket(c, x0, x1, y, o = {}) {
-  rline(c, [[x0, y + 14], [x0, y], [x1, y], [x1, y + 14]], { w: 4, color: P.ink2, seed: 33, ...o });
-}
-function s2Sun(c, x, y, r, t) {
-  for (let k = 0; k < 8; k++) { const a = k / 8 * TAU + t * .6; rline(c, [[x + Math.cos(a) * r * 1.3, y + Math.sin(a) * r * 1.3], [x + Math.cos(a) * r * 1.75, y + Math.sin(a) * r * 1.75]], { w: 4, color: P.orange, seed: 40 + k, t }); }
-  rshape(c, circPts(x, y, r), { fill: P.sun, stroke: P.orange, w: 3.5, seed: 48, t });
-}
-function s2Steam(c, x, y, t, n = 2, al = .55) {
-  for (let k = 0; k < n; k++) {
-    const pts = []; for (let i = 0; i <= 10; i++) pts.push([x + (k - (n - 1) / 2) * 24 + 7 * Math.sin(i * .7 + t * 3 + k * 2), y - i * 7]);
-    rline(c, pts, { w: 3.5, color: P.ink2, al: al * (.6 + .4 * Math.sin(t * 2 + k)), seed: 90 + k, t, smooth: true });
-  }
-}
-function s2Arrow(c, x, y, s, dir, color, t) {   // 粗的小箭头 dir 1 向下 -1 向上
-  rshape(c, [[x - s * .22, y - dir * s * .5], [x + s * .22, y - dir * s * .5], [x + s * .22, y], [x + s * .5, y], [x, y + dir * s * .55], [x - s * .5, y], [x - s * .22, y]], { fill: color, stroke: mix(color, P.ink, .4), w: 3, seed: 55, t });
-}
+const s2k = (C, z = 0) => S2CAM / (S2CAM / C.z - z);
+function s2p(C, x, y, z = 0) { const k = s2k(C, z); return [CX + (x - C.x) * k, CY + (y - C.y) * k]; }
+const s2P = (C, pts, z = 0) => pts.map(p => s2p(C, p[0], p[1], z));
+// 局部轮廓 → 世界：平移 (x,y)、转 a、缩放 s（sy 可单独给）
+const s2tf = (pts, x, y, a = 0, s = 1, sy = s) => { const co = Math.cos(a), si = Math.sin(a); return pts.map(([u, v]) => [x + u * s * co - v * sy * si, y + u * s * si + v * sy * co]); };
+// 定格动画的「挪」：t0 起 d 秒从 a 到 b，按 twos 走（传进来的就是 twos 时间），末了轻微过冲
+const s2mv = (t, t0, d, a, b, e = easeOut) => lerp(a, b, e(clamp((t - t0) / d, 0, 1)));
+// s2drop：从 z0 高处落下（前快后停，落地一小弹）
+function s2drop(t, t0, z0 = 260, d = .33) { if (t < t0) return z0; const u = (t - t0) / d; if (u < 1) return z0 * (1 - u * u); const v = (t - t0 - d) / .18; return v < 1 ? Math.sin(v * Math.PI) * 10 : 0; }
 
-// ===================== L1：天平 =====================
-function s2Rice(c, x, y, s, t) {   // 饭碗，(x, y) 碗底
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rline(c, [[20, -70], [70, -130]], { w: 6, color: P.shelf2, seed: 3, t }); rline(c, [[34, -64], [90, -118]], { w: 6, color: P.shelf2, seed: 4, t });
-  rshape(c, [[-62, -60], [-40, -84], [-10, -92], [22, -88], [52, -78], [64, -60]], { fill: '#ffffff', stroke: P.ink, w: 3.5, seed: 5, t, smooth: true });
-  rshape(c, [[-72, -62], [72, -62], [58, -22], [30, 0], [-30, 0], [-58, -22]], { fill: P.blue, stroke: P.ink, w: 4, seed: 6, t, smooth: true });
-  rline(c, [[-62, -40], [62, -40]], { w: 4, color: P.paper, seed: 8, t, dash: [10, 9] });
+// s2prism：一块有厚度的剪纸（多层纸叠出侧面）。pts 世界坐标的轮廓；h 厚度；z0 离桌面的高度（悬空的东西影子更远更虚）
+function s2prism(c, C, pts, h, top, o = {}) {
+  const { z0 = 0, side = mix(top, P.ink, .3), seed = 1, sh = .3, gr = .1, step = 10, al = 1, noTop = false, layer = 3 } = o;
+  if (al <= .001) return null; const k = s2k(C, 0), ext = h + z0;
+  c.save(); c.globalAlpha *= al;
+  if (sh > 0) { c.save(); c.shadowColor = `rgba(40,26,22,${sh})`; c.shadowBlur = (3 + ext * .45) * k; c.shadowOffsetX = (1.5 + ext * S2LX) * k; c.shadowOffsetY = (2 + ext * S2LY) * k;
+    c.fillStyle = side; c.fill(polyPath(s2P(C, pts, z0))); c.restore(); }
+  if (h > 0) { const n = Math.max(1, Math.round(h / layer)), hl = alpha(mix(side, '#ffffff', .4), .45);
+    for (let i = 0; i < n; i++) { const path = polyPath(s2P(C, pts, z0 + h * i / n)); c.fillStyle = mix(side, P.ink, .16 * (1 - i / n)); c.fill(path); c.strokeStyle = hl; c.lineWidth = .8; c.stroke(path); } }
+  let path = null; if (!noTop) path = cutPaper(c, s2P(C, pts, z0 + h), top, { seed, step, shadow: false, grain: gr });
+  c.restore(); return path;
+}
+// s2wall：一条立着的纸边（衍纸）：沿折线 pts，高 h
+function s2wall(c, C, pts, h, col, o = {}) {
+  const { al = 1 } = o; if (pts.length < 2 || al <= 0) return; const k = s2k(C, 0), base = s2P(C, pts, 0), top = s2P(C, pts, h);
+  c.save(); c.globalAlpha *= al; c.lineJoin = 'round'; c.lineCap = 'round';
+  c.save(); c.filter = `blur(${(2 + h * .3) * k}px)`; c.strokeStyle = 'rgba(40,26,22,.22)'; c.lineWidth = 4 * k; c.stroke(polyPath(pts.map(([x, y]) => s2p(C, x + h * S2LX, y + h * S2LY, 0)), false)); c.restore();
+  c.fillStyle = mix(col, P.ink, .22); c.fill(polyPath([...base, ...top.slice().reverse()]));
+  c.strokeStyle = col; c.lineWidth = 3.2 * k; c.stroke(polyPath(top, false));
+  c.strokeStyle = alpha(mix(col, '#ffffff', .5), .8); c.lineWidth = 1 * k; c.stroke(polyPath(top, false));
   c.restore();
 }
-function s2Alarm(c, x, y, r, t) {  // 闹钟，(x, y) 钟心
-  rline(c, [[x - r * .6, y + r * .75], [x - r * .85, y + r * 1.15]], { w: 6, color: P.ink, seed: 12, t });
-  rline(c, [[x + r * .6, y + r * .75], [x + r * .85, y + r * 1.15]], { w: 6, color: P.ink, seed: 13, t });
-  rshape(c, ellPts(x - r * .62, y - r * .88, r * .34, r * .24, 20, -.6), { fill: P.sun, stroke: P.ink, w: 3.5, seed: 14, t });
-  rshape(c, ellPts(x + r * .62, y - r * .88, r * .34, r * .24, 20, .6), { fill: P.sun, stroke: P.ink, w: 3.5, seed: 15, t });
-  rshape(c, circPts(x, y, r), { fill: P.red, stroke: P.ink, w: 4, seed: 16, t });
-  rshape(c, circPts(x, y, r * .8), { fill: '#fffaf0', stroke: false, seed: 17, t });
-  for (let k = 0; k < 12; k++) { const a = k / 12 * TAU; rline(c, [[x + Math.cos(a) * r * .66, y + Math.sin(a) * r * .66], [x + Math.cos(a) * r * .74, y + Math.sin(a) * r * .74]], { w: 3, color: P.ink2, seed: 18 + k, amp: .4 }); }
-  const m = t * 1.4, hh = t * .12;
-  rline(c, [[x, y], [x + Math.sin(hh) * r * .4, y - Math.cos(hh) * r * .4]], { w: 6, color: P.ink, seed: 31, t });
-  rline(c, [[x, y], [x + Math.sin(m) * r * .62, y - Math.cos(m) * r * .62]], { w: 4, color: P.ink, seed: 32, t });
-}
-function s2Scale(c, tau) {
-  const a = .45, b = S2FS.in0 - .04; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .25, b, tau, easeIn), tB = s2ch(0, 6), tC = s2ch(0, 12), tEq = s2ch(0, 18);
-  const px = S2BX, py = 330, arm = 330, p = sm(a, a + .7, tau);
-  let ang = 0;
-  if (tau < tC) ang = -.2 * sm(tB + .1, tB + .6, tau);
-  else { const u = tau - tC; ang = -.2 * Math.exp(-u * 1.9) * Math.cos(u * 6.2); }
-  fade(c, out, () => pop(c, px, 560, lerp(.85, 1, out), () => {
-    // 支架
-    rshape(c, [[px - 110, 770], [px + 110, 770], [px + 70, 735], [px - 70, 735]], { fill: P.shelf2, stroke: P.ink, w: 4, seed: 71, t: tau, al: p });
-    rline(c, [[px, 740], [px, py]], { w: 12, color: P.shelf2, seed: 72, t: tau, p });
-    if (p < 1) return;
-    const cs = Math.cos(ang), sn = Math.sin(ang), ends = [[px - arm * cs, py - arm * sn], [px + arm * cs, py + arm * sn]];
-    rline(c, ends, { w: 10, color: P.ink2, seed: 73, t: tau });
-    ends.forEach(([ex, ey], k) => {
-      const pyy = ey + 150;
-      rline(c, [[ex - 80, pyy - 10], [ex, ey], [ex + 80, pyy - 10]], { w: 3, color: P.ink2, seed: 74 + k, t: tau });
-      rshape(c, [[ex - 95, pyy - 12], [ex + 95, pyy - 12], [ex + 60, pyy + 14], [ex - 60, pyy + 14]], { fill: P.gold, stroke: P.ink, w: 4, seed: 76 + k, t: tau });
-      if (k === 0) { const kk = s2pop(tau, tB, .5); if (kk > 0) s2Rice(c, ex, pyy - 12 - 60 * (1 - clamp(kk, 0, 1)), .9 * Math.min(1.1, kk), tau); zh(c, '吃什么', ex, pyy + 90, { size: 54, align: 'center', p: writeP(tau, tB, '吃什么', .08) }); }
-      else { const kk = s2pop(tau, tC, .5); if (kk > 0) s2Alarm(c, ex, pyy - 72 - 60 * (1 - clamp(kk, 0, 1)), 50 * Math.min(1.1, kk), tau); zh(c, '什么时候吃', ex, pyy + 90, { size: 54, align: 'center', p: writeP(tau, tC, '什么时候吃', .08) }); }
-    });
-    rshape(c, circPts(px, py, 14), { fill: P.moon, stroke: P.ink, w: 3, seed: 79, t: tau });
-    // 等号徽章
-    const ke = s2pop(tau, tEq, .5);
-    pop(c, px, py - 90, ke, () => {
-      rshape(c, circPts(px, py - 90, 54), { fill: P.moon, stroke: P.ink, w: 4.5, seed: 81, t: tau });
-      rline(c, [[px - 26, py - 102], [px + 26, py - 102]], { w: 9, color: P.ink, seed: 82, t: tau });
-      rline(c, [[px - 26, py - 78], [px + 26, py - 78]], { w: 9, color: P.ink, seed: 83, t: tau });
-    });
-    if (tau > tEq) for (let k = 0; k < 6; k++) { const u = clamp((tau - tEq - k * .05) / .7, 0, 1), a2 = k / 6 * TAU + .3;
-      if (u > 0 && u < 1) sparkle(c, px + Math.cos(a2) * (60 + u * 70), py - 90 + Math.sin(a2) * (60 + u * 70), 14 * (1 - u), { color: P.moon }); }
-    zh(c, '同样重要', px, 824, { size: 44, align: 'center', color: P.ink2, p: writeP(tau, tEq + .2, '同样重要', .08), outline: P.paper, ow: 10 });
-  }));
-}
+// s2txt：印/写在某个表面上的字（跟着透视缩放）
+function s2txt(c, C, text, x, y, z, size, o = {}) { const [sx, sy] = s2p(C, x, y, z); zh(c, text, sx, sy, { ...o, size: size * s2k(C, z) }); }
+// s2arc：折线按弧长均匀取 n 个点
+function s2arc(pts, n) { const q = resample(pts, 3), d = [0]; for (let i = 1; i < q.length; i++) d.push(d[i - 1] + Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1]));
+  const L = d.at(-1), out = []; let j = 1; for (let i = 0; i < n; i++) { const s = L * i / (n - 1); while (j < d.length - 1 && d[j] < s) j++; const u = (s - d[j - 1]) / ((d[j] - d[j - 1]) || 1); out.push([lerp(q[j - 1][0], q[j][0], u), lerp(q[j - 1][1], q[j][1], u)]); } return out; }
+// 沿路径偏移（带宽的一侧）
+function s2offset(pts, d) { return pts.map((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)], tx = b[0] - a[0], ty = b[1] - a[1], l = Math.hypot(tx, ty) || 1; return [p[0] - ty / l * d, p[1] + tx / l * d]; }); }
 
-// ===================== L2–L3：满屏小鼠实验 =====================
-// s2Mouse：圆滚滚的小白鼠。(x, y) 脚底中心，s 缩放（1 ≈ 身长 110）
-function s2Mouse(c, x, y, s, o = {}) {
-  const { face = 1, t = 0, seed = 1, fat = 0, sleepy = 0, run = 0, eat = 0, hop = 0 } = o;
-  c.save(); c.translate(x, y - hop); c.scale(face * s, s);
-  if (eat > 0) c.rotate(eat * .09 * (.5 + .5 * Math.sin(t * 10 + seed)));
-  if (sleepy > 0) c.rotate(-sleepy * .06);
-  const rx = 46 + fat * 24, ry = 30 + fat * 15, hx = rx * .62 + 10, hy = -ry * 1.18 - 6 + fat * 10 + (eat > 0 ? 6 : 0);
-  const white = '#fffdf8', wag = Math.sin(t * 3 + seed) * 8;
-  rline(c, [[-rx + 6, -ry * .6], [-rx - 24, -ry * .45 + wag * .3], [-rx - 46, -ry - 6 + wag], [-rx - 34, -ry - 30 + wag]], { w: 4.5, color: '#e98aa4', smooth: true, seed: seed + 3, t });
-  const lf = run ? Math.sin(t * 24) * 11 : 0;
-  rshape(c, ellPts(-rx * .45 + lf, -4, 13, 6.5), { fill: P.pink, stroke: P.ink, w: 2.5, seed: seed + 5, t });
-  rshape(c, ellPts(rx * .5 - lf, -4, 11, 6), { fill: P.pink, stroke: P.ink, w: 2.5, seed: seed + 6, t });
-  rshape(c, circPts(hx - 18, hy - 22, 15, 24), { fill: white, stroke: P.ink, w: 3, seed: seed + 11, t });
-  rshape(c, circPts(hx - 18, hy - 22, 8, 16), { fill: P.pink, stroke: false, seed: seed + 12, t });
-  rshape(c, ellPts(0, -ry, rx, ry), { fill: white, stroke: P.ink, w: 3.5, seed: seed + 7, t });
-  rline(c, [[-rx * .5, -ry * .35], [-rx * .1, -ry * .15]], { w: 2.5, color: P.faint, seed: seed + 8, t, al: .7 });
-  rshape(c, ellPts(hx, hy, 29, 24, 32, .14), { fill: white, stroke: P.ink, w: 3.5, seed: seed + 9, t });
-  rshape(c, circPts(hx + 2, hy - 27, 14, 24), { fill: white, stroke: P.ink, w: 3, seed: seed + 13, t });
-  rshape(c, circPts(hx + 2, hy - 27, 7.5, 16), { fill: P.pink, stroke: false, seed: seed + 14, t });
-  if (sleepy > .5) rline(c, [[hx + 5, hy - 5], [hx + 11, hy - 1], [hx + 18, hy - 5]], { w: 3, color: P.ink, seed: seed + 15, t });
-  else { c.fillStyle = P.ink; c.beginPath(); c.arc(hx + 12, hy - 5, 5, 0, TAU); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(hx + 13.8, hy - 7, 1.8, 0, TAU); c.fill(); }
-  c.fillStyle = alpha(P.pink, .6); c.beginPath(); c.ellipse(hx + 5, hy + 9, 7, 4, 0, 0, TAU); c.fill();
-  c.fillStyle = '#e46a8c'; c.beginPath(); c.arc(hx + 29, hy + 3, 5, 0, TAU); c.fill();
-  for (const [dy, ey] of [[0, -9], [3, 3], [5, 14]]) rline(c, [[hx + 22, hy + dy + 2], [hx + 50, hy + ey]], { w: 1.8, color: P.ink2, seed: seed + dy + 20, t, amp: .5 });
-  if (eat > 0) rline(c, [[hx + 18, hy + 13], [hx + 22, hy + 16], [hx + 26, hy + 13]], { w: 2, color: P.ink, seed: seed + 30, t, amp: .3 });
-  c.restore();
-}
-function s2Cage(c, x, y, w, h, t, p) {
-  if (p <= 0) return;
-  fade(c, clamp(p * 1.5, 0, 1), () => {
-    rshape(c, rectPts(x, y, w, h, 26), { fill: alpha('#ffffff', .6), stroke: false, seed: 40 });
-    rshape(c, rectPts(x + 8, y + h - 70, w - 16, 60), { fill: P.paper2, stroke: false, seed: 41 });
-    for (let k = 0; k < 26; k++) { const sx = x + 30 + hash(k, 3) * (w - 60), sy = y + h - 58 + hash(k, 4) * 40;
-      rline(c, [[sx, sy], [sx + 14, sy - 4 + hash(k, 5) * 8]], { w: 2.5, color: P.paperEdge, seed: k, amp: .5 }); }
-  });
-  for (let k = 0; k <= 16; k++) { const bx = x + 22 + k * (w - 44) / 16; rline(c, [[bx, y + 14], [bx, y + h - 66]], { w: 3, color: alpha(P.ink2, .35), seed: 50 + k, t, p }); }
-  rline(c, rectPts(x, y, w, h, 26), { close: true, w: 6, color: P.ink2, seed: 44, t, p });
-  rline(c, [[x + w * .42, y], [x + w * .42, y - 26], [x + w * .58, y - 26], [x + w * .58, y]], { w: 5, color: P.ink2, seed: 45, t, p });
-}
-function s2CageFront(c, x, y, w, h, t, p) {   // 笼子前面的托盘（盖住脚下）
-  if (p <= 0) return;
-  rshape(c, [[x - 10, y + h - 26], [x + w + 10, y + h - 26], [x + w - 4, y + h + 20], [x + 4, y + h + 20]], { fill: mix(P.purple, P.paper, .35), stroke: P.ink, w: 4, seed: 46, t, al: clamp(p * 1.5, 0, 1) });
-}
-const S2PELLETS = [[-44, -44], [-16, -46], [12, -45], [40, -43], [-30, -62], [-2, -64], [26, -61], [-16, -79], [12, -80], [-2, -95]];
-function s2Feeder(c, x, y, s, o = {}) {   // (x, y) 碗底
-  const { fill = 1, cheese = 0, drop = 0, t = 0, seed = 1 } = o;
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rshape(c, ellPts(0, -40, 72, 12), { fill: mix(P.teal, P.ink, .35), stroke: P.ink, w: 3, seed: seed + 1, t });
-  const n = Math.round(fill * S2PELLETS.length), pa = 1 - cheese;
-  if (pa > 0) for (let k = 0; k < n; k++) { const [px, py] = S2PELLETS[k]; rshape(c, ellPts(px, py, 15, 10, 16, hash(k, 7) - .5), { fill: mix(P.shelf2, P.orange, .45), stroke: P.ink, w: 2, seed: seed + k, t, al: pa }); }
-  if (cheese > 0) [[-32, -52, -.2], [22, -54, .25], [-4, -80, 0]].forEach(([cx, cy, r], k) => { if (k >= n / 3.3) return;
-    c.save(); c.translate(cx, cy - drop * (1 + k * .4)); c.rotate(r);
-    rshape(c, [[-30, 14], [30, 14], [22, -20]], { fill: P.sun, stroke: P.ink, w: 3, seed: seed + 20 + k, t });
-    c.fillStyle = mix(P.sun, P.orange, .6); c.beginPath(); c.arc(-8, 4, 5, 0, TAU); c.arc(12, 0, 4, 0, TAU); c.fill();
-    c.restore(); });
-  rshape(c, [[-74, -40], [74, -40], [60, 0], [-60, 0]], { fill: P.teal, stroke: P.ink, w: 4, seed: seed + 3, t });
-  rline(c, [[-66, -24], [66, -24]], { w: 3, color: alpha('#fff', .6), seed: seed + 4, t });
-  c.restore();
-}
-// s2Dial：24 小时钟。lit = [h0, h1] 亮的时段，p 亮的扇形画出比例，hand 指针（小时）
-function s2Dial(c, x, y, r, t, o = {}) {
-  const { lit = null, p = 1, hand = 0, label = '' } = o, ang = hh => hh / 24 * TAU - Math.PI / 2;
-  rshape(c, circPts(x, y, r), { fill: '#fffaf0', stroke: P.ink, w: 5, seed: 91, t });
-  rshape(c, circPts(x, y, r - 9), { fill: alpha(P.gray, .22), stroke: false, seed: 92 });
-  if (lit && p > 0) { const a0 = ang(lit[0]), a1 = a0 + (ang(lit[1]) - a0) * p, pts = [[x, y]];
-    for (let k = 0; k <= 30; k++) { const a = lerp(a0, a1, k / 30); pts.push([x + Math.cos(a) * (r - 9), y + Math.sin(a) * (r - 9)]); }
-    rshape(c, pts, { fill: alpha(P.sun, .9), stroke: false, seed: 93 }); }
-  for (let k = 0; k < 24; k++) { const a = ang(k), r0 = k % 6 ? r - 14 : r - 22; rline(c, [[x + Math.cos(a) * r0, y + Math.sin(a) * r0], [x + Math.cos(a) * (r - 7), y + Math.sin(a) * (r - 7)]], { w: k % 6 ? 2 : 4, color: P.ink2, seed: 94 + k, amp: .3 }); }
-  if (label && lit) { const am = ang((lit[0] + lit[1]) / 2); zh(c, label, x + Math.cos(am) * r * .5, y + Math.sin(am) * r * .5, { size: 32, align: 'center', base: 'middle', color: P.ink }); }
-  const a = ang(hand); rline(c, [[x, y], [x + Math.cos(a) * r * .8, y + Math.sin(a) * r * .8]], { w: 6, color: P.red, seed: 120, t });
-  rshape(c, circPts(x, y, 8), { fill: P.ink, stroke: false });
-}
-function s2Wheel(c, x, y, r, ang, t) {
-  rline(c, [[x, y], [x - r * .55, y + r + 30]], { w: 7, color: P.ink2, seed: 61, t });
-  rline(c, [[x, y], [x + r * .55, y + r + 30]], { w: 7, color: P.ink2, seed: 62, t });
-  rshape(c, circPts(x, y, r), { fill: alpha(P.sky, .28), stroke: P.blue, w: 8, seed: 63, t });
-  rline(c, circPts(x, y, r - 14), { close: true, w: 3, color: P.blue, seed: 64, t });
-  for (let k = 0; k < 16; k++) { const a = ang + k * TAU / 16; rline(c, [[x + Math.cos(a) * (r - 14), y + Math.sin(a) * (r - 14)], [x + Math.cos(a) * r, y + Math.sin(a) * r]], { w: 3, color: P.blue, seed: 70 + k, amp: .4 }); }
-  for (let k = 0; k < 6; k++) { const a = ang + k * TAU / 6; rline(c, [[x, y], [x + Math.cos(a) * (r - 14), y + Math.sin(a) * (r - 14)]], { w: 3, color: alpha(P.blue, .7), seed: 90 + k, t }); }
-  rshape(c, circPts(x, y, 11), { fill: P.moon, stroke: P.ink, w: 3, seed: 97, t });
-}
-function s2Lab(c, tau, L) {
-  const t2 = S2T(1), t3 = S2T(2), e3 = S2E(2);
+// ===================== 桌布 =====================
+// 亚麻经纬纹理：载入时生成一次（确定性）
+const S2WEAVE = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const g = cv.getContext('2d'), r = rng(2901);
+  for (let i = 0; i < 128; i += 4) { g.fillStyle = `rgba(90,70,50,${.025 + r() * .03})`; g.fillRect(0, i, 128, 1.4); g.fillStyle = `rgba(90,70,50,${.02 + r() * .03})`; g.fillRect(i + 2, 0, 1.4, 128); }
+  for (let k = 0; k < 40; k++) { g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(r() * 128, r() * 128, 3 + r() * 6, 1); }
+  return cv; })();
+// 亚麻色桌布（和 handoffThread 的纸同色），纸纹随镜头移动；几道叠过的折痕让横移有参照。
+function s2cloth(c, C, crease = 1) {
   c.fillStyle = P.paper; c.fillRect(0, 0, W, H);
-  const g = c.createRadialGradient(CX, CY, 320, CX, CY, 1150); g.addColorStop(0, alpha(P.paper2, 0)); g.addColorStop(1, alpha(P.paperEdge, .6)); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  const cam = key(tau, [[t2, [1, CX, 560]], [t3 + 1.3, [1.035, CX, 560]], [t3 + 1.9, [1.15, 500, 620]], [t3 + 2.6, [1.15, 500, 620]], [t3 + 3.2, [1.15, 1420, 620]], [t3 + 4.5, [1.15, 1420, 620]], [e3 - .2, [1, CX, 560]]]);
-  c.save(); c.translate(cam[1], cam[2]); c.scale(cam[0], cam[0]); c.translate(-cam[1], -cam[2]);
-  rline(c, rectPts(40, 40, W - 80, H - 80, 24), { close: true, w: 4, color: P.paperEdge, seed: 5, t: tau });
-  // 标题
-  const head = '2012 年 · 小鼠实验';
-  zh(c, head, CX, 140, { size: 68, align: 'center', p: writeP(tau, t2 - .15, head, .06) });
-  rline(c, [[CX - 260, 164], [CX + 260, 164]], { w: 4, color: P.moon, seed: 6, t: tau, p: sm(t2 + .3, t2 + .9, tau) });
-  const cp = sm(t2 + .1, t2 + 1.0, tau), gy = 786;
-  const cages = [[130, 300, 760, 520], [1030, 300, 760, 520]];
-  cages.forEach(([x, y, w, h]) => s2Cage(c, x, y, w, h, tau, cp));
-  // 条件标签
-  const tA = s2ch(1, 13), tB = s2ch(1, 20), tc = s2ch(2, 6), tf = s2ch(2, 9) + .1, tRun = t3 + 2.55;
-  zh(c, '随时能吃', 510, 272, { size: 54, align: 'center', p: writeP(tau, tA, '随时能吃', .08) });
-  zh(c, '只在 8 小时里吃', 1410, 272, { size: 54, align: 'center', p: writeP(tau, tB, '只在 8 小时里吃', .06) });
-  // 钟：左边 24 小时全亮，右边只亮 8 小时
-  const hand = tau < tB ? 6 : (6 + (tau - tB) * 4.2) % 24;
-  const kA = s2pop(tau, tA), kB = s2pop(tau, tB);
-  pop(c, 770, 410, kA, () => s2Dial(c, 770, 410, 64, tau, { lit: [0, 24], p: 1, hand, label: '' }));
-  if (kA > .5) zh(c, '24h', 770, 500, { size: 32, align: 'center', color: P.ink2 });
-  pop(c, 1670, 410, kB, () => s2Dial(c, 1670, 410, 64, tau, { lit: [9, 17], p: sm(tB + .2, tB + .9, tau), hand, label: '8h' }));
-  // 食盆：换成奶酪
-  const cheese = sm(tc, tc + .25, tau), dropU = clamp((tau - tc) / .5, 0, 1), drop = tau < tc ? 0 : 260 * (1 - easeOutBack(dropU));
-  const fillR = tau < tB ? 1 : sm(9, 9.4, hand, s2lin) * (1 - sm(16.6, 17, hand, s2lin));
-  const fp = sm(t2 + .6, t2 + 1.0, tau);
-  if (fp > 0) {
-    s2Feeder(c, 390, gy + 4, fp, { fill: 1, cheese, drop, t: tau, seed: 1 });
-    s2Feeder(c, 1290, gy + 4, fp, { fill: fillR, cheese, drop, t: tau, seed: 2 });
+  c.save(); c.globalAlpha = .12; const pat = c.createPattern(PAPER_GRAIN, 'repeat'); pat.setTransform(new DOMMatrix().translate(((CX - C.x) % 256 + 256) % 256, ((CY - C.y) % 256 + 256) % 256)); c.fillStyle = pat; c.fillRect(0, 0, W, H); c.restore();
+  // 顶灯：中间亮、四周略暗（出场时退掉，和 handoffThread 的纯纸面接上）
+  if (crease > 0) { const g = c.createRadialGradient(CX, CY * .9, 200, CX, CY, W * .72); g.addColorStop(0, 'rgba(255,250,235,.10)'); g.addColorStop(1, 'rgba(60,40,25,.20)'); c.save(); c.globalAlpha = crease; c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore(); }
+  if (crease <= 0) return; const k = s2k(C, 0);
+  // 亚麻的经纬（很淡）
+  c.save(); c.globalAlpha = .5 * crease; const wv = c.createPattern(S2WEAVE, 'repeat'); wv.setTransform(new DOMMatrix().translate(CX - C.x * k, CY - C.y * k).scale(k)); c.fillStyle = wv; c.fillRect(0, 0, W, H); c.restore();
+  c.save(); c.globalAlpha = crease;
+  for (let gx = -640; gx < 11000; gx += 640) { const [sx] = s2p(C, gx, 0); if (sx < -20 || sx > W + 20) continue;
+    c.fillStyle = 'rgba(80,60,40,.05)'; c.fillRect(sx - 3 * k, 0, 3 * k, H); c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(sx, 0, 2 * k, H); }
+  for (const gy of [-40, 1120]) { const [, sy] = s2p(C, 0, gy); c.fillStyle = 'rgba(80,60,40,.05)'; c.fillRect(0, sy - 3 * k, W, 3 * k); c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, sy, W, 2 * k); }
+  c.restore();
+}
+
+// ===================== 道具 =====================
+const S2C = {
+  plate: mix(P.paper, '#ffffff', .25), well: mix(P.paper, P.g1, .3), cheese: mix(P.cap, P.moon, .42), kraft: P.paperEdge, kraftIn: mix(P.paperEdge, P.paper, .45),
+  tea: mix(P.paperEdge, P.ink2, .35), coffee: mix(P.ink, P.paperEdge, .28), milktea: mix(P.paperEdge, P.cap, .45), gut: P.blush, thread: '#6b4f55', steel: mix(P.g1, P.g2, .35),
+};
+// 盘子：一圈紫色细边的纸盘（handoffDisc 的圆盘就是它）
+function s2plate(c, C, x, y, r) {
+  s2prism(c, C, circPts(x, y, r, 72), 8, S2C.plate, { seed: 2001, step: 26, side: mix(S2C.plate, P.g2, .4) });
+  const [sx, sy] = s2p(C, x, y, 8), k = s2k(C, 8);
+  c.save(); c.fillStyle = S2C.well; c.beginPath(); c.arc(sx, sy, r * .7 * k, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(60,40,30,.12)'; c.lineWidth = 6 * k; c.beginPath(); c.arc(sx + 2 * k, sy + 3 * k, r * .7 * k - 3 * k, Math.PI * 1.05, Math.PI * 1.75); c.stroke();
+  c.strokeStyle = alpha(P.purple, .55); c.lineWidth = 2.5 * k; c.beginPath(); c.arc(sx, sy, r * .88 * k, 0, TAU); c.stroke(); c.restore();
+}
+// 时钟（24 小时盘也用它）：sector = [起点小时, 长度小时]（奶酪色扇形 = 能吃的时间）；hands = [时针角, 分针角]
+function s2clock(c, C, x, y, r, o = {}) {
+  const { h = 14, sector = null, hands = null, dial = 12, al = 1 } = o; if (al <= 0) return;
+  c.save(); c.globalAlpha *= al;
+  s2prism(c, C, circPts(x, y, r, 56), h, P.cap, { seed: 2010 + (x | 0) % 9, side: mix(P.cap, P.g2, .45) });
+  const [sx, sy] = s2p(C, x, y, h), k = s2k(C, h), R = r * k;
+  if (sector && sector[1] > .01) { const a0 = -Math.PI / 2 + sector[0] / dial * TAU, a1 = a0 + sector[1] / dial * TAU;
+    c.fillStyle = S2C.cheese; c.beginPath(); c.moveTo(sx, sy); c.arc(sx, sy, R * .86, a0, a1); c.closePath(); c.fill(); }
+  c.strokeStyle = P.g3; c.lineWidth = 2.5 * k; c.beginPath(); c.arc(sx, sy, R * .92, 0, TAU); c.stroke();
+  for (let i = 0; i < dial; i++) { const a = i / dial * TAU, big = i % (dial / 4) === 0; c.strokeStyle = P.ink; c.lineWidth = (big ? 3.5 : 2) * k;
+    c.beginPath(); c.moveTo(sx + Math.sin(a) * R * (big ? .66 : .74), sy - Math.cos(a) * R * (big ? .66 : .74)); c.lineTo(sx + Math.sin(a) * R * .84, sy - Math.cos(a) * R * .84); c.stroke(); }
+  if (hands) hands.forEach((a, i) => { const len = (i ? .72 : .5) * r; s2prism(c, C, s2tf([[-6, -3], [len, -2], [len + 6, 0], [len, 2], [-6, 3]], x, y, a - Math.PI / 2), 2, P.ink, { z0: h + i * 2, seed: 2020 + i, sh: .2, gr: 0, step: 6 }); });
+  if (hands) brassPin(c, sx, sy, 6 * k);
+  c.restore();
+}
+// 纸条（标签、桌签）：宽 w、高 hh 的一张纸片，字写在上面
+function s2slip(c, C, x, y, w, hh, text, o = {}) {
+  const { a = 0, size = 40, color = P.ink, al = 1, z0 = 0, seed = 2030, fill = P.cap, ox = 0 } = o; if (al <= 0) return;
+  s2prism(c, C, s2tf(rectPts(-w / 2, -hh / 2, w, hh, 3), x, y, a), 2, fill, { z0, seed, step: 30, al });
+  if (text) fade(c, al, () => { const [sx, sy] = s2p(C, x + ox, y, z0 + 2), k = s2k(C, z0 + 2); c.save(); c.translate(sx, sy); c.rotate(a); zh(c, text, 0, size * .36 * k, { size: size * k, align: 'center', color, p: o.p ?? 1 }); c.restore(); });
+}
+// 老鼠（俯视）：蛋形身子、两只粉耳朵、线尾巴。fat 1..1.6，sleep 闭眼
+function s2mouse(c, C, x, y, a, o = {}) {
+  const { fat = 1, sleep = false, t = 0, run = 0 } = o, body = [], M = 1.35;
+  for (let i = 0; i < 28; i++) { const th = i / 28 * TAU, cx = Math.cos(th); body.push([cx * 36 * (1 + (fat - 1) * .45), Math.sin(th) * 21 * fat * (1 - .42 * Math.pow(Math.max(0, cx), 1.6))]); }
+  const wag = Math.sin(twos(t) * (run ? 30 : 5)) * (run ? 10 : 4), tail = s2tf([[-34 * fat, 0], [-56, 6 + wag * .4], [-74, -4 - wag], [-92, 6 + wag]], x, y, a, M);
+  const k = s2k(C, 0); c.save(); c.strokeStyle = S2C.gut; c.lineWidth = 2.6 * k; c.lineCap = 'round'; c.stroke(polyPath(s2P(C, spline(tail, 4)), false)); c.restore();
+  s2prism(c, C, s2tf(body, x, y, a, M), 14 * fat, P.cap, { seed: 2040 + (x | 0) % 7, step: 8, side: mix(P.cap, P.g2, .45) });
+  const zt = 14 * fat;
+  for (const s of [-1, 1]) { const e = s2tf([[10 - (fat - 1) * 6, s * 18 * fat]], x, y, a, M)[0]; s2prism(c, C, circPts(e[0], e[1], 9 * M, 14), 2, P.cap, { z0: zt, seed: 2045 + s, step: 5, sh: .15 });
+    const [ex, ey] = s2p(C, e[0], e[1], zt + 2); c.fillStyle = P.blush; c.beginPath(); c.arc(ex, ey, 5 * M * k, 0, TAU); c.fill(); }
+  const n = s2p(C, ...s2tf([[36 * (1 + (fat - 1) * .45), 0]], x, y, a, M)[0], zt); c.fillStyle = P.blush; c.beginPath(); c.arc(n[0], n[1], 3.4 * k, 0, TAU); c.fill();
+  for (const s of [-1, 1]) { const e = s2p(C, ...s2tf([[22, s * 8]], x, y, a, M)[0], zt); c.fillStyle = P.ink; c.strokeStyle = P.ink; c.lineWidth = 1.6 * k;
+    if (sleep) { c.beginPath(); c.arc(e[0], e[1] - 1.5 * k, 3 * k, .2, Math.PI - .2); c.stroke(); } else { c.beginPath(); c.arc(e[0], e[1], 2.6 * k, 0, TAU); c.fill(); } }
+}
+// 纸箱鼠笼：牛皮纸盒（壁厚、内壁明暗、地板上铁丝的影子）。inner(C) 画里面的东西
+function s2box(c, C, x, y, w, hh, H, inner, o = {}) {
+  const t = 14, out = rectPts(x, y, w, hh), inn = rectPts(x + t, y + t, w - t * 2, hh - t * 2), k = s2k(C, 0);
+  s2prism(c, C, out, H, S2C.kraft, { noTop: true, seed: 2050, side: mix(S2C.kraft, P.ink, .25) });
+  const fl = s2P(C, inn, 2), top = s2P(C, inn, H);
+  c.fillStyle = S2C.kraftIn; c.fill(polyPath(fl)); grain(c, polyPath(fl), .1);
+  // 内壁：四面，朝右下的两面（左、上壁的内侧）背光
+  const shade = [.3, .12, .05, .22];
+  for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; c.fillStyle = mix(S2C.kraft, P.ink, shade[i]); c.fill(polyPath([top[i], top[j], fl[j], fl[i]])); }
+  // 左、上壁投在地板上的影子
+  c.save(); c.clip(polyPath(fl)); c.fillStyle = 'rgba(50,30,20,.16)'; const off = s2P(C, inn.map(([px, py]) => [px + H * S2LX, py + H * S2LY]), 2);
+  c.fill(polyPath([fl[0], fl[1], [fl[1][0], off[1][1]], off[0], [off[3][0], fl[3][1]], fl[3]])); c.restore();
+  c.save(); c.clip(polyPath(fl)); inner(C); c.restore();
+  // 铁丝盖：一根根细线，和它们落在地板上的影子
+  const bars = o.bars ?? 7;
+  for (let i = 1; i <= bars; i++) { const bx = x + t + (w - 2 * t) * i / (bars + 1);
+    c.save(); c.clip(polyPath(fl)); c.strokeStyle = 'rgba(40,26,22,.18)'; c.lineWidth = 4 * k; c.beginPath(); const sa = s2p(C, bx + H * S2LX, y + H * S2LY, 2), sb = s2p(C, bx + H * S2LX, y + hh + H * S2LY, 2); c.moveTo(...sa); c.lineTo(...sb); c.stroke(); c.restore();
+    const a = s2p(C, bx, y, H + 3), b = s2p(C, bx, y + hh, H + 3); c.strokeStyle = P.g3; c.lineWidth = 2.6 * k; c.beginPath(); c.moveTo(...a); c.lineTo(...b); c.stroke(); }
+  // 纸盒边沿（顶面是一圈）
+  const ring = new Path2D(); ring.addPath(polyPath(s2P(C, out, H))); ring.addPath(polyPath(top.slice().reverse()));
+  c.save(); c.fillStyle = mix(S2C.kraft, '#ffffff', .12); c.fill(ring, 'evenodd'); c.restore();
+}
+function s2cheese(c, C, x, y, a, z0 = 0, s = 1) {
+  const pts = s2tf([[-36, -24], [-20, -27], [40, -3], [42, 3], [-20, 27], [-36, 24], [-39, 0]], x, y, a, s);
+  const path = s2prism(c, C, pts, 16 * s, S2C.cheese, { z0, seed: 2060 + (x | 0) % 5, step: 8, side: mix(S2C.cheese, P.paperEdge, .6) });
+  const k = s2k(C, z0 + 16 * s); c.fillStyle = mix(S2C.cheese, P.paperEdge, .55);
+  for (const [u, v, r] of [[-18, -8, 6], [4, 6, 4.5], [-22, 12, 3.5], [16, -2, 3]]) { const [hx, hy] = s2p(C, ...s2tf([[u, v]], x, y, a, s)[0], z0 + 16 * s); c.beginPath(); c.arc(hx, hy, r * k * s, 0, TAU); c.fill(); }
+  return path;
+}
+// 碗（俯视）：一圈碗沿 + 米饭
+function s2bowl(c, C, x, y, r = 24, o = {}) { const { al = 1, z0 = 0 } = o; if (al <= 0) return;
+  s2prism(c, C, circPts(x, y, r, 28), 12, P.cap, { z0, seed: 2070 + (x | 0) % 11, step: 8, al, side: mix(P.cap, P.g2, .5) });
+  const [sx, sy] = s2p(C, x, y, z0 + 12), k = s2k(C, z0 + 12);
+  fade(c, al, () => { c.fillStyle = mix(P.cap, P.g1, .45); c.beginPath(); c.arc(sx, sy, r * .72 * k, 0, TAU); c.fill(); c.fillStyle = '#f7f3ea'; c.beginPath(); c.arc(sx - 1 * k, sy - 1 * k, r * .58 * k, 0, TAU); c.fill();
+    c.strokeStyle = alpha(P.purple, .6); c.lineWidth = 1.6 * k; c.beginPath(); c.arc(sx, sy, r * .88 * k, 0, TAU); c.stroke(); });
+}
+// 纸飞机（俯视）
+function s2plane(c, C, x, y, a, z0) { const pts = s2tf([[46, 0], [-30, -26], [-18, 0], [-30, 26]], x, y, a, 1.7);
+  s2prism(c, C, pts, 4, P.stripe, { z0, seed: 2080, step: 8, sh: .22 }); const f0 = s2p(C, ...s2tf([[46, 0]], x, y, a, 1.7)[0], z0 + 4), f1 = s2p(C, ...s2tf([[-18, 0]], x, y, a, 1.7)[0], z0 + 4);
+  c.strokeStyle = alpha(P.g2, .8); c.lineWidth = 1.5; c.beginPath(); c.moveTo(...f0); c.lineTo(...f1); c.stroke(); }
+// 外卖袋（牛皮纸袋，折口 + 订书钉 + 印了只鸡腿）
+function s2bag(c, C, x, y, a, z0 = 0) {
+  s2prism(c, C, s2tf(rectPts(-52, -62, 104, 124, 4), x, y, a), 34, S2C.kraft, { z0, seed: 2090, step: 16, side: mix(S2C.kraft, P.ink, .3) });
+  const zt = z0 + 34; s2prism(c, C, s2tf(rectPts(-52, -62, 104, 30, 2), x, y, a), 4, mix(S2C.kraft, '#ffffff', .15), { z0: zt, seed: 2091, step: 16, sh: .15 });
+  const k = s2k(C, zt), q = s2P(C, s2tf([[-10, 4], [8, -8], [22, 2], [18, 22], [2, 26], [-6, 20], [-22, 30], [-28, 22], [-14, 14]], x, y + 10, a), zt);
+  c.strokeStyle = P.ink2; c.lineWidth = 2.4 * k; c.lineJoin = 'round'; c.stroke(polyPath(q));
+  const st = s2P(C, s2tf([[-8, -48], [8, -48]], x, y, a), zt + 4); c.strokeStyle = P.g2; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(...st[0]); c.lineTo(...st[1]); c.stroke();
+}
+// 墨色纸剪的「×」（两根交叉的黑纸条），放在东西上
+function s2cross(c, C, x, y, s, z0, t0, t) { const u = clamp((t - t0) / .17, 0, 1); if (u <= 0) return; const zz = z0 + (1 - u) * 120;
+  for (const a of [.78, -.78]) s2prism(c, C, s2tf(rectPts(-s / 2, -s * .09, s, s * .18, 2), x, y, a), 2, P.ink, { z0: zz, seed: 2095 + (a > 0 ? 1 : 0), step: 8, sh: .25, gr: .05 }); }
+// 杯子：kind water | tea | coffee | milktea | yogurt
+function s2cup(c, C, x, y, kind, o = {}) {
+  const { s = 1, al = 1, z0 = 0 } = o; if (al <= 0 || s <= .01) return; const r = { water: 34, tea: 30, coffee: 33, milktea: 50, yogurt: 44 }[kind] * s, hh = { water: 54, tea: 26, coffee: 46, milktea: 84, yogurt: 56 }[kind] * s;
+  c.save(); c.globalAlpha *= al;
+  if (kind === 'tea') s2prism(c, C, circPts(x, y, 46 * s, 36), 4, P.cap, { z0, seed: 2100, step: 10, side: mix(P.cap, P.g2, .4) });
+  const z1 = kind === 'tea' ? z0 + 4 : z0;
+  if (kind === 'tea' || kind === 'coffee') { const hp = s2tf(rectPts(r - 4, -7, 22 * s, 14, 6), x, y, .5); s2prism(c, C, hp, hh * .6, kind === 'coffee' ? P.g3 : P.cap, { z0: z1 + hh * .2, seed: 2101, step: 6, sh: .15 }); }
+  if (kind === 'water') { vellum(c, s2P(C, circPts(x, y, r, 36), z1 + hh), { seed: 2102, shadow: true }); const [sx, sy] = s2p(C, x, y, z1 + hh), k = s2k(C, z1 + hh);
+    c.strokeStyle = alpha('#ffffff', .8); c.lineWidth = 2.5 * k; c.beginPath(); c.arc(sx, sy, r * .8 * k, Math.PI * 1.1, Math.PI * 1.5); c.stroke(); c.strokeStyle = alpha(P.blue, .25); c.lineWidth = 1.5 * k; c.beginPath(); c.arc(sx, sy, r * .62 * k, 0, TAU); c.stroke(); c.restore(); return; }
+  const body = { tea: P.cap, coffee: P.g3, milktea: alpha(P.cap, 1), yogurt: P.cap }[kind];
+  s2prism(c, C, circPts(x, y, r, 40), hh, body, { z0: z1, seed: 2103 + kind.length, step: 10, side: mix(body, P.ink, .3) });
+  const zt = z1 + hh, [sx, sy] = s2p(C, x, y, zt), k = s2k(C, zt);
+  if (kind === 'tea' || kind === 'coffee') { c.fillStyle = kind === 'tea' ? S2C.tea : S2C.coffee; c.beginPath(); c.arc(sx, sy, r * .8 * k, 0, TAU); c.fill(); c.strokeStyle = alpha('#ffffff', .35); c.lineWidth = 2 * k; c.beginPath(); c.arc(sx - 3 * k, sy - 3 * k, r * .45 * k, Math.PI, Math.PI * 1.5); c.stroke(); }
+  if (kind === 'milktea') { c.fillStyle = S2C.milktea; c.beginPath(); c.arc(sx, sy, r * .86 * k, 0, TAU); c.fill(); c.fillStyle = P.ink2; for (let i = 0; i < 9; i++) { const a = i * 2.4, rr = (i % 3 + 1) * .24 * r * k; c.beginPath(); c.arc(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr, 5 * k * s, 0, TAU); c.fill(); }
+    vellum(c, circPts(sx, sy, r * .95 * k, 36), { seed: 2104, shadow: false }); s2prism(c, C, circPts(x + 12 * s, y - 10 * s, 9 * s, 14), 60 * s, P.purple, { z0: zt, seed: 2105, step: 5, sh: .2 }); }
+  if (kind === 'yogurt') { c.fillStyle = mix(P.g1, '#ffffff', .4); c.beginPath(); c.arc(sx, sy, r * .9 * k, 0, TAU); c.fill(); c.strokeStyle = alpha(P.g2, .6); c.lineWidth = 1.2 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(sx, sy, r * (.3 + i * .12) * k, 0, TAU); c.stroke(); }
+    zh(c, '无糖', sx, sy + 9 * k, { size: 26 * k, align: 'center', color: P.ink2 }); }
+  c.restore();
+}
+// 勺子（悬在空中 z0，带一小堆糖粒），tilt 0..1 倾倒
+function s2spoon(c, C, x, y, a, z0, sugar = 1) {
+  const pts = s2tf([...ellPts(0, 0, 30, 21, 20), [-24, 6], [-120, 7], [-126, 0], [-120, -7], [-24, -6]].slice(0, 20), x, y, a);
+  s2prism(c, C, s2tf([[-22, -5], [-122, -6], [-128, 0], [-122, 6], [-22, 5]], x, y, a), 3, S2C.steel, { z0, seed: 2110, step: 8, sh: .2 });
+  s2prism(c, C, pts, 4, S2C.steel, { z0, seed: 2111, step: 8, sh: .2 });
+  if (sugar > 0) { const r = rng(2112); for (let i = 0; i < 14 * sugar; i++) { const u = (r() - .5) * 34, v = (r() - .5) * 24; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ...s2tf([[u, v]], x, y, a)[0], r() * 2), 5, '#f7f3ea', { z0: z0 + 4, seed: 2113 + i, step: 4, sh: .12, gr: 0 }); } }
+}
+// 发酵罐：玻璃罐身、布盖（荷叶边）+ 一圈扎口的线；tip 0..1 侧倒（口朝左）
+function s2jar(c, C, x, y, o = {}) {
+  const { lid = 1, lidX = 0, lidY = 0, tip = 0, fill = P.green } = o, r = 62;
+  if (tip < .5) { s2prism(c, C, circPts(x, y, r, 40), 74, mix(P.cap, P.g1, .3), { seed: 2120, step: 12, side: mix(P.g1, P.green, .25), al: 1 });
+    const [sx, sy] = s2p(C, x, y, 74), k = s2k(C, 74);
+    c.fillStyle = mix(fill, P.g1, .35); c.beginPath(); c.arc(sx, sy, r * .8 * k, 0, TAU); c.fill(); c.fillStyle = mix(fill, P.ink, .15);
+    for (let i = 0; i < 7; i++) { const a = i * 2.1, rr = (i % 3) * 14 * k; c.beginPath(); c.ellipse(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr, 11 * k, 6 * k, a, 0, TAU); c.fill(); } }
+  else { const L = 170, body = s2tf(rectPts(-L / 2, -r, L, r * 2, r * .7), x, y, 0); s2prism(c, C, body, 60, mix(P.cap, P.g1, .3), { seed: 2121, step: 12, side: mix(P.g1, P.green, .25) });
+    const m = s2p(C, x - L / 2 + 6, y, 60), k = s2k(C, 60); c.fillStyle = mix(fill, P.ink, .2); c.beginPath(); c.ellipse(m[0], m[1], 14 * k, r * .8 * k, 0, 0, TAU); c.fill(); }
+  if (lid > 0) { const lx = x + lidX, ly = y + lidY, pts = []; for (let i = 0; i < 60; i++) { const a = i / 60 * TAU; pts.push([lx + Math.cos(a) * (r - 2 + 4 * Math.sin(a * 12)), ly + Math.sin(a) * (r - 2 + 4 * Math.sin(a * 12))]); }
+    s2prism(c, C, pts, 3, P.stripe, { z0: lidX || lidY ? 0 : 74, seed: 2122, step: 8, sh: .2 });
+    const [sx, sy] = s2p(C, lx, ly, (lidX || lidY ? 0 : 74) + 3), k = s2k(C, 77); c.strokeStyle = P.purple; c.lineWidth = 3 * k; c.beginPath(); c.arc(sx, sy, (r - 16) * k, 0, TAU); c.stroke(); }
+}
+
+// ===================== 衍纸肠道 =====================
+// 一条弯来弯去的纸槽：粉色纸边立着（衍纸），槽底一条白纸。局部坐标（工位 D）
+const S2GUT = (() => { const pts = [], R = 90, arc = (cx, cy, a0, a1) => { for (let i = 0; i <= 18; i++) { const a = lerp(a0, a1, i / 18); pts.push([cx + Math.cos(a) * R, cy + Math.sin(a) * R]); } };
+  pts.push([900, 240], [250, 240]); arc(250, 330, -Math.PI / 2, -Math.PI * 1.5); pts.push([800, 420]); arc(800, 510, -Math.PI / 2, Math.PI / 2); pts.push([250, 600]); arc(250, 690, -Math.PI / 2, -Math.PI * 1.5); pts.push([905, 780]);
+  const q = s2arc(pts, 420), L = pathLen(q); return { q, L, l: s2offset(q, -38), r: s2offset(q, 38) }; })();
+function s2gutAt(s, lat = 0) { const n = S2GUT.q.length, f = clamp(s / S2GUT.L, 0, 1) * (n - 1), i = Math.min(n - 2, Math.floor(f)), u = f - i, a = S2GUT.q[i], b = S2GUT.q[i + 1], tx = b[0] - a[0], ty = b[1] - a[1], l = Math.hypot(tx, ty) || 1;
+  return [lerp(a[0], b[0], u) - ty / l * lat, lerp(a[1], b[1], u) + tx / l * lat, Math.atan2(ty, tx)]; }
+// 小菌：衍纸卷（coil）、小球、杆、泪滴、链、圈
+const S2BUGT = ['coil', 'ball', 'rod', 'tear', 'chain', 'ring', 'coil', 'rod'];
+const S2BUGC = [P.purple, P.g2, P.green, P.g3, P.stripe, P.hairDark, P.paperEdge, P.purple];
+function s2bug(c, C, x, y, a, type, col, s = 1, seed = 1) {
+  if (s <= .01) return; const k = s2k(C, 6);
+  if (type === 'ball') { s2prism(c, C, circPts(x, y, 9 * s, 12), 6, col, { seed, step: 5, sh: .2, gr: 0 }); return; }
+  if (type === 'rod') { s2prism(c, C, s2tf(rectPts(-15, -6, 30, 12, 6), x, y, a, s), 6, col, { seed, step: 5, sh: .2, gr: 0 }); return; }
+  if (type === 'tear') { s2prism(c, C, s2tf([[-10, 0], [-6, -8], [2, -9], [14, 0], [2, 9], [-6, 8]], x, y, a, s), 6, col, { seed, step: 5, sh: .2, gr: 0 }); return; }
+  if (type === 'chain') { for (const u of [-13, 0, 13]) s2prism(c, C, circPts(...s2tf([[u, 0]], x, y, a, s)[0], 6 * s, 10), 6, col, { seed: seed + u, step: 4, sh: .2, gr: 0 }); return; }
+  // coil / ring：衍纸卷——一条纸边卷成的螺旋（或空心圈）
+  s2prism(c, C, circPts(x, y, 11 * s, 16), 6, mix(col, '#ffffff', .25), { seed, step: 5, sh: .2, gr: 0 });
+  const [sx, sy] = s2p(C, x, y, 6); c.strokeStyle = mix(col, P.ink, .2); c.lineWidth = 1.6 * k; c.beginPath();
+  if (type === 'ring') c.arc(sx, sy, 6 * s * k, 0, TAU); else for (let i = 0; i <= 30; i++) { const th = i / 30 * TAU * 2.3 + a, rr = (1.5 + i / 30 * 8.5) * s * k; i ? c.lineTo(sx + Math.cos(th) * rr, sy + Math.sin(th) * rr) : c.moveTo(sx + Math.cos(th) * rr, sy + Math.sin(th) * rr); }
+  c.stroke();
+}
+// 炎症：金色小纸火苗
+function s2flame(c, C, x, y, s, t, seed) { if (s <= .01) return; const f = Math.floor(t * 12) % 2, w = f ? 1 : .86;
+  s2prism(c, C, s2tf([[0, -34], [6 * w, -16], [13, -24 * w], [14, -2], [11, 8], [0, 14], [-11, 8], [-14, -4], [-12, -20 / w], [-5, -12]], x, y, 0, s), 6, P.moon, { seed, step: 5, sh: .25, gr: .05 });
+  s2prism(c, C, s2tf([[0, -8], [5, 2], [0, 8], [-5, 2]], x, y + 2, 0, s), 1, mix(P.moon, '#ffffff', .5), { z0: 5, seed: seed + 1, step: 4, sh: 0, gr: 0 }); }
+
+// ===================== 帕秋莉：站在桌上的小剪纸人偶 =====================
+// 关键帧：[时刻, { st 工位, x, y（工位内坐标）, pose, facing, look, mood, tilt, dur 走过去用时 }]。位置变了就一跳一跳地走过去（定格）
+function s2patK() {
+  const E = s2E, T = s2T, a = s2at;
+  return [
+    [0, { st: 0, x: 1560, y: 870, pose: 'lecture', facing: -1, look: .5 }],
+    [a(0, '吃什么') - .1, { pose: 'point', look: .8 }],
+    [a(0, '什么时候吃') + .5, { pose: 'lecture', look: .3 }],
+    [a(0, '同样重要'), { pose: 'cross', mood: 'smug', look: .6 }],
+    [E(0) + .05, { st: 1, x: 1560, pose: 'stand', dur: .95 }],
+    [T(1), { pose: 'lecture', look: .6 }],
+    [a(1, '一组只在'), { pose: 'point', look: .9 }],
+    [T(2) - .1, { pose: 'stand', look: .7 }],
+    [a(2, '限时组'), { pose: 'point', look: .9 }],
+    [a(2, '更健康') - .3, { x: 1260, pose: 'stand', look: .9, dur: .6 }],
+    [a(2, '更健康') + .5, { pose: 'cross', mood: 'smug', look: .5 }],
+    [E(2) + .05, { st: 2, x: 1720, pose: 'stand', dur: .95 }],
+    [T(3), { pose: 'point', look: .9 }],
+    [T(4), { pose: 'lecture', look: .3 }],
+    [T(5), { pose: 'cross', mood: 'annoyed', look: -.6 }],
+    [a(5, '你懂的') - .35, { x: 1680, pose: 'stand', mood: 'annoyed', look: .9, dur: .4 }],
+    [a(5, '你懂的') + .2, { pose: 'point', mood: 'annoyed', look: .9 }],
+    [a(5, '你懂的') + .85, { pose: 'cross', mood: 'pout', look: -.5 }],
+    [s2E(5) + .1, { x: 1720, pose: 'stand', look: .6, dur: .4 }],
+    [T(6), { pose: 'lecture', look: .6 }],
+    [a(6, '倒时差') + .3, { pose: 'point', mood: 'annoyed', look: .9 }],
+    [T(7) - .1, { pose: 'lecture', look: .4 }],
+    [a(7, '不算'), { pose: 'cross', mood: 'smug', look: .4 }],
+    [a(7, '就算'), { pose: 'hide', mood: 'flustered', look: .8 }],
+    [E(7) + .05, { st: 3, x: 1690, pose: 'stand', dur: 1 }],
+    [E(7) + 1.1, { y: 745, pose: 'sit', look: .7, dur: .25 }],
+    [a(8, '越多样'), { pose: 'sit', mood: 'smile', look: .8 }],
+    [T(9) - .15, { y: 870, x: 1660, pose: 'stand', mood: 'surprised', look: .8, dur: .3 }],
+    [a(9, '菌群更多样'), { pose: 'point', look: .9 }],
+    [a(9, '炎症') + .4, { pose: 'cross', mood: 'smug', look: .4 }],
+    [T(10), { pose: 'lecture', look: .6 }],
+    [a(10, '点外卖') - .2, { x: 1650, pose: 'lecture', look: .8, dur: .45 }],
+    [a(10, '少点奶茶'), { pose: 'point', mood: 'smug', look: .9 }],
+    [E(10) + .05, { st: 4, x: 1400, pose: 'stand', dur: .95 }],
+    [T(11), { pose: 'stand', mood: 'normal', look: .5, tilt: .03 }],
+    [a(11, '先问医生'), { pose: 'lecture', look: .5 }],
+    [a(11, '别硬饿'), { pose: 'stand', mood: 'smile', tilt: .08, look: .3 }],
+    [E(11) + .15, { x: 1470, pose: 'stand', mood: 'normal', look: -.4, dur: .3 }],
+    [E(11) + .5, { x: 2500, pose: 'stand', mood: 'smug', dur: 1.2 }],
+  ];
+}
+const S2PATK = s2patK();
+function s2patAt(t) {
+  let cur = { ...S2PATK[0][1] }, prev = cur, t0 = 0;
+  for (const [tk, st] of S2PATK) { if (tk > t) break; prev = cur; cur = { ...cur, mood: undefined, tilt: 0, ...st }; t0 = tk; }
+  const wx = S2OX[cur.st] + cur.x, px = S2OX[prev.st] + prev.x, d = cur.dur || 0, u = d ? clamp((t - t0) / d, 0, 1) : 1;
+  if (u >= 1 || (px === wx && prev.y === cur.y)) return { ...cur, wx, wy: cur.y, hop: 0 };
+  const steps = Math.max(1, Math.round(Math.abs(wx - px) / 150)), e = easeIO(u), hop = Math.abs(Math.sin(u * steps * Math.PI)) * (d > .5 ? 26 : 34);
+  return { ...cur, pose: d > .5 ? 'stand' : cur.pose, facing: wx > px ? 1 : wx < px ? -1 : cur.facing, wx: lerp(px, wx, e), wy: lerp(prev.y, cur.y, e), hop, walking: true, tilt: (Math.sin(u * steps * Math.PI * 2) * .05) };
+}
+function s2pat(c, C, t, tau, L) {
+  const ent = t < 1.45 ? 0 : t < 1.8 ? (t - 1.45) / .35 : 1; if (ent <= 0) return;
+  const s = s2patAt(t), [sx, sy] = s2p(C, s.wx, s.wy, 0), k = s2k(C, 0), hh = 520 * k, sit = s.pose === 'sit';
+  if (ent < 1) s.hop += (1 - ent * ent) * 340;
+  // 脚下的影子（顶光：一小团，偏右下；跳起来时影子变淡变小）
+  const fy = sit ? sy + 150 * k : sy, sa = .3 * Math.max(.2, 1 - s.hop / 60);
+  c.save(); c.filter = `blur(${6 * k}px)`; c.fillStyle = `rgba(40,26,22,${sa})`; c.beginPath(); c.ellipse(sx + 16 * k, fy + 6 * k, 70 * k * Math.max(.4, 1 - s.hop / 120), 16 * k, 0, 0, TAU); c.fill(); c.restore();
+  const talking = L.talking && L.line;
+  drawPatchouli(c, { x: sx, y: sy - s.hop * k, h: hh, pose: s.pose, facing: s.facing ?? -1, look: s.look ?? .5, tilt: s.tilt || 0, mood: s.mood || L.mood || 'normal', mouth: talking ? L.mouth : 0, blink: blinkAt(tau, 2), t: tau, gesture: .55 + .35 * Math.sin(tau * 1.3) });
+}
+
+// ===================== 五个工位 =====================
+// A：盘子（吃什么）+ 时钟（什么时候吃）+ 筷子摆成的「=」
+function s2stA(c, C, t) {
+  const ox = S2OX[0], a = s2at;
+  // 桌签（页眉）：一张平放的小纸签，月牙 + 页名
+  s2prism(c, C, s2tf(rectPts(-200, -46, 400, 92, 4), ox + 290, 150, -.035), 3, P.cap, { seed: 2201, step: 30 });
+  { const [sx, sy] = s2p(C, ox + 290, 150, 3), k = s2k(C, 3); c.save(); c.translate(sx, sy); c.rotate(-.035); drawMoonIcon(c, -150 * k, -12 * k, 18 * k, P.moon, -.5); zh(c, '第二页 · 吃饭', -118 * k, 14 * k, { size: 40 * k, color: P.ink2 }); c.restore(); }
+  s2plate(c, C, ox + 720, 500, 150);
+  // 吃什么：饭团、西兰花、煎蛋一样一样挪上盘子
+  const f0 = a(0, '吃什么');
+  const rice = s2mv(t, f0 - .15, .35, -260, 0), brc = s2mv(t, f0 + .15, .35, -240, 0), egg = s2mv(t, f0 + .45, .35, 260, 0);
+  if (t > f0 - .15) { const x = ox + 668 + rice * .3, y = 470 + rice; [[44, 0], [34, 7], [22, 13]].forEach(([r, z], i) => s2prism(c, C, circPts(x - i * 2, y - i * 3, r, 22), 7, '#f7f3ea', { z0: 8 + z, seed: 2210 + i, step: 7, side: mix(P.cap, P.g1, .6), sh: .2 }));
+    s2prism(c, C, s2tf(rectPts(-30, -12, 60, 24, 3), x + 4, y + 26, .1), 3, P.ink2, { z0: 16, seed: 2213, step: 8, sh: .15 }); }
+  if (t > f0 + .15) { const x = ox + 790 + brc * -.2, y = 455 - brc * .2; s2prism(c, C, s2tf(rectPts(-6, -4, 30, 12, 5), x + 8, y + 22, .9), 10, mix(P.green, P.g1, .35), { z0: 8, seed: 2220, step: 6, sh: .2 });
+    [[0, 0, 18], [-16, 10, 13], [14, 12, 13], [-4, -16, 12], [16, -8, 11]].forEach(([u, v, r], i) => s2prism(c, C, circPts(x + u, y + v, r, 12), 10 + (i % 2) * 4, P.green, { z0: 12, seed: 2221 + i, step: 5, sh: .2 })); }
+  if (t > f0 + .45) { const x = ox + 745 + egg * .2, y = 572 + egg * .1; s2prism(c, C, s2tf([[-40, -8], [-22, -30], [8, -34], [36, -18], [40, 10], [22, 30], [-10, 32], [-36, 18]], x, y, .2), 3, '#f7f3ea', { z0: 8, seed: 2230, step: 8, sh: .15 });
+    s2prism(c, C, circPts(x + 4, y - 2, 16, 18), 6, P.moon, { z0: 11, seed: 2231, step: 5, sh: .2 }); }
+  // 什么时候吃：时钟一顿一顿挪进来，指针转两圈停在 12 点
+  const c0 = a(0, '什么时候吃') - .3, cx = s2mv(t, c0, .5, 2150, 1185), sp = s2mv(t, c0 + .3, 1, 0, 1);
+  if (t > c0) s2clock(c, C, ox + cx, 500, 118, { h: 16, hands: [lerp(-2.2, 0, sp), lerp(-TAU * 2 + .9, 0, sp)] });
+  // 同样重要：两根筷子一根一根落下，摆成「=」
+  const e0 = a(0, '同样重要');
+  [[478, 0], [522, .22]].forEach(([y, d], i) => { if (t < e0 + d) return; const z = s2drop(t, e0 + d, 200);
+    s2prism(c, C, s2tf([[-78, -4.5], [74, -3], [78, 0], [74, 3], [-78, 4.5]], ox + 970, y + i * 2, i * .03 - .015), 7, S2C.kraft, { z0: z, seed: 2240 + i, step: 10, side: mix(S2C.kraft, P.ink, .35) }); });
+}
+// B：2012 小鼠实验
+function s2stB(c, C, t) {
+  const ox = S2OX[1], a = s2at, t1 = s2T(1), q0 = a(1, '一组随时'), q1 = a(1, '一组只在'), q8 = a(1, '8 小时'), hf = a(2, '高脂'), hp = a(2, '更健康');
+  // 日历纸「2012」
+  const cy = s2mv(t, t1 - .1, .4, -200, 0); s2prism(c, C, s2tf(rectPts(-95, -70, 190, 140, 3), ox + 170, 190 + cy, .05), 4, P.cap, { seed: 2301, step: 16 });
+  s2prism(c, C, s2tf(rectPts(-95, -70, 190, 30, 2), ox + 170, 190 + cy, .05), 2, P.g3, { z0: 4, seed: 2302, step: 16, sh: .1 });
+  s2txt(c, C, '2012', ox + 172, 232 + cy, 6, 58, { align: 'center', color: P.ink });
+  const fat = 1 + .55 * sm(hf + .5, hf + 1.4, t), sleep = t > hf + 1.5, run = t > hp - .6;
+  // 左笼：随时能吃
+  s2box(c, C, ox + 260, 330, 360, 320, 44, CC => {
+    const cz = s2drop(t, hf, 240); if (t > hf) s2cheese(c, CC, ox + 360, 440, -.4, cz);
+    const mx = ox + 470 - (fat - 1) * 60, my = 520; s2mouse(c, CC, mx, my, 2.8 - (fat - 1) * .6, { fat, sleep, t });
+    if (sleep) for (let i = 0; i < 3; i++) { const u = ((t - hf - 1.5) * .7 + i / 3) % 1, [zx, zy] = s2p(CC, mx - 40 + u * 30, my - 50 - u * 60, 60); zh(c, 'z', zx, zy, { size: (18 + u * 16) * s2k(CC, 60), color: P.ink2, al: Math.sin(u * Math.PI) }); } });
+  // 右笼：只在 8 小时里吃；吃完绕着笼子跑圈，撒金纸屑
+  s2box(c, C, ox + 720, 330, 360, 320, 44, CC => {
+    const cz = s2drop(t, hf + .15, 240); if (t > hf + .15) s2cheese(c, CC, ox + 820, 440, .3, cz, t > hp - .6 ? .7 : 1);
+    const ang = run ? (t - hp + .6) * 3.2 : 0, rx = ox + 900 + Math.cos(ang) * 95 * (run ? 1 : 0), ry = 490 + Math.sin(ang) * 80 * (run ? 1 : 0);
+    if (run) for (let j = 0; j < 26; j++) { const b = hp - .6 + j * .22; if (t < b || t > b + 2.6) continue; const ba = (b - hp + .6) * 3.2, u = clamp((t - b) / .4, 0, 1), bx = ox + 900 + Math.cos(ba) * 95 + (hash(j, 3) - .5) * 30, by = 490 + Math.sin(ba) * 80 + (hash(j, 4) - .5) * 30;
+      s2prism(c, CC, s2tf(rectPts(-5, -3, 10, 6), bx, by, hash(j, 5) * 3), 1, P.moon, { z0: Math.sin(u * Math.PI) * 50, seed: 2320 + j, step: 4, sh: .15, gr: 0, al: 1 - sm(b + 2, b + 2.6, t) }); }
+    s2mouse(c, CC, run ? rx : ox + 930, run ? ry : 520, run ? ang + Math.PI / 2 : 2.9, { t, run: run ? 1 : 0 }); });
+  // 两只 24 小时小钟：左边一整圈都能吃，右边只有 8 小时
+  const cL = s2mv(t, q0 - .3, .4, -260, 0), cR = s2mv(t, q1 - .3, .4, -260, 0);
+  if (t > q0 - .3) s2clock(c, C, ox + 440, 210 + cL, 70, { h: 10, dial: 24, sector: [0, 24 * sm(q0, q0 + .8, t, easeOut)] });
+  if (t > q1 - .3) s2clock(c, C, ox + 900, 210 + cR, 70, { h: 10, dial: 24, sector: [8, 8 * sm(q8 - .3, q8 + .3, t, easeOut)] });
+  // 纸条：随时吃 / 8 小时
+  if (t > q0 + .2) s2slip(c, C, ox + 440, 720 + s2mv(t, q0 + .2, .35, 200, 0), 190, 64, '随时吃', { size: 38, a: -.02, seed: 2330 });
+  if (t > q8 - .1) s2slip(c, C, ox + 900, 722 + s2mv(t, q8 - .1, .35, 200, 0), 210, 76, '8 小时', { size: 54, a: .02, seed: 2331 });
+  if (t > hp) { const [sx, sy] = s2p(C, ox + 1050, 716, 2); check(c, sx, sy, 56 * s2k(C, 2), { p: sm(hp, hp + .3, t), seed: 2332 }); }
+}
+// C：手风琴折页时间带
+const S2H = h => 150 + (h - 7) * 75;          // 小时 → 工位 C 里的 x（7:00 → 150，凌晨 1:36 → 1545）
+const S2ROW = { y: 470, h: 96, gap: 110 };
+function s2strip(c, C, ox, y, o = {}) {
+  const { u = 1, day = '', al = 1 } = o, x0 = ox + 100, x1 = ox + S2H(25.6), len = (x1 - x0) * u; if (al <= 0) return;
+  c.save(); c.globalAlpha *= al;
+  const path = s2prism(c, C, rectPts(x0, y, len, S2ROW.h), 3, P.cap, { seed: 2401 + (y | 0) % 13, step: 40 });
+  const k = s2k(C, 3), sy0 = s2p(C, 0, y, 3)[1], sy1 = s2p(C, 0, y + S2ROW.h, 3)[1];
+  if (path) { c.save(); c.clip(path);
+    // 夜里那一截（24 点以后）是深色纸
+    const n0 = s2p(C, ox + S2H(24), 0, 3)[0]; c.fillStyle = P.night2; c.fillRect(n0, sy0 - 2, W, sy1 - sy0 + 4);
+    // 折痕：每小时一道，山折谷折交替明暗
+    for (let h = 7; h < 25.6; h++) { const xa = s2p(C, ox + S2H(h), 0, 3)[0], xb = s2p(C, ox + S2H(h + 1), 0, 3)[0]; if (h % 2) { c.fillStyle = 'rgba(60,40,30,.025)'; c.fillRect(xa, sy0, xb - xa, sy1 - sy0); }
+      c.fillStyle = 'rgba(60,40,30,.09)'; c.fillRect(xa - .5, sy0, 1.2, sy1 - sy0); }
+    c.fillStyle = 'rgba(60,40,30,.12)'; const tx = s2p(C, ox + 150, 0, 3)[0]; c.fillRect(tx - 1, sy0, 2, sy1 - sy0);
+    c.restore();
+    for (const h of [7, 12, 18, 24]) if (ox + S2H(h) + 20 < x0 + len) s2txt(c, C, String(h), ox + S2H(h) + 6, y + 25, 3, 23, { color: h === 24 ? P.g1 : P.ink2 });
+    if (day) s2txt(c, C, day, ox + 125, y + S2ROW.h / 2 + 12, 3, 34, { align: 'center', color: P.ink });
   }
-  // 左笼三只：吃、吃、晃悠 → 变胖、没精神
-  const fat = sm(tf, tf + 1.1, tau), sleepy = sm(tf + .8, tf + 1.0, tau);
-  const mice = [[245, 1, 0], [540, -1, 1], [745, -1, 2]];
-  mice.forEach(([mx, face, k]) => {
-    const ka = s2pop(tau, t2 + .9 + k * .18, .4); if (ka <= 0) return;
-    let xx = mx, ff = face, eat = k < 2 && fat < .5 ? 1 : 0;
-    if (k === 2) { xx = mx + (1 - fat) * 36 * Math.sin(tau * .9); ff = Math.cos(tau * .9) > 0 ? 1 : -1; if (fat > .5) ff = -1; }
-    pop(c, xx, gy, ka, () => s2Mouse(c, xx, gy, 1.2, { face: ff, t: tau, seed: 3 + k * 10, fat, sleepy, eat, hop: k === 2 && fat < .3 ? Math.abs(Math.sin(tau * 3.6)) * 6 : 0 }));
-    if (sleepy > 0) for (let z = 0; z < 3; z++) { const u = ((tau - tf) * .6 + z / 3 + k * .21) % 1;
-      zh(c, 'z', xx + face * 40 + u * 40, gy - 130 - fat * 30 - u * 70, { size: 32 + z * 6, color: P.ink2, al: sleepy * Math.sin(u * Math.PI) }); }
-  });
-  // 右笼：两只吃饭 + 一只在跑轮里
-  const running = sm(tRun, tRun + .4, tau), wx = 1640, wy = gy - 130, wr = 100;
-  if (cp > .6) fade(c, sm(t2 + .6, t2 + 1, tau), () => s2Wheel(c, wx, wy, wr, (tau > tRun ? (tau - tRun) * running * 7 : 0), tau));
-  [[1150, 1, 0], [1440, -1, 1]].forEach(([mx, face, k]) => {
-    const ka = s2pop(tau, t2 + 1.0 + k * .18, .4); if (ka <= 0) return;
-    const eat = fillR > .5 && running < .5 ? 1 : 0, hop = running * Math.abs(Math.sin(tau * 6 + k * 1.3)) * 22;
-    pop(c, mx, gy, ka, () => s2Mouse(c, mx, gy, 1.2, { face, t: tau, seed: 40 + k * 10, eat, hop }));
-  });
-  if (running > .5) for (let k = 0; k < 3; k++) { const u = (tau * 3 + k / 3) % 1; rline(c, [[wx - 60 - u * 30, wy + wr - 50 + k * 16], [wx - 100 - u * 30, wy + wr - 50 + k * 16]], { w: 3, color: P.ink2, al: 1 - u, seed: 150 + k, t: tau }); }
-  const kw = s2pop(tau, t2 + 1.4, .4);
-  pop(c, wx, wy + wr - 12, kw, () => s2Mouse(c, wx, wy + wr - 12 - (running ? Math.abs(Math.sin(tau * 12)) * 5 : 0), .95, { face: 1, t: tau, seed: 60, run: running > .5 ? 1 : 0 }));
-  if (running > 0) for (let k = 0; k < 5; k++) { const u = ((tau - tRun) * .9 + k / 5) % 1, sx = wx + (k - 2) * 46 + Math.sin(u * 5 + k) * 14;
-    s2Star(c, sx, wy - wr - 10 - u * 120, 18 * (1 - u * .4), u * 3 + k, k % 2 ? P.sun : P.moon, tau, running * Math.sin(u * Math.PI)); }
-  cages.forEach(([x, y, w, h]) => s2CageFront(c, x, y, w, h, tau, cp));
-  // 「高脂饲料」签
-  const kc = s2pop(tau, tc - .15, .5);
-  pop(c, CX, 222, kc, () => {
-    rshape(c, rectPts(CX - 150, 188, 300, 64, 18), { fill: P.sun, stroke: P.ink, w: 4, seed: 130, t: tau });
-    zh(c, '高脂饲料', CX, 236, { size: 44, align: 'center' });
-  });
-  // 结果章
-  s2Stamp(c, 450, 470, '变胖 · 没精神', P.red, clamp((tau - (t3 + 2.1)) / .35, 0, 1), -.08, tau, 50);
-  s2Stamp(c, 1320, 470, '更健康！', P.green, clamp((tau - (t3 + 3.25)) / .35, 0, 1), .07, tau, 56);
-  if (tau > t3 + 3.4) for (let k = 0; k < 5; k++) { const u = clamp((tau - t3 - 3.4 - k * .06) / .6, 0, 1), a = k / 5 * TAU - .5;
-    if (u < 1) sparkle(c, 1320 + Math.cos(a) * (120 + u * 60), 470 + Math.sin(a) * (50 + u * 40), 16 * (1 - u), { color: P.moon }); }
+  // 还没展开的那一叠（手风琴）
+  if (u < 1) { const fx = x0 + len, left = Math.ceil((1 - u) * 25); s2prism(c, C, rectPts(fx - 4, y - 2, 30, S2ROW.h + 4), 4 + left * 1.6, P.cap, { seed: 2409, step: 20, side: mix(P.cap, P.g2, .5), layer: 1.6 }); }
   c.restore();
-  // Q 版帕秋莉从右下角探头
-  const kp = sm(t2 + .3, t2 + .9, tau, easeOutBack) * (1 - sm(e3 - .2, e3 + .2, tau));
-  if (kp > 0) drawPatchouliChibi(c, { x: lerp(2080, 1830, kp), y: 1090, h: 250, facing: -1, pose: 'stand', mood: (L && L.mood) || 'normal', mouth: (L && L.mouth) || 0, blink: blinkAt(tau, 4), t: tau });
+}
+// 一行的遮条（早上 1 小时、睡前 2–3 小时）
+function s2covers(c, C, ox, y, t, o = {}) {
+  const { m = 1, e = 1, al = 1, eo = 0, eal = 1 } = o; if (al <= 0) return;
+  if (m > 0) s2prism(c, C, rectPts(ox + S2H(7) - 3, y - 6 - (1 - m) * 200, S2H(8) - S2H(7) + 3, S2ROW.h + 12, 2), 3, P.g1, { z0: 3, seed: 2420, step: 20, al: al * Math.min(1, m * 3), side: mix(P.g1, P.ink, .3) });
+  if (e > 0 && eal > 0) { const dy = -(1 - e) * 200 + eo; c.save(); c.globalAlpha *= eal; vellum(c, s2P(C, rectPts(ox + S2H(21), y - 6 + dy, S2H(22) - S2H(21), S2ROW.h + 12, 2), 6), { seed: 2421, al: al * Math.min(1, e * 3) * 1.2 });
+    s2prism(c, C, rectPts(ox + S2H(22), y - 6 + dy, S2H(24) - S2H(22), S2ROW.h + 12, 2), 3, P.g1, { z0: 3, seed: 2422, step: 20, al: al * Math.min(1, e * 3), side: mix(P.g1, P.ink, .3) }); c.restore(); }
+}
+// 每天三顿饭的时刻（碗）：稳定前各天乱跳，稳定后对齐
+const S2MEAL = [9, 12.5, 18.5];
+function s2mealOff(i, j, t) {
+  const st = s2at(6, '稳定') + i * .16, g = s2at(6, '倒时差');
+  let d = (hash(i * 3 + j, 71) - .5) * 3.4 * (i || j !== 1 ? 1 : .7);
+  const scatter = sm(s2T(6) + .5 + i * .1, s2T(6) + .8 + i * .1, t, easeOutBack), align = sm(st, st + .3, t, easeOutBack);
+  let v = d * scatter * (1 - align);
+  if (i === 4) { const px = s2planeX(t), hit = px > S2H(S2MEAL[j]) + 40; if (hit && t < g + 1.95) v += [1.4, -1.1, 1.7][j] * (1 - sm(g + 1.6, g + 1.9, t, easeOutBack)); }
+  return v;
+}
+function s2planeX(t) { const g = s2at(6, '倒时差'); return lerp(-150, 1900, clamp((t - g + .1) / 1.3, 0, 1)); }
+function s2stC(c, C, t) {
+  const ox = S2OX[2], a = s2at, t3 = s2T(3), t6 = s2T(6), t7 = s2T(7), sg = a(7, '一勺糖'), js = a(7, '就算');
+  const u = sm(t3 - .45, t3 + .9, t, x => x);
+  // 五天：其余四条从第一条底下抽出来，上下散开成一周；L8 前收回去
+  const ex = i => Math.min(sm(t6 + .1 + Math.abs(i - 2) * .08, t6 + .5 + Math.abs(i - 2) * .08, t, easeOut), 1 - sm(t7 - .35 + (4 - i) * .05, t7 + .05 + (4 - i) * .05, t, easeIO));
+  const rowY = i => S2ROW.y + (i - 2) * S2ROW.gap * ex(i), y0 = rowY(0), gone = sm(js + .35, js + .7, t, easeIn);
+  for (const i of [4, 3, 2, 1, 0]) { const k = ex(i); if (i && k <= 0) continue; const y = rowY(i), day = k > .5 ? '一二三四五'[i] : '';
+    s2strip(c, C, ox, y, { u: i ? 1 : u, day });
+    if (u >= 1) s2covers(c, C, ox, y, t, { m: sm(a(3, '起床后') - .1, a(3, '起床后') + .35, t, easeOut), e: sm(a(4, '睡前') - .1, a(4, '睡前') + .35, t, easeOut), eo: i === 0 ? -520 * gone : 0, eal: i === 0 ? 1 - gone : 1 });
+    // 三顿饭（碗）
+    const mt = a(4, '不再进食');
+    S2MEAL.forEach((h, j) => { if (t < mt + j * .14) return; const d = s2mealOff(i, j, t), z = s2drop(t, mt + j * .14, 180), hit = i === 4 && s2planeX(t) > S2H(h) + 40 && t < a(6, '倒时差') + 1.9;
+      s2bowl(c, C, ox + S2H(h + d), y + 58 + (hit ? [22, -18, 16][j] : 0), 26, { z0: z }); });
+  }
+  // 太阳、月亮贴纸（贴在第一天那条上）
+  if (t > a(3, '起床后') + .3) { const z = s2drop(t, a(3, '起床后') + .3, 160); s2prism(c, C, starPts(ox + S2H(7) + 36, y0 - 26, 30, 10, .62), 3, P.moon, { z0: z, seed: 2430, step: 5, sh: .25 }); s2prism(c, C, circPts(ox + S2H(7) + 36, y0 - 26, 17, 16), 2, mix(P.moon, '#ffffff', .25), { z0: z + 3, seed: 2431, step: 5, sh: 0 }); }
+  if (t > a(4, '睡前') + .3) { const z = s2drop(t, a(4, '睡前') + .3, 160); s2prism(c, C, crescentPts(ox + S2H(24.9), y0 + 54, 24, -.5, 48), 3, P.moon, { z0: z, seed: 2432, step: 5, sh: .25 }); }
+  // 纸条：1 小时 / 2–3 小时（五天那句收走）
+  const slipA = 1 - sm(t6 - .2, t6 + .1, t);
+  if (t > a(3, '1 小时') - .1 && slipA > 0) s2slip(c, C, ox + S2H(7.5) + 20, y0 - 110 - (1 - slipA) * 400 + s2mv(t, a(3, '1 小时') - .1, .35, -260, 0), 170, 70, '1 小时', { size: 46, a: -.03, seed: 2440 });
+  if (t > a(4, '2 到 3') - .1 && slipA > 0) s2slip(c, C, ox + S2H(22.5), y0 - 110 - (1 - slipA) * 400 + s2mv(t, a(4, '2 到 3') - .1, .35, -260, 0), 230, 70, '2–3 小时', { size: 46, a: .025, seed: 2441 });
+  // 凌晨一点：炸鸡外卖从天而降落在夜里那截上，盖一个墨色 ×，被帕秋莉一脚踢出桌外
+  const bt = a(5, '炸鸡') - .2, bk = a(5, '你懂的') + .3;
+  if (t > bt && t < bk + 1) { const z = s2drop(t, bt, 420, .4), fly = sm(bk, bk + .5, t, easeIn), x = ox + S2H(25) + fly * 900, y = y0 + 40 - fly * 700 + Math.sin(fly * Math.PI) * -100;
+    s2bag(c, C, x, y, .12 + fly * 4, z + fly * 200); if (fly <= 0) s2cross(c, C, x, y + 10, 96, z + 38, a(5, '嗯'), t); }
+  // 倒时差：一架纸飞机从第五天上面掠过，把碗撞歪
+  const px = s2planeX(t); if (px > -140 && px < 1880) s2plane(c, C, ox + px, rowY(4) + 40 + Math.sin(px / 180) * 24, .12 * Math.cos(px / 180), 70);
+  // 饮料：白水、茶、黑咖啡立在睡前那段上方；一勺糖倒进咖啡
+  const dA = 1 - sm(s2E(7) + .05, s2E(7) + .35, t), cy = y0 - 86 - (1 - dA) * 500;
+  [['water', a(7, '白水'), 1236], ['tea', a(7, '茶'), 1330], ['coffee', a(7, '不加糖'), 1428]].forEach(([k, t0, x], i) => { if (t < t0 - .15) return;
+    s2cup(c, C, ox + x, cy, k, { z0: s2drop(t, t0 - .15, 200) });
+    const ck = a(7, '不算') + i * .15, [sx, sy] = s2p(C, ox + x, cy - 92, 0);
+    if (t > ck && !(k === 'coffee' && t > js)) check(c, sx, sy, 50, { p: sm(ck, ck + .25, t), seed: 2450 + i }); });
+  if (t > sg - .5 && dA > 0) { const u2 = s2mv(t, sg - .5, .5, 0, 1), tilt = sm(sg + .2, sg + .5, t), away = sm(js + .6, js + 1, t, easeIn), x = ox + lerp(1780, 1520, u2) + away * 300, y = cy - 70 + lerp(-300, 0, u2) - away * 300;
+    s2spoon(c, C, x, y, -.5 - tilt * .6, 110, 1 - tilt);
+    for (let j = 0; j < 8; j++) { const b = sg + .3 + j * .03, v = clamp((t - b) / .3, 0, 1); if (v <= 0) continue; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ox + 1428 + (hash(j, 8) - .5) * 30, cy + (hash(j, 9) - .5) * 26, j), 3, '#f7f3ea', { z0: lerp(110, 46, v), seed: 2460 + j, step: 4, sh: .12, gr: 0 }); }
+    if (t > js) s2cross(c, C, ox + 1428, cy, 70, 60, js, t); }
+}
+// D：衍纸肠道 + 小菌 + 发酵食品
+function s2stD(c, C, t) {
+  const ox = S2OX[3], a = s2at, t8 = s2T(8), t9 = s2T(9), t10 = s2T(10), jf = a(9, '发酵'), ya = a(8, '小居民'), dv = a(8, '越多样'), yz = a(9, '炎症');
+  const build = sm(t8 - .2, t8 + 1.2, t, x => x), n = Math.max(2, Math.floor(build * S2GUT.q.length)), wg = pts => pts.slice(0, n).map(([x, y]) => [ox + x, y]);
+  const dim = 1 - .45 * sm(s2E(10) + .05, s2E(10) + .6, t);
+  c.save(); c.globalAlpha *= dim;
+  // 槽底一条白纸 + 两道粉色衍纸边
+  if (build > 0) { const band = wg(S2GUT.l).concat(wg(S2GUT.r).reverse()); s2prism(c, C, band, 2, mix(P.cap, P.blush, .12), { seed: 2501, step: 40, sh: .15 });
+    s2wall(c, C, wg(S2GUT.l), 24, S2C.gut); s2wall(c, C, wg(S2GUT.r), 24, S2C.gut); }
+  // 炎症：五朵金色小火苗，菌多了一朵朵熄掉
+  [300, 1000, 1500, 2150, 2800].forEach((s, j) => { const on = sm(t9 + .3 + j * .12, t9 + .45 + j * .12, t, easeOutBack), off = sm(yz + j * .18, yz + .2 + j * .18, t); if (on <= 0) return; const [x, y] = s2gutAt(s, (j % 2 ? 1 : -1) * 12);
+    s2flame(c, C, ox + x, y, on * (1 - off), t, 2510 + j);
+    if (off > 0 && off < 1 || (t > yz + j * .18 && t < yz + j * .18 + .9)) { const v = clamp((t - yz - j * .18) / .9, 0, 1), [sx, sy] = s2p(C, ox + x, y - v * 40, 20); c.strokeStyle = alpha(P.g2, .7 * (1 - v)); c.lineWidth = 2; c.beginPath(); for (let i = 0; i < 16; i++) { const th = i / 16 * TAU * 1.5, rr = 3 + i * .8; c.lineTo(sx + Math.cos(th) * rr, sy + Math.sin(th) * rr); } c.stroke(); } });
+  // 小菌：先 8 个一样的小灰球，「越多样」时一个个换成不同的样子（替换动画），发酵罐倒进来更多
+  for (let k0 = 0; k0 < 40; k0++) {
+    const old = k0 < 8, born = old ? ya + k0 * .09 : jf + .35 + (k0 - 8) * .09; if (t < born) continue;
+    const type = old && t < dv + k0 * .07 ? 'ball' : S2BUGT[(k0 * 5 + 3) % S2BUGT.length], col = old && t < dv + k0 * .07 ? P.g2 : S2BUGC[(k0 * 3 + 1) % S2BUGC.length];
+    const s0 = 120 + hash(k0, 21) * (S2GUT.L - 240), lat = (hash(k0, 22) - .5) * 40;
+    let s, zz = 0, x, y, ang;
+    if (old) { s = (s0 + (t - born) * 9) % S2GUT.L; [x, y, ang] = s2gutAt(s, lat); }
+    else { const v = (t - born) / .45; if (v < 1) { x = lerp(1040, 900, v); y = lerp(255, 240, v) + (hash(k0, 23) - .5) * 30; zz = Math.sin(v * Math.PI) * 70; ang = hash(k0, 24) * 6; }
+      else { s = Math.min(s0, (t - born - .45) * 520) + Math.max(0, t - born - .45 - s0 / 520) * 9; [x, y, ang] = s2gutAt(s, lat * Math.min(1, (t - born - .45) * 3)); } }
+    const pop = old ? sm(born, born + .2, t, easeOutBack) * (t > dv + k0 * .07 && t < dv + k0 * .07 + .17 ? 1.35 : 1) : 1;
+    c.save(); if (zz) { c.globalAlpha *= 1; } s2bug(c, C, ox + x, y, ang + t * .3 * (k0 % 2 ? 1 : -1), type, col, pop, 2520 + k0); c.restore();
+  }
+  c.restore();
+  // 纸条：菌群 / 多样 ✓ / 炎症 ↓
+  const sa = 1 - sm(t10 - .3, t10, t);
+  if (t > a(8, '菌群') - .1 && sa > 0) s2slip(c, C, ox + 1150, 460 + s2mv(t, a(8, '菌群') - .1, .35, 260, 0) - (1 - sa) * 600, 180, 82, '菌群', { size: 56, a: -.03, seed: 2560 });
+  if (t > dv && sa > 0) { s2slip(c, C, ox + 1150, 565 + s2mv(t, dv, .35, 260, 0) - (1 - sa) * 600, 150, 64, '多样', { size: 40, a: .02, seed: 2561, ox: -16 }); const [sx, sy] = s2p(C, ox + 1195, 562 - (1 - sa) * 600, 2); if (t > dv + .35) check(c, sx, sy, 40, { p: sm(dv + .35, dv + .6, t), seed: 2562 }); }
+  if (t > yz - .1 && sa > 0) { s2slip(c, C, ox + 1150, 668 + s2mv(t, yz - .1, .35, 260, 0) - (1 - sa) * 600, 170, 66, '炎症', { size: 40, a: -.02, seed: 2563, ox: -20 }); const [sx, sy] = s2p(C, ox + 1205, 668 - (1 - sa) * 600, 2);
+    if (t > yz + .35) arrow(c, [sx, sy - 22], [sx, sy + 20], { w: 4, head: 11, color: P.green, p: sm(yz + .35, yz + .6, t), seed: 2564 }); }
+  // 发酵罐（泡菜）：掀布盖、侧倒、把一群五花八门的小菌倒进肠道；L11 扶正，挪去和酸奶、纳豆排一排
+  const lidOff = s2mv(t, jf - .5, .35, 0, 1), tip = t > jf - .15 && t < t10 - .2 ? 1 : 0, jx = s2mv(t, t10 - .2, .4, 1140, 1265), jy = s2mv(t, t10 - .2, .4, 250, 250);
+  if (t > t9 - .4) { const z = s2drop(t, t9 - .4, 220); c.save(); if (z) c.translate(0, 0);
+    s2jar(c, C, ox + jx + (tip ? 20 : 0), jy, { lid: t < t10 - .2 ? 1 : 0, lidX: lidOff * 140, lidY: lidOff * -90, tip });
+    c.restore(); if (t < jf) s2slip(c, C, ox + 1140, 350, 110, 50, '发酵', { size: 30, a: .08, seed: 2570, al: 1 - sm(jf - .5, jf - .2, t) }); }
+  // 无糖酸奶、泡菜、纳豆 ✓；外卖盒加蔬菜粗粮；奶茶缩小
+  const yo = a(10, '无糖酸奶'), pc = a(10, '泡菜'), nd = a(10, '纳豆'), tk = a(10, '点外卖'), vg = a(10, '蔬菜粗粮'), mt = a(10, '少点奶茶');
+  if (t > yo - .2) s2cup(c, C, ox + 1085, 250, 'yogurt', { z0: s2drop(t, yo - .2, 200) });
+  if (t > nd - .2) { const z = s2drop(t, nd - .2, 200); s2prism(c, C, rectPts(ox + 1395, 200, 100, 96, 6), 26, P.cap, { z0: z, seed: 2580, step: 12 }); const [sx, sy] = s2p(C, ox + 1445, 248, z + 26), k = s2k(C, z + 26);
+    c.fillStyle = mix(P.paperEdge, P.ink2, .3); for (let i = 0; i < 16; i++) { c.beginPath(); c.ellipse(sx + (hash(i, 31) - .5) * 64 * k, sy + (hash(i, 32) - .5) * 60 * k, 7 * k, 5.5 * k, hash(i, 33) * 3, 0, TAU); c.fill(); }
+    c.strokeStyle = alpha('#ffffff', .7); c.lineWidth = .8 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(sx + (hash(i, 34) - .5) * 60 * k, sy + (hash(i, 35) - .5) * 50 * k); c.quadraticCurveTo(sx, sy - 30 * k, sx + (hash(i, 36) - .5) * 60 * k, sy + (hash(i, 37) - .5) * 50 * k); c.stroke(); } }
+  [[yo, 1085], [pc, 1265], [nd, 1445]].forEach(([t0, x], i) => { const ck = t0 + .5; if (t < ck) return; const [sx, sy] = s2p(C, ox + x, 130, 0); check(c, sx, sy, 50, { p: sm(ck, ck + .25, t), seed: 2590 + i }); });
+  if (t > tk - .2) { const z = s2drop(t, tk - .2, 200), bxx = ox + 1040, byy = 470;
+    s2prism(c, C, rectPts(bxx, byy, 260, 170, 6), 34, P.cap, { z0: z, seed: 2600, step: 14, noTop: false });
+    const zt = z + 34, k = s2k(C, zt), q = s2P(C, rectPts(bxx + 10, byy + 10, 240, 150), zt); c.fillStyle = mix(P.cap, P.g1, .4); c.fill(polyPath(q));
+    const dvd = s2P(C, [[bxx + 130, byy + 8], [bxx + 130, byy + 162]], zt); c.strokeStyle = P.cap; c.lineWidth = 6 * k; c.beginPath(); c.moveTo(...dvd[0]); c.lineTo(...dvd[1]); c.stroke();
+    for (let i = 0; i < 6; i++) s2prism(c, C, ellPts(bxx + 40 + (i % 3) * 32, byy + 50 + Math.floor(i / 3) * 60, 18, 13, 12, i), 8, mix(P.paperEdge, P.moon, .3), { z0: zt, seed: 2605 + i, step: 5, sh: .15 });
+    for (let i = 0; i < 9; i++) { const b = vg - .1 + i * .08; if (t < b) continue; const zz = zt + s2drop(t, b, 160, .3), x = bxx + 160 + (i % 3) * 32 + (hash(i, 41) - .5) * 10, y = byy + 38 + Math.floor(i / 3) * 44;
+      if (i % 2 === 0) s2prism(c, C, s2tf([[-18, 0], [-6, -10], [14, -8], [20, 0], [14, 8], [-6, 10]], x, y, hash(i, 42) * 3), 4, P.green, { z0: zz, seed: 2610 + i, step: 5, sh: .15 });
+      else for (let g = 0; g < 4; g++) s2prism(c, C, ellPts(x + (g % 2) * 12 - 6, y + (g > 1 ? 8 : -8), 6, 4, 8, g), 3, mix(P.paperEdge, P.cap, .3), { z0: zz, seed: 2620 + i * 4 + g, step: 3, sh: .12, gr: 0 }); } }
+  if (t > tk) { const s = t < mt + .1 ? 1 : t < mt + .2 ? .8 : t < mt + .3 ? .58 : .62; s2cup(c, C, ox + 1420, 700, 'milktea', { s, z0: s2drop(t, tk, 200) }); }
+  // 帕秋莉坐的那摞书
+  if (t > t8 - .5 && t < t9 + .5) { const al = 1 - sm(t9 - .1, t9 + .3, t); [[P.g3, 0, 60], [P.paperEdge, .06, 40], [P.purple, -.04, 20]].forEach(([col, rot, z], i) => s2prism(c, C, s2tf(rectPts(-110, -70, 220, 140, 5), ox + 1690, 790 - i * 6, rot), 20, col, { z0: 40 - z + 0, seed: 2630 + i, step: 20, al })); }
+}
+// E：折起来的便条 + 桌布上的缝线（出场）
+function s2stE(c, C, t) {
+  const ox = S2OX[4], a = s2at, t11 = s2T(11), e11 = s2E(11), pull = sm(e11 + .55, S2DUR - .85, t, easeIO);
+  // 缝线：一段段穿进桌布的平针线，被拉直
+  const pt = s2patAt(t), drag = t > e11 + .45, x0 = ox + 30, x1 = drag ? Math.min(ox + 2600, pt.wx + 10) : ox + 2600, yy = S2END.y, k = s2k(C, 0);
+  if (drag && pull < 1) { const f = s2p(C, x1, yy), hp = s2p(C, pt.wx, pt.wy), kk = s2k(C, 0); c.save(); c.strokeStyle = S2C.thread; c.lineWidth = 3 * kk; c.lineCap = 'round'; c.beginPath(); c.moveTo(...f); c.quadraticCurveTo(f[0] - 10 * kk, hp[1] - 120 * kk, hp[0] - 14 * kk, hp[1] - (210 + pt.hop) * kk); c.stroke(); c.restore(); }
+  if (pull >= 1) { const sy = s2p(C, 0, yy)[1]; rline(c, [[-20, sy], [W + 20, sy]], { w: 3, color: S2C.thread, seed: 2002, amp: .3 }); }
+  else { const a0 = s2p(C, x0, yy), a1 = s2p(C, x1, yy), w = lerp(3 * k, 3, pull), dash = 36 * k, gap = 22 * k * (1 - pull);
+    c.save(); c.strokeStyle = S2C.thread; c.lineWidth = w; c.lineCap = 'round'; if (gap > .5) c.setLineDash([dash, gap]); c.lineDashOffset = -pull * 400 * k;
+    c.beginPath(); c.moveTo(a0[0], a0[1]); for (let i = 1; i <= 60; i++) { const u = i / 60, wx = lerp(x0, x1, u), wy = yy + Math.sin(u * 40) * 3 * (1 - pull); const p = s2p(C, wx, wy); c.lineTo(p[0], p[1]); } c.stroke(); c.restore();
+    if (gap > .5) { c.save(); c.globalAlpha = (1 - pull) * .5; c.strokeStyle = 'rgba(60,40,30,.25)'; c.lineWidth = 1; for (let wx = x0; wx < x1; wx += 58) { const p = s2p(C, wx - 11, yy); c.beginPath(); c.arc(p[0], p[1], 1.6 * k, 0, TAU); c.stroke(); } c.restore(); } }
+  // 便条：折成四分之一的一张纸，一顿一顿打开
+  const n0 = t11 - .2, o1 = sm(n0 + .3, n0 + .55, t, easeOut), o2 = sm(n0 + .7, n0 + .95, t, easeOut), nx = ox + 800, ny = 420, nw = 580, nh = 420, fa = 1 - sm(e11 + .15, e11 + .5, t);
+  if (t > n0 && fa > 0) { const z = s2drop(t, n0, 220), w = nw * lerp(.5, 1, o1), hh = nh * lerp(.5, 1, o2);
+    c.save(); c.globalAlpha *= 1; const lift = (1 - fa) * -700;
+    s2prism(c, C, rectPts(nx - w / 2, ny - hh / 2 + lift, w, hh, 3), 3, P.cap, { z0: z, seed: 2701, step: 26 });
+    // 折痕
+    const kk = s2k(C, z + 3), m0 = s2p(C, nx, ny - hh / 2 + lift, z + 3), m1 = s2p(C, nx, ny + hh / 2 + lift, z + 3), h0 = s2p(C, nx - w / 2, ny + lift, z + 3), h1 = s2p(C, nx + w / 2, ny + lift, z + 3);
+    c.strokeStyle = 'rgba(60,40,30,.18)'; c.lineWidth = 1.5 * kk; if (o1 > .9) { c.beginPath(); c.moveTo(...m0); c.lineTo(...m1); c.stroke(); } if (o2 > .9) { c.beginPath(); c.moveTo(...h0); c.lineTo(...h1); c.stroke(); }
+    if (o2 >= 1) {
+      const cz = z + 3; s2prism(c, C, [[-10, -34], [10, -34], [10, -10], [34, -10], [34, 10], [10, 10], [10, 34], [-10, 34], [-10, 10], [-34, 10], [-34, -10], [-10, -10]].map(([u, v]) => [nx - 190 + u * 1.25, ny - 56 + lift + v * 1.25]), 3, P.green, { z0: cz, seed: 2710, step: 8, sh: .2 });
+      s2txt(c, C, '胃不好', nx - 120, ny - 80 + lift, cz, 50, { color: P.ink, p: writeP(t, n0 + 1, '胃不好', .08) });
+      s2txt(c, C, '有进食困扰', nx - 120, ny + 2 + lift, cz, 50, { color: P.ink, p: writeP(t, a(11, '进食方面'), '有进食困扰', .08) });
+      s2txt(c, C, '→ 先问医生', nx - 210, ny + 128 + lift, cz, 60, { color: P.ink, p: writeP(t, a(11, '先问医生'), '→ 先问医生', .08) });
+      if (t > a(11, '先问医生') + .5) { const u0 = s2p(C, nx - 150, ny + 148 + lift, cz), u1 = s2p(C, nx + 200, ny + 148 + lift, cz); rline(c, [u0, u1], { w: 3, color: P.green, p: sm(a(11, '先问医生') + .5, a(11, '先问医生') + .8, t), seed: 2711 }); } }
+    c.restore(); }
+  // 别硬饿：一只小饭团被推到便条旁边
+  const og = a(11, '别硬饿'); if (t > og && fa > 0) { const x = ox + s2mv(t, og, .45, 1300, 1080), y = 590 - (1 - fa) * 700;
+    s2prism(c, C, [[0, -46], [30, -30], [46, 22], [34, 40], [-34, 40], [-46, 22], [-30, -30]].map(([u, v]) => [x + u, y + v]), 16, '#f7f3ea', { seed: 2720, step: 8, side: mix(P.cap, P.g1, .6) });
+    s2prism(c, C, rectPts(x - 26, y + 8, 52, 34, 3), 2, P.ink2, { z0: 16, seed: 2721, step: 8, sh: .12 }); }
 }
 
-// ===================== L4–L6：一天的时间轴 =====================
-const S2TL = { x0: 800, x1: 1780, y: 430, h: 70 };
-const s2hx = (hh, x0 = S2TL.x0, x1 = S2TL.x1) => lerp(x0, x1, (hh - 7) / 19);
-// s2Bar：7:00 → 次日 2:00 的横条。band 绿色吃饭窗口 [a, b]；grayL 早上 1h 灰；grayR 睡前灰（从 24 往回吃到 21）；night 24 点后夜色
-function s2Bar(c, x0, x1, y, h, o = {}) {
-  const { band = null, grayL = 0, grayR = 0, night = 0, t = null, seed = 80, p = 1 } = o;
-  const hx = hh => s2hx(hh, x0, x1), box = rectPts(x0, y, x1 - x0, h, Math.min(14, h * .3));
-  if (p < 1) { rline(c, box, { close: true, w: 4, p, seed, t }); return; }
-  rshape(c, box, { fill: '#fffaf0', stroke: false });
-  c.save(); c.clip(polyPath(box));
-  const seg = (a, b, col) => { if (b > a) rshape(c, rectPts(hx(a), y - 6, hx(b) - hx(a), h + 12), { fill: col, stroke: false, seed, t, amp: .8 }); };
-  if (night > 0) { seg(24, 26, alpha(P.night3, night)); for (let k = 0; k < 4; k++) sparkle(c, hx(24.3 + k * .45), y + h * (.3 + .4 * hash(k, 3)), h * .12, { al: night * .9, rot: t * .5 }); }
-  if (grayL > 0) seg(7, lerp(7, 8, grayL), alpha(P.gray, .55));
-  if (band) seg(band[0], band[1], P.green);
-  if (grayR > 0) seg(lerp(24, 21, grayR), 24, alpha(P.gray, .55));
-  c.restore();
-  rshape(c, box, { fill: null, stroke: P.ink, w: h > 50 ? 4.5 : 3.5, seed, t });
-}
-// s2Tummy：小胃。(x, y) 中心，mood: happy | sleepy | calm | shock | dizzy
-function s2Tummy(c, x, y, s, mood, t, seed = 5) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  const edge = mix(P.pink, P.red, .45);
-  rline(c, [[-32, -48], [-38, -70], [-32, -92]], { w: 18, color: P.ink, t, seed, smooth: true });
-  rline(c, [[-32, -48], [-38, -70], [-32, -92]], { w: 11, color: P.pink, t, seed, smooth: true });
-  rline(c, [[48, 30], [66, 44], [70, 66]], { w: 18, color: P.ink, t, seed: seed + 1, smooth: true });
-  rline(c, [[48, 30], [66, 44], [70, 66]], { w: 11, color: P.pink, t, seed: seed + 1, smooth: true });
-  rshape(c, [[-44, -54], [-8, -52], [8, -26], [40, -22], [60, 8], [44, 46], [0, 60], [-42, 48], [-62, 8], [-60, -30]], { fill: P.pink, stroke: P.ink, w: 4, seed: seed + 2, t, smooth: true });
-  rline(c, [[-40, 30], [-10, 44], [24, 40]], { w: 3, color: edge, seed: seed + 3, t, smooth: true, al: .6 });
-  const ex = 15, ey = 4;
-  if (mood === 'happy') { for (const d of [-1, 1]) rline(c, [[d * ex - 8, ey + 3], [d * ex, ey - 5], [d * ex + 8, ey + 3]], { w: 3.5, seed: seed + 4 + d, t });
-    rshape(c, [[-9, 18], [9, 18], [6, 28], [0, 31], [-6, 28]], { fill: '#b0405a', stroke: P.ink, w: 2.5, seed: seed + 6, t }); }
-  else if (mood === 'sleepy') { for (const d of [-1, 1]) rline(c, [[d * ex - 8, ey], [d * ex + 8, ey]], { w: 3.5, seed: seed + 4 + d, t });
-    rline(c, [[-5, 22], [5, 22]], { w: 3, seed: seed + 6, t }); }
-  else if (mood === 'shock') { for (const d of [-1, 1]) { rshape(c, circPts(d * ex, ey - 2, 9), { fill: '#fff', stroke: P.ink, w: 2.5, seed: seed + 4 + d, t }); c.fillStyle = P.ink; c.beginPath(); c.arc(d * ex, ey - 2, 3.5, 0, TAU); c.fill(); }
-    rshape(c, ellPts(0, 26, 7, 9), { fill: '#b0405a', stroke: P.ink, w: 2.5, seed: seed + 6, t });
-    rshape(c, [[52, -40], [60, -24], [52, -18], [45, -24]], { fill: P.sky, stroke: P.ink, w: 2, seed: seed + 7, t, smooth: true }); }
-  else if (mood === 'dizzy') { for (const d of [-1, 1]) { const pts = []; for (let i = 0; i <= 18; i++) { const a = i * .7 + t * 6 * d, r = i * .55; pts.push([d * ex + Math.cos(a) * r, ey + Math.sin(a) * r]); } rline(c, pts, { w: 2.5, seed: seed + 4 + d, amp: .3 }); }
-    rline(c, [[-12, 24], [-6, 20], [0, 25], [6, 20], [12, 24]], { w: 3, seed: seed + 6, t }); }
-  else { for (const d of [-1, 1]) { c.fillStyle = P.ink; c.beginPath(); c.arc(d * ex, ey, 4.5, 0, TAU); c.fill(); }
-    rline(c, [[-7, 20], [0, 25], [7, 20]], { w: 3, seed: seed + 6, t }); }
-  c.fillStyle = alpha(P.red, .3); c.beginPath(); c.ellipse(-30, 18, 8, 5, 0, 0, TAU); c.ellipse(30, 18, 8, 5, 0, 0, TAU); c.fill();
-  c.restore();
-}
-function s2Bag(c, x, y, s, t, rot = 0, sq = 1) {   // 炸鸡外卖袋，(x, y) 袋底中心
-  c.save(); c.translate(x, y); c.rotate(rot); c.scale(s / sq, s * sq);
-  const kraft = mix(P.orange, P.paper2, .45);
-  c.save(); c.translate(26, -120); c.rotate(.5);   // 露出来的鸡腿
-  rshape(c, [[-6, 30], [6, 30], [5, -4], [-5, -4]], { fill: P.cap, stroke: P.ink, w: 3, seed: 3, t });
-  rshape(c, circPts(-7, -10, 8), { fill: P.cap, stroke: P.ink, w: 3, seed: 4, t }); rshape(c, circPts(7, -10, 8), { fill: P.cap, stroke: P.ink, w: 3, seed: 5, t });
-  c.restore();
-  rshape(c, [[-10, -80], [30, -130], [60, -110], [52, -70], [0, -60]], { fill: mix(P.orange, P.shelf2, .25), stroke: P.ink, w: 3.5, seed: 6, t, smooth: true });
-  rshape(c, [[-55, 0], [55, 0], [50, -100], [-50, -100]], { fill: kraft, stroke: P.ink, w: 4, seed: 7, t });
-  rshape(c, [[-50, -100], [50, -100], [44, -120], [30, -108], [16, -122], [0, -108], [-16, -122], [-30, -108], [-44, -120]], { fill: mix(kraft, '#fff', .2), stroke: P.ink, w: 3.5, seed: 8, t });
-  rshape(c, circPts(0, -48, 26), { fill: P.red, stroke: P.ink, w: 3, seed: 9, t });
-  rshape(c, [[-10, -40], [-4, -56], [8, -60], [12, -48], [2, -40]], { fill: P.sun, stroke: P.ink, w: 2, seed: 10, t, smooth: true });
-  c.restore();
-}
-function s2Day(c, tau, L) {
-  const a = S2FS.out1 - .1, e = S2T(6); if (tau < a || tau >= e) return;
-  const tS = s2ch(3, 9), tG = s2ch(3, 14), tw = s2ch(3, 19), tM = S2T(4) + .05, tR = s2ch(4, 2);
-  const tb0 = s2ch(5, 3), tl = tb0 + .6, tx = s2ch(5, 11) + .1;
-  const p = sm(a, a + .9, tau), dec = 1 - sm(e - .22, e, tau, easeIn);
-  const bandEnd = key(tau, [[tw, 8], [tw + .8, 24], [tR, 24], [tR + .7, 21]]);
-  const { x0, x1, y, h } = S2TL;
-  s2Bar(c, x0, x1, y, h, { p, band: tau > tw ? [8, bandEnd] : null, grayL: sm(tG, tG + .4, tau), grayR: sm(tR, tR + .7, tau), night: sm(tM, tM + .5, tau), t: tau });
-  fade(c, dec, () => {
-    // 刻度和时间
-    const lp = sm(a + .6, a + 1.1, tau);
-    if (lp > 0) fade(c, lp, () => {
-      for (let hh = 7; hh <= 26; hh++) rline(c, [[s2hx(hh), y + h + 4], [s2hx(hh), y + h + (hh % 3 ? 12 : 20)]], { w: 3, color: P.ink2, seed: hh, amp: .4 });
-      for (const hh of [7, 12, 18, 21, 24]) zh(c, hh + ':00', s2hx(hh), y + h + 58, { size: 32, align: 'center', color: P.ink2 });
-    });
-    // 起床 / 睡觉
-    pop(c, s2hx(7), 238, s2pop(tau, tS), () => s2Sun(c, s2hx(7), 238, 22, tau));
-    zh(c, '起床', s2hx(7) + 44, 252, { size: 40, p: writeP(tau, tS + .1, '起床', .1) });
-    pop(c, s2hx(24), 238, s2pop(tau, tM), () => drawMoonIcon(c, s2hx(24), 238, 26, P.moon, -.3));
-    zh(c, '睡觉', s2hx(24) - 36, 252, { align: 'right', size: 40, p: writeP(tau, tM + .1, '睡觉', .1) });
-    // 早上 1h 先不吃
-    if (tau > tG) { s2Bracket(c, s2hx(7), s2hx(8), 408, { t: tau, p: sm(tG, tG + .3, tau) }); zh(c, '先不吃 1h', s2hx(7) - 6, 392, { size: 40, p: writeP(tau, tG + .1, '先不吃 1h', .08) }); }
-    if (tau > tw + .3) zh(c, '吃饭时间', s2hx(14.5), y + 50, { size: 46, align: 'center', color: '#fff', p: writeP(tau, tw + .35, '吃饭时间', .09), outline: mix(P.green, P.ink, .4), ow: 6 });
-    if (tau > tR) { s2Bracket(c, s2hx(21), s2hx(24), 408, { t: tau, p: sm(tR, tR + .4, tau) }); zh(c, '不再进食 2–3h', s2hx(24) - 14, 392, { size: 40, align: 'right', p: writeP(tau, tR + .2, '不再进食 2–3h', .08) }); }
-    // 小胃跟着时间走
-    const hh = key(tau, [[tw, 7.4], [S2E(4), 23.3], [S2T(5), 23.3], [S2T(5) + .7, 25]], s2lin);
-    const moving = (tau > tw && tau < S2E(4)) || (tau > S2T(5) && tau < S2T(5) + .7);
-    let mood = hh < 8 ? 'sleepy' : hh < 21 ? 'happy' : 'calm';
-    if (tau > tl) mood = tau < tx + .6 ? 'shock' : 'dizzy';
-    const kt = s2pop(tau, S2T(3) + .9, .5), tx0 = s2hx(hh), ty = 720 - (moving ? Math.abs(Math.sin(tau * 9)) * 8 : 0);
-    if (kt > 0) {
-      fade(c, clamp(kt, 0, 1), () => {
-        rline(c, [[tx0, y + h + 6], [tx0, 628]], { w: 3, color: P.ink2, dash: [8, 9], seed: 3 });
-        rshape(c, [[tx0, y + h + 2], [tx0 - 10, y + h + 18], [tx0 + 10, y + h + 18]], { fill: P.red, stroke: P.ink, w: 2.5, seed: 4, t: tau });
-      });
-      pop(c, tx0, ty + 50, kt, () => s2Tummy(c, tx0, ty, .8, mood, tau));
-      if (mood === 'sleepy') for (let z = 0; z < 2; z++) { const u = (tau * .7 + z / 2) % 1; zh(c, 'z', tx0 + 50 + u * 26, ty - 50 - u * 50, { size: 34, color: P.ink2, al: Math.sin(u * Math.PI) }); }
-      if (mood === 'happy') { const u = (tau * 1.3) % 1; sparkle(c, tx0 + 56, ty - 40 - u * 30, 12 * Math.sin(u * Math.PI), { color: P.moon }); }
-    }
-    // 凌晨 1 点的炸鸡外卖
-    if (tau > tb0) {
-      const u = clamp((tau - tb0) / .6, 0, 1), v = tau - tl, bx = lerp(2080, s2hx(25), easeOut(u)), by = lerp(60, y, u * u);
-      const sq = v > 0 ? 1 - .18 * Math.sin(v * 18) * Math.exp(-v * 7) : 1;
-      s2Bag(c, bx + 6, by - 2, .95, tau, (1 - u) * 1.6, sq);
-      if (v > 0) { zh(c, '凌晨 1:00', s2hx(25) - 16, 612, { size: 36, align: 'right', color: P.red, p: writeP(tau, tl, '凌晨 1:00', .06) });
-        if (v < .5) for (let k = 0; k < 6; k++) { const a2 = Math.PI + k / 5 * Math.PI; sparkle(c, s2hx(25) + Math.cos(a2) * (50 + v * 120), y - 8 + Math.sin(a2) * (10 + v * 60), 10 * (1 - v * 2), { color: P.paperEdge }); } }
-      if (tau > tx) cross(c, s2hx(25) - 10, y - 70, 150, { p: sm(tx, tx + .3, tau, s2lin), t: tau, al: .85 });
-    }
-  });
-}
-
-// ===================== L7：周一到周五 =====================
-const S2MESSY = [[10, 22.5], [7.5, 15], [12, 25], [9, 19.5], [13.5, 24.6]];
-const S2WK = ['周一', '周二', '周三', '周四', '周五'];
-function s2Plane(c, x, y, s, dir, bank, t) {
-  c.save(); c.translate(x, y); c.scale(s * dir, s); c.rotate(bank);
-  rshape(c, [[-10, -4], [16, -46], [30, -46], [18, -4]], { fill: P.sky, stroke: P.ink, w: 3, seed: 1, t });
-  rshape(c, [[-48, -6], [-58, -30], [-46, -30], [-34, -8]], { fill: P.sky, stroke: P.ink, w: 3, seed: 2, t });
-  rshape(c, [[-56, -2], [30, -12], [56, -2], [30, 10], [-50, 8]], { fill: '#fffdf8', stroke: P.ink, w: 3.5, seed: 3, t, smooth: true });
-  for (let k = 0; k < 4; k++) { c.fillStyle = P.blue; c.beginPath(); c.arc(-20 + k * 13, -2, 3.2, 0, TAU); c.fill(); }
-  rshape(c, [[-6, 4], [20, 30], [30, 30], [16, 4]], { fill: P.sky, stroke: P.ink, w: 3, seed: 4, t });
-  c.restore();
-}
-function s2Week(c, tau) {
-  const a = S2T(6), b = S2T(7) - .02; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .22, b, tau, easeIn), m = sm(a, a + .7, tau);
-  const C1 = [840, 1270], C2 = [1420, 1810], rowY = k => 318 + k * 76, bh = 40;
-  const t1 = s2ch(6, 6), tg = s2ch(6, 13), t2 = s2ch(6, 17), tp = s2ch(6, 22);
-  fade(c, out, () => pop(c, S2BX, 480, lerp(.9, 1, out), () => {
-    // 左：每天一样
-    zh(c, '每天差不多', C1[0] - 70, 268, { size: 44, color: mix(P.green, P.ink, .3), p: writeP(tau, t1, '每天差不多', .07) });
-    pop(c, C1[1] - 20, 250, s2pop(tau, tg), () => check(c, C1[1] - 20, 250, 56, { t: tau }));
-    for (let k = 0; k < 5; k++) {
-      const kk = k === 0 ? 1 : s2pop(tau, t1 + k * .16, .4); if (kk <= 0) continue;
-      const yy = k === 0 ? lerp(S2TL.y, rowY(0), m) : lerp(rowY(0), rowY(k), clamp(kk, 0, 1.2));
-      const x0 = k === 0 ? lerp(S2TL.x0, C1[0], m) : C1[0], x1 = k === 0 ? lerp(S2TL.x1, C1[1], m) : C1[1], hh = k === 0 ? lerp(S2TL.h, bh, m) : bh;
-      s2Bar(c, x0, x1, yy, hh, { band: [8, 21], grayL: 1, grayR: 1, night: 1, t: tau, seed: 80 + k });
-      if (m > .8) zh(c, S2WK[k], C1[0] - 14, yy + 32, { size: 32, align: 'right', color: P.ink2, al: k === 0 ? sm(.8, 1, m) : clamp(kk, 0, 1) });
-    }
-    if (tau > tg) for (const hh of [8, 21]) rline(c, [[s2hx(hh, C1[0], C1[1]), rowY(0) - 16], [s2hx(hh, C1[0], C1[1]), rowY(4) + bh + 16]], { w: 4, color: mix(P.green, P.ink, .2), dash: [10, 8], seed: hh, t: tau, p: sm(tg, tg + .5, tau) });
-    // 右：天天倒时差
-    zh(c, '天天倒时差', C2[0] - 60, 268, { size: 44, color: P.red, p: writeP(tau, t2, '天天倒时差', .07) });
-    for (let k = 0; k < 5; k++) {
-      const kk = s2pop(tau, t2 + k * .13, .4); if (kk <= 0) continue;
-      const j = .5 * Math.sin(tau * 2.3 + k * 1.9), [w0, w1] = S2MESSY[k];
-      pop(c, (C2[0] + C2[1]) / 2, rowY(k) + bh / 2, kk, () => {
-        s2Bar(c, C2[0], C2[1], rowY(k), bh, { band: [w0 + j, w1 + j], grayL: 0, grayR: 0, night: 1, t: tau, seed: 90 + k });
-        zh(c, S2WK[k], C2[0] - 14, rowY(k) + 32, { size: 32, align: 'right', color: P.ink2 });
-      });
-    }
-    // 小飞机绕圈
-    const kp = s2pop(tau, tp, .4);
-    if (kp > 0) { const w = (tau - tp) * 2.6, px = 1735 + 72 * Math.cos(w), py = 240 + 18 * Math.sin(2 * w), dir = -Math.sin(w) >= 0 ? 1 : -1;
-      for (let k = 1; k <= 5; k++) { const w2 = w - k * .18; c.fillStyle = alpha(P.ink2, .35 - k * .05); c.beginPath(); c.arc(1735 + 72 * Math.cos(w2), 240 + 18 * Math.sin(2 * w2), 4, 0, TAU); c.fill(); }
-      pop(c, px, py, kp, () => s2Plane(c, px, py, .8, dir, .15 * Math.cos(2 * w), tau)); }
-    // 两只小胃
-    pop(c, (C1[0] + C1[1]) / 2, 790, s2pop(tau, tg + .1), () => s2Tummy(c, (C1[0] + C1[1]) / 2, 742 - Math.abs(Math.sin(tau * 4)) * 5, .66, 'happy', tau, 7));
-    pop(c, (C2[0] + C2[1]) / 2, 790, s2pop(tau, tp + .1), () => {
-      c.save(); c.translate((C2[0] + C2[1]) / 2, 742); c.rotate(.12 * Math.sin(tau * 5)); s2Tummy(c, 0, 0, .66, 'dizzy', tau, 9); c.restore(); });
-  }));
-}
-
-// ===================== L8：什么不算开饭 =====================
-function s2Glass(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  const body = [[-44, -150], [44, -150], [34, 0], [-34, 0]], lvl = -104;
-  rshape(c, body, { fill: alpha(P.sky, .15), stroke: false, seed: 1 });
-  c.save(); c.clip(polyPath(body));
-  const wv = []; for (let i = 0; i <= 12; i++) { const xx = -50 + i * 100 / 12; wv.push([xx, lvl + 4 * Math.sin(xx * .08 + t * 4)]); }
-  rshape(c, [...wv, [50, 10], [-50, 10]], { fill: alpha(P.sky, .75), stroke: false, seed: 2 });
-  c.restore();
-  rshape(c, body, { fill: null, stroke: P.ink, w: 4, seed: 3, t });
-  rline(c, [[-28, -132], [-22, -24]], { w: 6, color: '#fff', al: .8, seed: 4, t });
-  c.restore();
-}
-function s2Tea(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rshape(c, ellPts(0, -4, 88, 14), { fill: P.cap, stroke: P.ink, w: 3.5, seed: 1, t });
-  rshape(c, [[-64, -96], [64, -96], [52, -34], [26, -12], [-26, -12], [-52, -34]], { fill: P.cap, stroke: P.ink, w: 4, seed: 2, t, smooth: true });
-  rline(c, [[-58, -66], [58, -66]], { w: 7, color: P.green, seed: 3, t });
-  rshape(c, ellPts(0, -96, 62, 12), { fill: mix(P.gold, P.green, .4), stroke: P.ink, w: 3, seed: 4, t });
-  rline(c, [[24, -96], [44, -128], [58, -130]], { w: 2.5, color: P.ink2, seed: 5, t, smooth: true });
-  rshape(c, rectPts(52, -150, 26, 30, 4), { fill: P.gold, stroke: P.ink, w: 2.5, seed: 6, t });
-  s2Steam(c, -10, -118, t, 2);
-  c.restore();
-}
-function s2Mug(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rline(c, [[46, -108], [80, -104], [84, -60], [46, -44]], { w: 12, color: P.ink, seed: 1, t, smooth: true });
-  rline(c, [[46, -108], [80, -104], [84, -60], [46, -44]], { w: 5, color: P.cap, seed: 1, t, smooth: true });
-  rshape(c, rectPts(-50, -132, 100, 132, 14), { fill: P.cap, stroke: P.ink, w: 4, seed: 2, t });
-  rline(c, [[-50, -46], [50, -46]], { w: 8, color: P.purple, seed: 3, t });
-  rshape(c, ellPts(0, -128, 46, 10), { fill: mix(P.shelf2, P.ink, .45), stroke: P.ink, w: 3, seed: 4, t });
-  s2Steam(c, 0, -150, t, 2);
-  c.restore();
-}
-function s2Spoon(c, x, y, s, tilt, t, pour) {   // (x, y) 勺子头中心；pour 0..1 倒糖的时间进度
-  c.save(); c.translate(x, y); c.scale(s, s); c.rotate(tilt);
-  rline(c, [[40, -6], [150, -60]], { w: 12, color: P.ink, seed: 1, t }); rline(c, [[40, -6], [150, -60]], { w: 6, color: mix(P.gray, '#fff', .5), seed: 1, t });
-  rshape(c, ellPts(0, 0, 52, 26), { fill: mix(P.gray, '#fff', .55), stroke: P.ink, w: 4, seed: 2, t });
-  const n = Math.round(9 * (1 - pour * .6));
-  for (let k = 0; k < n; k++) { const cx = -30 + (k % 5) * 14, cy = -12 - Math.floor(k / 5) * 12; rshape(c, rectPts(cx - 7, cy - 7, 14, 14, 2), { fill: '#fff', stroke: P.ink2, w: 2, seed: 3 + k, t }); }
-  c.restore();
-}
-function s2Drinks(c, tau) {
-  const a = S2T(7), b = S2T(8) - .02; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .22, b, tau, easeIn), base = 500;
-  const items = [[870, s2ch(7, 0), s2ch(7, 1.5), '白水', s2Glass], [1085, s2ch(7, 3), s2ch(7, 4), '茶', s2Tea], [1305, s2ch(7, 5), s2ch(7, 10), '黑咖啡', s2Mug]];
-  const tN = s2ch(7, 12), tS = s2ch(7, 18), tX = s2ch(7, 21);
-  fade(c, out, () => {
-    items.forEach(([x, t0, tc, label, draw], k) => {
-      pop(c, x, base - 80, s2pop(tau, t0), () => draw(c, x, base, 1.15, tau));
-      zh(c, label, x, base + 70, { size: 40, align: 'center', p: writeP(tau, t0 + .1, label, .08) });
-      pop(c, x + 72, base - 196, s2pop(tau, tc + .2), () => check(c, x + 72, base - 196, 64, { t: tau }));
-    });
-    if (tau > tN) { s2Bracket(c, 790, 1390, base + 100, { t: tau, p: sm(tN, tN + .4, tau), color: mix(P.green, P.ink, .2) });
-      zh(c, '不算“开饭”', 1090, base + 180, { size: 52, align: 'center', color: mix(P.green, P.ink, .3), p: writeP(tau, tN + .2, '不算“开饭”', .08) }); }
-    rline(c, [[1490, 250], [1490, 700]], { w: 3, color: P.paperEdge, dash: [12, 10], seed: 5, t: tau, p: sm(tS - .3, tS + .2, tau) });
-    const ks = s2pop(tau, tS), pour = sm(tS + .35, tS + .75, tau), tilt = -.85 * pour;
-    pop(c, 1640, base - 70, ks, () => s2Mug(c, 1640, base, 1, tau));
-    pop(c, 1640, 262, ks, () => s2Spoon(c, 1640, 250, .85, tilt, tau, sm(tS + .6, tX, tau)));
-    if (pour > .9) for (let k = 0; k < 12; k++) { const t0 = tS + .6 + k * .06, u = clamp((tau - t0) / .35, 0, 1);
-      if (tau > t0 && u < 1) rshape(c, rectPts(1612 + (hash(k, 2) - .5) * 18 - 4, lerp(285, 366, u * u) - 4, 8, 8, 1), { fill: '#fff', stroke: P.ink2, w: 1.5, seed: k }); }
-    zh(c, '+ 一勺糖', 1640, base + 70, { size: 40, align: 'center', p: writeP(tau, tS + .1, '+ 一勺糖', .07) });
-    if (tau > tX) { cross(c, 1645, 405, 170, { p: sm(tX, tX + .3, tau, s2lin), t: tau });
-      zh(c, '就算开饭！', 1640, base + 180, { size: 48, align: 'center', color: P.red, p: writeP(tau, tX + .2, '就算开饭！', .07) }); }
-  });
-}
-
-// ===================== L9–L10：肠道和菌群 =====================
-const S2GUT = [[850, 290], [900, 290], [1200, 290], [1450, 290], [1528, 380], [1450, 470], [1200, 470], [920, 470], [838, 560], [920, 650], [1200, 650], [1470, 650]];
-const S2GUTP = spline(S2GUT, 4);
-const S2GUTC = (() => { const acc = [0]; for (let i = 1; i < S2GUTP.length; i++) acc.push(acc[i - 1] + Math.hypot(S2GUTP[i][0] - S2GUTP[i - 1][0], S2GUTP[i][1] - S2GUTP[i - 1][1])); return acc; })();
-function s2GutAt(u) {   // 沿肠道 u∈[0,1] 的位置和切线角
-  const L0 = S2GUTC.at(-1) * clamp(u, 0, 1); let i = 1; while (i < S2GUTC.length - 1 && S2GUTC[i] < L0) i++;
-  const a = S2GUTP[i - 1], b = S2GUTP[i], f = (L0 - S2GUTC[i - 1]) / Math.max(1e-6, S2GUTC[i] - S2GUTC[i - 1]);
-  return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), Math.atan2(b[1] - a[1], b[0] - a[0])];
-}
-// 小菌：wave 0 开头就有（种类少），1「越多样」时加，2 吃了发酵食品后加
-const S2BUGS = (() => {
-  const r = rng(29), out = [], N = 24;
-  const kinds = { 0: [['coccus', P.green], ['coccus', P.green], ['rod', P.green]], 1: [['rod', P.blue], ['spiral', P.orange], ['duo', P.purple]], 2: [['spiral', P.teal], ['spiky', P.gold], ['rod', P.sky], ['duo', P.red], ['coccus', P.purple], ['spiral', P.blue]] };
-  for (let k = 0; k < N; k++) { const wave = [0, 2, 1][k % 3], list = kinds[wave], [kind, col] = list[Math.floor(r() * list.length)];
-    out.push({ u: .04 + .92 * (k + r() * .6) / N, off: (r() - .5) * 26, kind, col, sz: 1.25 + r() * .3, wave, ph: r() * TAU }); }
-  return out;
-})();
-function s2Bug(c, x, y, sz, kind, col, ang, t, seed) {
-  c.save(); c.translate(x, y); c.rotate(ang); c.scale(sz, sz);
-  const st = mix(col, P.ink, .55), o = { fill: col, stroke: st, w: 3, seed, t, amp: .8 };
-  let ex = 0;
-  if (kind === 'rod') { rline(c, [[-24, 0], [-34, -6], [-42, 2], [-50, -4]], { w: 2.5, color: st, seed, t, smooth: true }); rshape(c, rectPts(-26, -12, 52, 24, 12), o); ex = 8; }
-  else if (kind === 'duo') { rshape(c, circPts(-12, 0, 14), o); rshape(c, circPts(12, 0, 14), o); ex = 12; }
-  else if (kind === 'spiral') { const pts = []; for (let i = 0; i <= 20; i++) pts.push([-30 + i * 3, 8 * Math.sin(i / 20 * TAU * 1.5 + t * 7)]);
-    rline(c, pts, { w: 14, color: st, seed, amp: .4, smooth: true }); rline(c, pts, { w: 8, color: col, seed, amp: .4, smooth: true }); ex = 30; }
-  else if (kind === 'spiky') { rshape(c, starPts(0, 0, 22, 9, .72, t * .8), o); }
-  else rshape(c, circPts(0, 0, 18), o);
-  const ey = kind === 'spiral' ? 8 * Math.sin(1.5 * TAU + t * 7) - 4 : -3;
-  c.fillStyle = P.ink; c.beginPath(); c.arc(ex - 5, ey, 2.8, 0, TAU); c.arc(ex + 5, ey, 2.8, 0, TAU); c.fill();
-  if (kind !== 'spiral') rline(c, [[ex - 4, 5], [ex, 8], [ex + 4, 5]], { w: 2, color: P.ink, seed: seed + 1, amp: .2 });
-  c.restore();
-}
-function s2FBowl(c, x, y, s, t) {   // 一碗发酵食品，(x, y) 碗底
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rshape(c, [[-60, -62], [-30, -80], [10, -84], [40, -78], [60, -62]], { fill: '#fffdf8', stroke: P.ink, w: 3, seed: 1, t, smooth: true });
-  rshape(c, [[-46, -70], [-26, -86], [-8, -72]], { fill: P.red, stroke: P.ink, w: 2.5, seed: 2, t });
-  for (let k = 0; k < 4; k++) rshape(c, circPts(16 + k * 9, -74 - (k % 2) * 6, 6), { fill: mix(P.gold, P.shelf2, .4), stroke: P.ink, w: 2, seed: 3 + k, t });
-  rshape(c, [[-70, -64], [70, -64], [56, -22], [28, 0], [-28, 0], [-56, -22]], { fill: P.orange, stroke: P.ink, w: 4, seed: 9, t, smooth: true });
-  rline(c, [[-60, -42], [60, -42]], { w: 4, color: P.paper, seed: 10, t, dash: [10, 9] });
-  c.restore();
-}
-function s2Gut(c, tau) {
-  const a = S2T(8), b = S2T(10) - .02; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .22, b, tau, easeIn), p = sm(a, a + 1.0, tau);
-  const t0 = s2ch(8, 7), t1 = s2ch(8, 14), tH = s2ch(8, 20), tbw = s2ch(9, 3), tp = s2ch(9, 7), tg = s2ch(9, 16), ti = s2ch(9, 22);
-  fade(c, out, () => pop(c, S2BX, 480, lerp(.9, 1, out), () => {
-    rline(c, S2GUT, { w: 122, color: P.ink, smooth: true, seed: 3, t: tau, p });
-    rline(c, S2GUT, { w: 110, color: mix(P.pink, P.red, .25), smooth: true, seed: 3, t: tau, p });
-    rline(c, S2GUT, { w: 90, color: mix(P.pink, P.cap, .45), smooth: true, seed: 3, t: tau, p });
-    rline(c, S2GUT, { w: 4, color: alpha(P.pink, .8), smooth: true, seed: 4, t: tau, p, dash: [18, 22] });
-    // 小菌
-    S2BUGS.forEach((g, k) => {
-      const tA = g.wave === 0 ? t0 + g.u * .6 : g.wave === 1 ? t1 + g.u * .5 : tp + .3 + g.u * 1.4;
-      const kk = s2pop(tau, tA, .4); if (kk <= 0) return;
-      const u = g.u + .012 * Math.sin(tau * .9 + g.ph), [x, y, an] = s2GutAt(u), off = g.off + 6 * Math.sin(tau * 1.4 + g.ph);
-      const bx = x - Math.sin(an) * off, by = y + Math.cos(an) * off, ang = (Math.cos(an) < 0 ? an + Math.PI : an) + .25 * Math.sin(tau * 2 + g.ph);
-      pop(c, bx, by, kk, () => s2Bug(c, bx, by, g.sz, g.kind, g.col, ang, tau, 200 + k));
-    });
-    // 多样性刻度条
-    const kg = s2pop(tau, t1 - .15), gx = 1660, gt = 305, gb = 665, gw = 56;
-    const lvl = key(tau, [[t1, .22], [t1 + .8, .5], [tg, .5], [tg + .9, .9]]);
-    pop(c, gx + gw / 2, (gt + gb) / 2, kg, () => {
-      zh(c, '多样性', gx + gw / 2, gt - 24, { size: 40, align: 'center' });
-      const box = rectPts(gx, gt, gw, gb - gt, 24);
-      rshape(c, box, { fill: '#fffaf0', stroke: false });
-      c.save(); c.clip(polyPath(box));
-      const fy = lerp(gb, gt, lvl), col = lvl < .5 ? mix(P.red, P.gold, lvl * 2) : mix(P.gold, P.green, (lvl - .5) * 2);
-      rshape(c, rectPts(gx - 6, fy, gw + 12, gb - fy + 6), { fill: col, stroke: false, seed: 5, t: tau });
-      c.restore();
-      rshape(c, box, { fill: null, stroke: P.ink, w: 4.5, seed: 6, t: tau });
-      for (let k = 1; k < 4; k++) rline(c, [[gx, lerp(gb, gt, k / 4)], [gx + 14, lerp(gb, gt, k / 4)]], { w: 3, color: P.ink2, seed: 7 + k, amp: .4 });
-      zh(c, '高', gx + gw + 14, gt + 30, { size: 32, color: P.ink2 }); zh(c, '低', gx + gw + 14, gb - 6, { size: 32, color: P.ink2 });
-      const kh = s2pop(tau, tH); if (kh > 0) pop(c, gx - 34, fy, kh, () => rshape(c, heartPts(gx - 34, fy, 20), { fill: P.red, stroke: P.ink, w: 3, seed: 9, t: tau }));
-    });
-    if (tau > tg && tau < tg + 1.2) for (let k = 0; k < 5; k++) { const u = clamp((tau - tg - k * .1) / .8, 0, 1); sparkle(c, gx + gw / 2 + (k - 2) * 20, lerp(gb, gt, .9) - u * 60, 12 * Math.sin(u * Math.PI), { color: P.moon }); }
-    // 一碗发酵食品倒进来
-    const kb = s2pop(tau, tbw) * (1 - sm(tp + 1.8, tp + 2.1, tau, easeIn)), tilt = .95 * sm(tp - .1, tp + .4, tau);
-    if (kb > 0) {
-      pop(c, 800, 170, kb, () => { c.save(); c.translate(800, 170); c.rotate(tilt); s2FBowl(c, 0, 36, .9, tau); c.restore(); });
-      zh(c, '发酵食品', 890, 196, { size: 38, al: clamp(kb, 0, 1), p: writeP(tau, tbw + .1, '发酵食品', .06), outline: P.paper, ow: 8 });
-      if (tau > tp + .2) for (let k = 0; k < 12; k++) { const u = ((tau - tp - .2) * 1.6 + k / 12) % 1, cols = [P.teal, P.gold, P.sky, P.red, P.purple];
-        c.fillStyle = cols[k % 5]; c.globalAlpha = clamp(kb, 0, 1) * (1 - u); c.beginPath(); c.arc(840 + u * 16 + (hash(k, 3) - .5) * 24, 200 + u * 90, 7, 0, TAU); c.fill(); c.globalAlpha = 1; }
-    }
-    // 炎症指标 ↓
-    const ki = s2pop(tau, ti);
-    pop(c, 1640, 760, ki, () => {
-      const fs = lerp(1.5, .8, sm(ti + .3, ti + 1.0, tau)), fx = 1500, fy = 775;
-      c.save(); c.translate(fx, fy); c.scale(fs, fs);
-      rshape(c, [[0, 18], [-20, 6], [-18, -14], [-8, -6], [-6, -30], [8, -16], [14, -38], [22, -8], [20, 8]], { fill: P.orange, stroke: P.ink, w: 3, seed: 11, t: tau, smooth: true });
-      c.restore();
-      zh(c, '炎症指标', 1540, 790, { size: 44 });
-      s2Arrow(c, 1745, 770, 46, 1, P.green, tau);
-    });
-  }));
-}
-
-// ===================== L11：这样吃 =====================
-function s2Yogurt(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rline(c, [[14, -120], [48, -176]], { w: 8, color: P.gray, seed: 1, t });
-  rshape(c, [[-52, -126], [52, -126], [42, 0], [-42, 0]], { fill: P.cap, stroke: P.ink, w: 4, seed: 2, t });
-  rshape(c, [[-48, -92], [48, -92], [45, -50], [-45, -50]], { fill: P.sky, stroke: false, seed: 3, t });
-  rshape(c, heartPts(0, -72, 14), { fill: '#fff', stroke: false, seed: 4, t });
-  rshape(c, ellPts(0, -126, 56, 13), { fill: '#fffdf8', stroke: P.ink, w: 3.5, seed: 5, t });
-  c.restore();
-}
-function s2Jar(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rshape(c, [[-14, -140], [-2, -176], [20, -170], [12, -136]], { fill: P.green, stroke: P.ink, w: 3, seed: 1, t, smooth: true });
-  rshape(c, [[-30, -140], [-24, -168], [0, -160], [4, -136]], { fill: P.red, stroke: P.ink, w: 3, seed: 2, t, smooth: true });
-  rshape(c, [[-42, -140], [42, -140], [72, -100], [70, -34], [44, 0], [-44, 0], [-70, -34], [-72, -100]], { fill: mix(P.shelf2, P.orange, .35), stroke: P.ink, w: 4, seed: 3, t, smooth: true });
-  rshape(c, ellPts(0, -140, 50, 12), { fill: mix(P.shelf2, P.ink, .2), stroke: P.ink, w: 3, seed: 4, t });
-  rline(c, [[-58, -82], [58, -82]], { w: 4, color: alpha(P.paper, .6), seed: 5, t, dash: [14, 10] });
-  rline(c, [[-50, -110], [-54, -50]], { w: 5, color: alpha('#fff', .35), seed: 6, t });
-  c.restore();
-}
-function s2Natto(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  for (let k = 0; k < 3; k++) rline(c, [[-6 + k * 14, -62], [-10 + k * 8 + 6 * Math.sin(t * 3 + k), -100], [-4, -130]], { w: 1.8, color: P.ink2, seed: 20 + k, t, smooth: true, al: .8 });
-  rline(c, [[-8, -126], [70, -178]], { w: 6, color: P.shelf2, seed: 1, t }); rline(c, [[4, -132], [80, -170]], { w: 6, color: P.shelf2, seed: 2, t });
-  rshape(c, [[-72, -62], [72, -62], [66, 0], [-66, 0]], { fill: P.cap, stroke: P.ink, w: 4, seed: 3, t });
-  for (let k = 0; k < 9; k++) rshape(c, ellPts(-50 + (k % 5) * 25 + (k > 4 ? 12 : 0), -64 - (k > 4 ? 12 : 0), 12, 9), { fill: mix(P.gold, P.shelf2, .45), stroke: P.ink, w: 2, seed: 4 + k, t });
-  rshape(c, [[-72, -62], [72, -62], [66, -40], [-66, -40]], { fill: null, stroke: false });
-  c.restore();
-}
-function s2Box(c, x, y, s, t, veg) {   // 外卖盒；veg 0..1 加青菜粗粮
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rshape(c, [[-110, -90], [110, -90], [124, -176], [-100, -186]], { fill: mix(P.cap, P.paper2, .6), stroke: P.ink, w: 4, seed: 1, t });
-  rshape(c, [[-90, -86], [-60, -118], [-20, -126], [20, -120], [50, -106], [70, -90]], { fill: '#fffdf8', stroke: P.ink, w: 3, seed: 2, t, smooth: true });
-  rshape(c, [[20, -96], [44, -120], [86, -112], [96, -90]], { fill: mix(P.orange, P.shelf2, .35), stroke: P.ink, w: 3, seed: 3, t, smooth: true });
-  const leaves = [[-72, -104, -.5], [-44, -118, .2], [-20, -108, -.3]], grains = [[-4, -122], [8, -114], [18, -124], [-10, -112], [4, -128]];
-  leaves.forEach(([lx, ly, r], k) => { const u = clamp(veg * 3 - k * .5, 0, 1); if (u <= 0) return; const dy = -160 * (1 - easeOutBack(u));
-    rshape(c, ellPts(lx, ly + dy, 22, 11, 20, r), { fill: P.green, stroke: P.ink, w: 2.5, seed: 10 + k, t }); rline(c, [[lx - 16 * Math.cos(r), ly + dy - 16 * Math.sin(r)], [lx + 16 * Math.cos(r), ly + dy + 16 * Math.sin(r)]], { w: 2, color: mix(P.green, P.ink, .4), seed: 14 + k }); });
-  grains.forEach(([gx, gy], k) => { const u = clamp(veg * 3 - 1.2 - k * .25, 0, 1); if (u <= 0) return; const dy = -160 * (1 - easeOutBack(u));
-    rshape(c, ellPts(gx + 60, gy + dy + 8, 8, 6), { fill: P.gold, stroke: P.ink, w: 2, seed: 20 + k, t }); });
-  rshape(c, [[-112, -92], [112, -92], [92, 0], [-92, 0]], { fill: P.cap, stroke: P.ink, w: 4, seed: 4, t });
-  rline(c, [[-100, -64], [100, -64]], { w: 3, color: P.faint, seed: 5, t });
-  c.restore();
-}
-function s2Boba(c, x, y, s, t) {
-  c.save(); c.translate(x, y); c.scale(s, s);
-  rline(c, [[8, -196], [28, -262]], { w: 14, color: P.ink, seed: 1, t }); rline(c, [[8, -196], [28, -262]], { w: 8, color: P.pink, seed: 1, t });
-  rshape(c, [[-54, -190], [54, -190], [42, 0], [-42, 0]], { fill: mix(P.orange, P.paper, .55), stroke: P.ink, w: 4, seed: 2, t });
-  for (let k = 0; k < 7; k++) rshape(c, circPts(-30 + (k % 4) * 20 + (k > 3 ? 10 : 0), -16 - (k > 3 ? 18 : 0), 9, 12), { fill: P.ink, stroke: false, seed: 3 + k });
-  rshape(c, ellPts(0, -194, 60, 16), { fill: P.cap, stroke: P.ink, w: 3.5, seed: 10, t });
-  c.restore();
-}
-function s2Foods(c, tau) {
-  const a = S2T(10), b = S2T(11) - .02; if (tau < a || tau > b) return;
-  const out = 1 - sm(b - .22, b, tau, easeIn), by = 390;
-  const top = [[930, 0, 3, '无糖酸奶', s2Yogurt], [1270, 5, 6, '泡菜', s2Jar], [1610, 8, 9, '纳豆', s2Natto]];
-  const tV = s2ch(10, 16), tC = s2ch(10, 21), tT = s2ch(10, 23);
-  fade(c, out, () => {
-    top.forEach(([x, n0, n1, label, draw]) => {
-      const t0 = s2ch(10, n0);
-      pop(c, x, by - 70, s2pop(tau, t0), () => draw(c, x, by, .95, tau));
-      zh(c, label, x, by + 56, { size: 40, align: 'center', p: writeP(tau, t0 + .1, label, .08) });
-      pop(c, x + 80, by - 150, s2pop(tau, s2ch(10, n1) + .15), () => check(c, x + 80, by - 150, 56, { t: tau }));
-    });
-    const kb = s2pop(tau, s2ch(10, 13));
-    pop(c, 1050, 700, kb, () => s2Box(c, 1050, 720, .95, tau, sm(tV, tV + 1.1, tau, s2lin)));
-    zh(c, '+ 蔬菜粗粮', 1050, 800, { size: 40, align: 'center', color: mix(P.green, P.ink, .3), p: writeP(tau, tV + .2, '+ 蔬菜粗粮', .08) });
-    pop(c, 1210, 590, s2pop(tau, tC), () => check(c, 1210, 590, 64, { t: tau }));
-    const kt = s2pop(tau, s2ch(10, 13) + .3), sh = lerp(1.05, .6, sm(tT + .1, tT + .8, tau));
-    pop(c, 1560, 720, kt, () => s2Boba(c, 1560, 730, .95 * sh, tau));
-    if (tau > tT + .5) rshape(c, [[1560 + 70 * sh, 730 - 200 * sh], [1560 + 80 * sh, 730 - 178 * sh], [1560 + 70 * sh, 730 - 170 * sh], [1560 + 62 * sh, 730 - 178 * sh]], { fill: P.sky, stroke: P.ink, w: 2, seed: 9, t: tau, smooth: true });
-    if (tau > tT) { zh(c, '少点奶茶', 1580, 800, { size: 40, align: 'center', color: P.red, p: writeP(tau, tT + .1, '少点奶茶', .08) });
-      s2Arrow(c, 1680, 640, 46, 1, P.red, tau); }
-  });
-}
-
-// ===================== L12：医生便签 =====================
-function s2Note(c, tau) {
-  const a = S2T(11), b = S2DUR - .55; if (tau < a || tau > b) return;
-  const k = s2k(tau, a, b, .5), t1 = s2ch(11, 0), t2 = s2ch(11, 17), t3 = s2ch(11, 22);
-  pop(c, S2BX, 480, k, () => {
-    c.save(); c.translate(S2BX, 480); c.rotate(-.03 + .006 * Math.sin(tau * 1.5)); c.translate(-S2BX, -480);
-    c.save(); c.fillStyle = alpha('#000', .15); c.fill(polyPath(rectPts(S2BX - 380, 262, 780, 460, 10))); c.restore();
-    rshape(c, rectPts(S2BX - 390, 250, 780, 460, 10), { fill: '#fff7c9', stroke: P.ink, w: 4, seed: 301, t: tau });
-    rshape(c, rectPts(S2BX - 70, 226, 140, 44, 4), { fill: alpha(P.sky, .6), stroke: false, seed: 302, t: tau });
-    // 医院十字
-    const cx0 = S2BX - 300, cy0 = 330;
-    rshape(c, rectPts(cx0 - 48, cy0 - 48, 96, 96, 18), { fill: '#fff', stroke: P.red, w: 5, seed: 303, t: tau });
-    rshape(c, [[cx0 - 12, cy0 - 34], [cx0 + 12, cy0 - 34], [cx0 + 12, cy0 - 12], [cx0 + 34, cy0 - 12], [cx0 + 34, cy0 + 12], [cx0 + 12, cy0 + 12], [cx0 + 12, cy0 + 34], [cx0 - 12, cy0 + 34], [cx0 - 12, cy0 + 12], [cx0 - 34, cy0 + 12], [cx0 - 34, cy0 - 12], [cx0 - 12, cy0 - 12]], { fill: P.red, stroke: false, seed: 304, t: tau });
-    zh(c, '胃不好', S2BX - 200, 350, { size: 56, p: writeP(tau, t1, '胃不好', .1) });
-    zh(c, '有进食困扰', S2BX - 200, 436, { size: 56, p: writeP(tau, s2ch(11, 4), '有进食困扰', .1) });
-    if (tau > t2 - .1) { s2Arrow(c, S2BX - 250, 540, 50, 1, P.blue, tau);
-      zh(c, '先问医生', S2BX - 200, 566, { size: 64, color: mix(P.blue, P.ink, .3), p: writeP(tau, t2, '先问医生', .1) }); }
-    if (tau > t3) { zh(c, '别硬饿', S2BX + 150, 660, { size: 48, color: P.red, p: writeP(tau, t3, '别硬饿', .1) });
-      rline(c, [[S2BX + 140, 676], [S2BX + 310, 672]], { w: 4, color: P.red, seed: 305, t: tau, p: sm(t3 + .3, t3 + .6, tau) }); }
-    // 小胃也来了：先紧张，听到「先问医生」松口气
-    const kt = s2pop(tau, s2ch(11, 8));
-    pop(c, S2BX + 250, 470, kt, () => s2Tummy(c, S2BX + 250, 450 - Math.abs(Math.sin(tau * 3)) * 4, .9, tau < t2 + .3 ? 'shock' : 'happy', tau, 11));
-    if (tau > t2 + .4) { const kh = s2pop(tau, t2 + .4); pop(c, S2BX + 320, 370, kh, () => rshape(c, heartPts(S2BX + 320, 370, 22), { fill: P.red, stroke: P.ink, w: 3, seed: 306, t: tau })); }
-    c.restore();
-  });
-}
-
-// ===================== 讲台 + 姿势 =====================
-function s2Pose(tau, L) {
-  const gesture = L.talking ? .45 + .45 * Math.abs(Math.sin(tau * 1.6)) : .25;
-  let pose = 'lecture';
-  const inL = (i, a = -.1) => tau >= S2T(i) + a && tau < (i + 1 < S2LINES.length ? S2T(i + 1) - .1 : S2DUR);
-  if (inL(3)) pose = 'point';
-  else if (inL(5)) pose = tau < s2ch(5, 10) ? 'point' : 'shrug';
-  else if (inL(6)) pose = 'point';
-  else if (inL(7)) pose = tau < s2ch(7, 18) ? 'lecture' : 'point';
-  else if (inL(8)) pose = tau < S2T(8) + 1.3 ? 'read' : 'lecture';
-  else if (inL(9)) pose = 'point';
-  else if (inL(10)) pose = 'cheer';
-  if (tau > S2DUR - .6) pose = 'lecture';
-  return { pose, gesture };
-}
-function s2Cam(tau) {   // 讲台镜头：[缩放, 焦点 x, 焦点 y, 抖动 x, 抖动 y]
-  const tx = s2ch(5, 11) + .1;
-  let s = 1, fx = CX, fy = CY, dx = 0, dy = 0;
-  if (tau > S2T(5) - .1 && tau < S2T(6) + .5) { s = key(tau, [[S2T(5), 1], [S2T(5) + .9, 1.05], [S2E(5) + .2, 1.05], [S2T(6) + .4, 1]]); fx = 1560; fy = 470;
-    if (tau > tx + .25) { const d = Math.exp(-(tau - tx - .25) * 9); dx = 12 * Math.sin(tau * 83) * d; dy = 8 * Math.cos(tau * 71) * d; } }
-  else if (tau > S2T(9) - .1 && tau < S2T(10) + .5) { s = key(tau, [[S2T(9), 1], [S2T(9) + 1.6, 1.04], [S2E(9), 1.04], [S2T(10) + .4, 1]]); fx = 1250; fy = 470; }
-  return [s, fx, fy, dx, dy];
-}
-function s2Stage(c, tau, L) {
-  libraryBg(c, tau);
-  board(c, STAGE.board.x, STAGE.board.y, STAGE.board.w, STAGE.board.h, { t: tau });
-  s2Title(c, tau);
-  s2Scale(c, tau); s2Day(c, tau, L); s2Week(c, tau); s2Drinks(c, tau); s2Gut(c, tau); s2Foods(c, tau); s2Note(c, tau);
-  stageChar(c, tau, L, s2Pose(tau, L));
-}
-
-scene({ order: 2, key: 'diet', title: '吃饭', dur: S2DUR, lines: S2LINES,
+scene({ order: 2, key: 'diet', title: '吃饭', dur: S2DUR, lines: S2LINES, noFlip: true,
   fn(c, tau, L) {
-    const z = Math.min(sm(S2FS.in0, S2FS.in1, tau), 1 - sm(S2FS.out0, S2FS.out1, tau));
-    if (z >= 1) { s2Lab(c, tau, L); return; }
-    c.save();
-    if (z > 0) { const s = lerp(1, 1.75, z); c.translate(lerp(S2BX, CX, z), lerp(465, CY, z)); c.scale(s, s); c.translate(-S2BX, -465); }
-    else { const [s, fx, fy, dx, dy] = s2Cam(tau); c.translate(fx + dx, fy + dy); c.scale(s, s); c.translate(-fx, -fy); }
-    s2Stage(c, tau, L);
-    c.restore();
-    if (z > 0) fade(c, sm(.55, 1, z), () => s2Lab(c, tau, L));
-    fade(c, 1 - sm(0, .3, z), () => chapterTag(c, tau, '第二页 · 吃饭', { t0: tau < S2FS.out0 ? 0 : S2FS.out1 - .1 }));
+    // 进场：前 0.2 秒只画交接圆盘；出场：最后 0.2 秒只画交接线
+    if (tau < .2) { handoffDisc(c); return; }
+    if (tau > S2DUR - .2) { handoffThread(c); return; }
+    const t = twos(tau), C = s2cam(t), endK = sm(S2DUR - 1.4, S2DUR - .8, t);
+    s2cloth(c, C, 1 - endK);
+    for (const [i, f] of [[0, s2stA], [1, s2stB], [2, s2stC], [3, s2stD], [4, s2stE]]) { const [lx] = s2p(C, S2OX[i], 0), [rx] = s2p(C, S2OX[i] + 1920, 0); if (rx < -300 || lx > W + 300) continue; f(c, C, t); }
+    s2pat(c, C, t, tau, L);
+    // 开灯：夜色慢慢退去，圆盘（盘子）先留着
+    const dark = 1 - sm(.2, 1.1, t);
+    if (dark > 0) { c.save(); c.globalAlpha = dark; c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); const [px, py] = s2p(C, 720, 500, 0), k = s2k(C, 0);
+      cutPaper(c, circPts(px, py, 150 * k, 72), '#ede6d6', { seed: 2001, step: 26, blur: 20, sx: 0, sy: 6 }); c.restore(); }
+    // 定格动画的曝光闪动（极轻）
+    if (tau > 1.2 && tau < S2DUR - 1) { const f = Math.floor(tau * 12); c.fillStyle = `rgba(30,20,10,${hash(f, 91) * .025})`; c.fillRect(0, 0, W, H); }
   } });
