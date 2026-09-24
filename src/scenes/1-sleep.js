@@ -57,7 +57,7 @@ const s1NP = k => mix(P.purple, P.night, k);   // 夜里各层：越近越暗（
 const S1C = {
   kraft: mix(P.paperEdge, P.paper, .35), frame: mix(P.ink, P.purple, .22), white: '#f7f3ea', moon: '#ede6d6',
   lamp: P.lamp, amber: mix(P.lamp, P.ribbonRed, .28), phone: '#eef0ec', star: '#e9dfc4', sun: P.moon, sunIn: mix(P.moon, '#ffffff', .32),
-  kid: mix(P.ink, P.night, .4), bean: P.shelf2,
+  kid: mix(P.ink, P.night, .4), bean: mix(P.shelf2, P.moon, .28),
   // 天空转盘的色带：白天 → 金 → 暮紫 → 深紫 → 夜
   sky: ['#efe7d3', mix('#efe7d3', P.moon, .5), mix(P.moon, P.purple, .5), s1NP(.35), s1NP(.54)],
 };
@@ -77,7 +77,7 @@ function s1Clock(tau) {
     [b.sun0, 5.7], [b.wake, 7.2], [b.spin0, 7.9], [b.spin1, 23.2], [b.yank, 23.45], [b.yank + .42, 13],
     [b.back, 13], [b.back + 1.15, 23.7], [b.pm - .1, 23.7], [b.pm + 1.0, 39],
     [b.trial, 39], [b.trial + .45, 37.3], [b.trial + 1.0, 41], [b.trial + 1.5, 38.6],
-    [S1T(10) + .15, 38.6], [b.ribbon - .15, 51], [b.yankR, 51], [b.day, 62], [b.night - .1, 62], [b.night + .85, 74]]);
+    [S1T(10) + .15, 38.6], [b.ribbon - .15, 51], [b.yankR, 51], [b.day, 62], [b.night - .1, 62], [b.night + .85, 73]]);
 }
 // s1Night：夜的程度 0..1（太阳越低越暗）
 function s1Night(T) { const cs = Math.cos((T - 12) * Math.PI / 12); return 1 - easeSine(clamp((cs + .1) / .5, 0, 1)); }
@@ -96,7 +96,7 @@ function s1Cam(tau) {
   const cam = key(tau, [[0, wide], [b.found, [0, 10, 1.02]], [t(1) + .1, [0, 10, 1.03]], [b.tick + .9, [-30, -150, 1.06]], [b.light, [-40, -150, 1.07]],
     [b.sun0, [-40, -150, 1.07]], [b.sun0 + 1.4, win], [S1E(2), win], [t(3) + 1.0, [-60, -30, 1.18]], [t(4) + .1, [-60, -30, 1.18]], [b.walk0, door], [b.gag, door], [b.gag + .5, [60, -20, 1.2]],
     [t(5) + .1, [60, -20, 1.2]], [b.pane - .1, win], [t(6), win], [b.spin0 + .9, [0, -70, 1.0]], [b.off0, [0, -70, 1.0]], [b.phone, win2], [b.yank - .05, win2], [b.yank + .5, [0, -40, 1.04]], [S1T(8) + .2, [0, -40, 1.04]], [b.dim - .1, win], [b.back, win], [b.back + 1.1, [0, -30, 1.05]],
-    [t(9), [30, 0, 1.0]], [b.pm, [30, 0, 1.0]], [b.pm + 1, [0, -60, 1.04]], [t(10) + .2, [0, -60, 1.04]], [b.ribbon + .6, [0, -170, 1.08]], [b.yankR, [0, -150, 1.08]],
+    [t(9), [30, 0, 1.0]], [t(9) + .6, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm - .2, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm + .4, [30, 0, 1.0]], [b.pm + 1, [0, -60, 1.04]], [t(10) + .2, [0, -60, 1.04]], [b.ribbon + .6, [0, -170, 1.08]], [b.yankR, [0, -150, 1.08]],
     [b.day + .5, [-20, -80, 1.1]], [b.night + .2, [-20, -80, 1.1]], [b.file, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])], [b.exit0, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])]]);
   if (tau <= b.exit0) return cam;
   // 出场：推向月亮。天空层的放大倍数按指数长到 300/月亮半径，月亮从原位滑到正中
@@ -481,6 +481,7 @@ function s1State(tau) {
   if (ph > 0) { st.kidLit = ph * lerp(1, .55, dim); st.kidCol = mix(S1C.phone, S1C.amber, warm); st.phoneGlow = mix(S1C.phone, S1C.amber, warm); }
   if (tau > t(8) - .2 && tau < t(9) + .4) st.lampY = sm(b.lamp, b.lamp + .8, tau, easeIO);
   if (tau >= t(11) && tau < b.day + .3) { st.kidLit = sm(t(11), t(11) + .15, tau) * (1 - sm(b.day, b.day + .3, tau)); st.kidCol = S1C.lamp; }
+  if (tau > S1T(10) && (tau < S1T(11) || tau > b.night + .6)) { st.kidLit = .32; st.kidCol = mix(S1C.moon, P.purple, .25); }   // 夜里月光照进窗，看得见睡着的小人
   if (tau > b.file) { let f = 0; for (let k = 0; k < 5; k++) { const ta = b.file + .55 + k * .3; f = Math.max(f, Math.exp(-Math.max(0, tau - ta) * 7) * (tau > ta ? 1 : 0)); } st.flash = f; }
   // 门和走出去的小人
   st.door = sm(b.door, b.door + .4, tau, easeOutBack) * (1 - sm(t(5) + .1, t(5) + .4, tau));
@@ -533,6 +534,9 @@ function s1Box(c, tau, L, full = true) {
       cutPaper(c, [[-8, 0], [60, 0], [74, 20], [60, 40], [-8, 40]].map(([u, v]) => [u - 8, v - 4]), S1C.kraft, { seed: 753, step: 10, blur: 5, sy: 3 });
       zh(c, '5折起', 28, 26, { size: 26, align: 'center', color: P.ink }); c.restore(); }
   }
+  // 出场时镜头穿过台口：框、吊牌这些贴在台口上的东西跟着放大飞出画面
+  const ez = tau > b.exit0 ? cam[2] / s1Cam(b.exit0)[2] : 1, exitT = fn => { if (ez > 8) return; c.save(); c.translate(CX, CY); c.scale(ez, ez); c.translate(-CX, -CY); fn(); c.restore(); };
+  exitT(() => {
   // 顶檐上吊下来的东西
   s1Glass(c, tau, 700, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
   s1Sign(c, tau, '皮质醇', b.cort, S1T(3) + .2, { x: 1350, seed: 760 });
@@ -542,12 +546,13 @@ function s1Box(c, tau, L, full = true) {
   s1Sign(c, tau, '6–8 小时', b.six - .2, S1T(11) + .1, { x: 1560, size: 84, seed: 764 });
   s1Sign(c, tau, '睡觉 = 存档', b.num11, S1DUR, { x: 1330, size: 76, seed: 765 });
   s1Pointer(c, tau, st);
+  });
   // 前景：咖啡豆跳进锁孔，「困」字签被挡回去（L9）
   const pat = s1Patchouli(c, tau, L);
   if (st.props > .5) {
     const lock = s1Map([S1LOCK[0], S1LOCK[1] - 10], S1Z.props, cam), cup = s1Map([590, 800], S1Z.props, cam), z = lock[2];
     if (tau > b.bean) { const u = sm(b.bean, b.bean + .5, tau, easeIn), hop = Math.sin(Math.PI * clamp((tau - b.bean) / .5, 0, 1)) * 190, wig = tau > b.bean + .5 ? Math.sin((tau - b.bean) * 30) * .15 * Math.exp(-(tau - b.bean - .5) * 5) : 0;
-      s1Bean(c, lerp(cup[0], lock[0], u), lerp(cup[1], lock[1] - 14 * z, u) - hop, u * 5 + wig, z * lerp(.7, 1, u)); }
+      s1Bean(c, lerp(cup[0], lock[0], u), lerp(cup[1], lock[1] - 14 * z, u) - hop, u * 5 + wig, z * lerp(.9, 1.35, u)); }
     if (tau > b.toss && pat) { const from = pat.tip || [S1PX - 200, 560], u = clamp((tau - b.toss) / (b.bump - b.toss), 0, 1), e1 = easeIn(u);
       if (tau < b.bump) { const q = [lerp(from[0], lock[0] + 30, e1), lerp(from[1], lock[1] - 20 * z, e1) - Math.sin(Math.PI * u) * 150]; s1KunTag(c, q[0], q[1], u * 7, z); }
       else { const v = clamp((tau - b.bump) / .9, 0, 1), fx = lock[0] + 30 + v * 140, fy = lock[1] - 20 * z - Math.sin(Math.PI * Math.min(1, v * 1.6)) * 90 + easeIn(v) * 160;
@@ -562,7 +567,7 @@ function s1Box(c, tau, L, full = true) {
   });
   // 困惑的太阳旁边冒一个问号
   if (st.sunEye && tau > b.yank + .5) { const q = sm(b.yank + .5, b.yank + .75, tau, easeOutBack) * (1 - sm(b.back, b.back + .3, tau)); zh(c, '？', sunS[0] + 70, sunS[1] - 60, { size: 56 * Math.max(q, .01), color: P.ink2, al: q }); }
-  if (full) { s1Frame(c, tau); s1Tag(c, tau, 1.9); }
+  if (full) exitT(() => { s1Frame(c, tau); s1Tag(c, tau, 1.9); });
 }
 
 // ===================== 进场：书页上的一扇小窗 =====================
