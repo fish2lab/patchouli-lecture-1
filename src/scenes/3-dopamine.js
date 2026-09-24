@@ -486,11 +486,11 @@ function s3BoardContent(c, tau) {
   });
   // ---- D：对策一：只剩一样，平缓的小起伏（L7）----
   if (tau >= T(6) && tau < T(7)) fade(c, out(T(7)), () => {
-    s3Card(c, tau, 960, 196, 680, 76, '对策一：别每次都叠满 buff', T(6) + .1, { size: 44 });
     // 上一张图的超高峰超深坑留一个淡淡的影子，做对比
-    const gk = .3 * (1 - sm(T(6) + 2.2, E(6) - .4, tau));
+    const gk = .5 * (1 - sm(T(6) + 2.2, E(6) - .4, tau));
     if (gk > 0) { const gp = []; for (let i = 0; i <= 200; i++) { const uu = i / 200 * .62; gp.push([s3X(uu), s3Y(S3C(uu))]); }
       rline(c, gp, { w: 4, color: P.ink2, dash: [10, 12], al: gk, seed: 818 }); }
+    s3Card(c, tau, 960, 196, 680, 76, '对策一：别每次都叠满 buff', T(6) + .1, { size: 44 });
     const uD = key(tau, [[T(6) + 2.1, 0], [E(6) - .3, .96]], s3Lin);
     s3Curve(c, tau, S3D, uD, { seed: 820, color: P.green });
     const ck = sm(E(6) - .5, E(6) - .2, tau, s3Lin);
