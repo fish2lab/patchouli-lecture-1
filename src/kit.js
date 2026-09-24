@@ -264,6 +264,7 @@ function caption(c, text, tau, t0 = 0, o = {}) {
   c.restore();
 }
 
+const CHALK = '#e9e4d6';   // 粉笔色
 // 黑板：木框（剪纸）+ 石板（暗绿黑），返回石板内区 { x, y, w, h }。上面的字用粉笔色 CHALK
 function chalkboard(c, x, y, w, h, t, o = {}) {
   const { legs = true } = o;

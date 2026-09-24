@@ -226,7 +226,7 @@ function s4Char(c, tau, L) {
   const bob = 7 * Math.sin(twos(tau) * 1.5);
   const drop = 1 - sm(1.0, 1.7, tau, easeOutBack);
   o.y += bob - drop * 900;
-  c.save(); c.filter = 'brightness(.9) saturate(.85)';
+  c.save();   // 不用 c.filter（会让每帧慢几十倍），蓝底上直接画原色人偶
   const r = drawPatchouli(c, { ...o, mouth: talk, blink: o.mood === 'sleepy' && tau > s4At(3, .6) && tau < t(4) ? 1 : blinkAt(tau, 4), t: tau });
   c.restore(); return { ...r, o };
 }
