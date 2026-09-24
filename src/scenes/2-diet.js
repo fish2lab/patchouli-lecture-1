@@ -134,7 +134,7 @@ function s2Scale(c, tau) {
     });
     if (tau > tEq) for (let k = 0; k < 6; k++) { const u = clamp((tau - tEq - k * .05) / .7, 0, 1), a2 = k / 6 * TAU + .3;
       if (u > 0 && u < 1) sparkle(c, px + Math.cos(a2) * (60 + u * 70), py - 90 + Math.sin(a2) * (60 + u * 70), 14 * (1 - u), { color: P.moon }); }
-    zh(c, '同样重要', px, 700, { size: 44, align: 'center', color: P.ink2, p: writeP(tau, tEq + .2, '同样重要', .08), outline: P.paper, ow: 10 });
+    zh(c, '同样重要', px, 824, { size: 44, align: 'center', color: P.ink2, p: writeP(tau, tEq + .2, '同样重要', .08), outline: P.paper, ow: 10 });
   }));
 }
 
@@ -145,7 +145,7 @@ function s2Mouse(c, x, y, s, o = {}) {
   c.save(); c.translate(x, y - hop); c.scale(face * s, s);
   if (eat > 0) c.rotate(eat * .09 * (.5 + .5 * Math.sin(t * 10 + seed)));
   if (sleepy > 0) c.rotate(-sleepy * .06);
-  const rx = 46 + fat * 30, ry = 30 + fat * 17, hx = rx * .62 + 10, hy = -ry * 1.18 - 6 + fat * 10 + (eat > 0 ? 6 : 0);
+  const rx = 46 + fat * 24, ry = 30 + fat * 15, hx = rx * .62 + 10, hy = -ry * 1.18 - 6 + fat * 10 + (eat > 0 ? 6 : 0);
   const white = '#fffdf8', wag = Math.sin(t * 3 + seed) * 8;
   rline(c, [[-rx + 6, -ry * .6], [-rx - 24, -ry * .45 + wag * .3], [-rx - 46, -ry - 6 + wag], [-rx - 34, -ry - 30 + wag]], { w: 4.5, color: '#e98aa4', smooth: true, seed: seed + 3, t });
   const lf = run ? Math.sin(t * 24) * 11 : 0;
@@ -254,7 +254,7 @@ function s2Lab(c, tau, L) {
   }
   // 左笼三只：吃、吃、晃悠 → 变胖、没精神
   const fat = sm(tf, tf + 1.1, tau), sleepy = sm(tf + .8, tf + 1.0, tau);
-  const mice = [[250, 1, 0], [535, -1, 1], [710, -1, 2]];
+  const mice = [[245, 1, 0], [540, -1, 1], [745, -1, 2]];
   mice.forEach(([mx, face, k]) => {
     const ka = s2pop(tau, t2 + .9 + k * .18, .4); if (ka <= 0) return;
     let xx = mx, ff = face, eat = k < 2 && fat < .5 ? 1 : 0;
@@ -265,12 +265,13 @@ function s2Lab(c, tau, L) {
   });
   // 右笼：两只吃饭 + 一只在跑轮里
   const running = sm(tRun, tRun + .4, tau), wx = 1640, wy = gy - 130, wr = 100;
-  if (cp > .6) fade(c, sm(t2 + .6, t2 + 1, tau), () => s2Wheel(c, wx, wy, wr, (tau - tRun) * running * -5 * (tau > tRun ? 1 : 0), tau));
+  if (cp > .6) fade(c, sm(t2 + .6, t2 + 1, tau), () => s2Wheel(c, wx, wy, wr, (tau > tRun ? (tau - tRun) * running * 7 : 0), tau));
   [[1150, 1, 0], [1440, -1, 1]].forEach(([mx, face, k]) => {
     const ka = s2pop(tau, t2 + 1.0 + k * .18, .4); if (ka <= 0) return;
     const eat = fillR > .5 && running < .5 ? 1 : 0, hop = running * Math.abs(Math.sin(tau * 6 + k * 1.3)) * 22;
     pop(c, mx, gy, ka, () => s2Mouse(c, mx, gy, 1.2, { face, t: tau, seed: 40 + k * 10, eat, hop }));
   });
+  if (running > .5) for (let k = 0; k < 3; k++) { const u = (tau * 3 + k / 3) % 1; rline(c, [[wx - 60 - u * 30, wy + wr - 50 + k * 16], [wx - 100 - u * 30, wy + wr - 50 + k * 16]], { w: 3, color: P.ink2, al: 1 - u, seed: 150 + k, t: tau }); }
   const kw = s2pop(tau, t2 + 1.4, .4);
   pop(c, wx, wy + wr - 12, kw, () => s2Mouse(c, wx, wy + wr - 12 - (running ? Math.abs(Math.sin(tau * 12)) * 5 : 0), .95, { face: 1, t: tau, seed: 60, run: running > .5 ? 1 : 0 }));
   if (running > 0) for (let k = 0; k < 5; k++) { const u = ((tau - tRun) * .9 + k / 5) % 1, sx = wx + (k - 2) * 46 + Math.sin(u * 5 + k) * 14;
@@ -369,11 +370,11 @@ function s2Day(c, tau, L) {
     pop(c, s2hx(7), 262, s2pop(tau, tS), () => s2Sun(c, s2hx(7), 262, 22, tau));
     zh(c, '起床', s2hx(7) + 44, 276, { size: 40, p: writeP(tau, tS + .1, '起床', .1) });
     pop(c, s2hx(24), 262, s2pop(tau, tM), () => drawMoonIcon(c, s2hx(24), 262, 26, P.moon, -.3));
-    zh(c, '睡觉', s2hx(24) + 36, 276, { size: 40, p: writeP(tau, tM + .1, '睡觉', .1) });
+    zh(c, '睡觉', s2hx(24) - 36, 276, { align: 'right', size: 40, p: writeP(tau, tM + .1, '睡觉', .1) });
     // 早上 1h 先不吃
     if (tau > tG) { s2Bracket(c, s2hx(7), s2hx(8), 408, { t: tau, p: sm(tG, tG + .3, tau) }); zh(c, '先不吃 1h', s2hx(7) - 6, 392, { size: 40, p: writeP(tau, tG + .1, '先不吃 1h', .08) }); }
     if (tau > tw + .3) zh(c, '吃饭时间', s2hx(14.5), y + 50, { size: 46, align: 'center', color: '#fff', p: writeP(tau, tw + .35, '吃饭时间', .09), outline: mix(P.green, P.ink, .4), ow: 6 });
-    if (tau > tR) { s2Bracket(c, s2hx(21), s2hx(24), 408, { t: tau, p: sm(tR, tR + .4, tau) }); zh(c, '不再进食 2–3h', s2hx(24), 392, { size: 40, align: 'right', p: writeP(tau, tR + .2, '不再进食 2–3h', .08) }); }
+    if (tau > tR) { s2Bracket(c, s2hx(21), s2hx(24), 408, { t: tau, p: sm(tR, tR + .4, tau) }); zh(c, '不再进食 2–3h', s2hx(24) - 14, 392, { size: 40, align: 'right', p: writeP(tau, tR + .2, '不再进食 2–3h', .08) }); }
     // 小胃跟着时间走
     const hh = key(tau, [[tw, 7.4], [S2E(4), 23.3], [S2T(5), 23.3], [S2T(5) + .7, 25]], s2lin);
     const moving = (tau > tw && tau < S2E(4)) || (tau > S2T(5) && tau < S2T(5) + .7);
@@ -385,7 +386,7 @@ function s2Day(c, tau, L) {
         rline(c, [[tx0, y + h + 6], [tx0, 628]], { w: 3, color: P.ink2, dash: [8, 9], seed: 3 });
         rshape(c, [[tx0, y + h + 2], [tx0 - 10, y + h + 18], [tx0 + 10, y + h + 18]], { fill: P.red, stroke: P.ink, w: 2.5, seed: 4, t: tau });
       });
-      pop(c, tx0, ty + 50, kt, () => s2Tummy(c, tx0, ty, .72, mood, tau));
+      pop(c, tx0, ty + 50, kt, () => s2Tummy(c, tx0, ty, .8, mood, tau));
       if (mood === 'sleepy') for (let z = 0; z < 2; z++) { const u = (tau * .7 + z / 2) % 1; zh(c, 'z', tx0 + 50 + u * 26, ty - 50 - u * 50, { size: 34, color: P.ink2, al: Math.sin(u * Math.PI) }); }
       if (mood === 'happy') { const u = (tau * 1.3) % 1; sparkle(c, tx0 + 56, ty - 40 - u * 30, 12 * Math.sin(u * Math.PI), { color: P.moon }); }
     }
@@ -393,10 +394,10 @@ function s2Day(c, tau, L) {
     if (tau > tb0) {
       const u = clamp((tau - tb0) / .6, 0, 1), v = tau - tl, bx = lerp(2080, s2hx(25), easeOut(u)), by = lerp(60, y, u * u);
       const sq = v > 0 ? 1 - .18 * Math.sin(v * 18) * Math.exp(-v * 7) : 1;
-      s2Bag(c, bx, by - 2, .82, tau, (1 - u) * 1.6, sq);
-      if (v > 0) { zh(c, '凌晨 1:00', s2hx(25), 612, { size: 36, align: 'center', color: P.red, p: writeP(tau, tl, '凌晨 1:00', .06) });
+      s2Bag(c, bx, by - 2, 1.02, tau, (1 - u) * 1.6, sq);
+      if (v > 0) { zh(c, '凌晨 1:00', s2hx(25) - 16, 612, { size: 36, align: 'right', color: P.red, p: writeP(tau, tl, '凌晨 1:00', .06) });
         if (v < .5) for (let k = 0; k < 6; k++) { const a2 = Math.PI + k / 5 * Math.PI; sparkle(c, s2hx(25) + Math.cos(a2) * (50 + v * 120), y - 8 + Math.sin(a2) * (10 + v * 60), 10 * (1 - v * 2), { color: P.paperEdge }); } }
-      if (tau > tx) cross(c, s2hx(25), y - 60, 190, { p: sm(tx, tx + .3, tau, s2lin), t: tau });
+      if (tau > tx) cross(c, s2hx(25) - 10, y - 70, 150, { p: sm(tx, tx + .3, tau, s2lin), t: tau });
     }
   });
 }
@@ -508,18 +509,19 @@ function s2Drinks(c, tau) {
     if (tau > tN) { s2Bracket(c, 800, 1380, base + 100, { t: tau, p: sm(tN, tN + .4, tau), color: mix(P.green, P.ink, .2) });
       zh(c, '不算“开饭”', 1090, base + 180, { size: 52, align: 'center', color: mix(P.green, P.ink, .3), p: writeP(tau, tN + .2, '不算“开饭”', .08) }); }
     rline(c, [[1490, 250], [1490, 700]], { w: 3, color: P.paperEdge, dash: [12, 10], seed: 5, t: tau, p: sm(tS - .3, tS + .2, tau) });
-    const ks = s2pop(tau, tS), pour = sm(tS + .3, tX, tau), tilt = -.9 * pour;
-    pop(c, 1660, 400, ks, () => s2Spoon(c, 1640, 400, 1, tilt, tau, pour));
-    if (pour > 0) for (let k = 0; k < 14; k++) { const u = ((tau - tS - .3) * 1.4 + k / 14) % 1, xx = 1600 - u * 8 + (hash(k, 2) - .5) * 26, yy = 410 + u * u * 180;
-      if (tau - tS - .3 > k / 14 / 1.4) rshape(c, rectPts(xx - 4, yy - 4, 8, 8, 1), { fill: '#fff', stroke: P.ink2, w: 1.5, seed: k, al: 1 - u }); }
-    zh(c, '一勺糖', 1660, base + 70, { size: 40, align: 'center', p: writeP(tau, tS + .1, '一勺糖', .08) });
-    if (tau > tX) { cross(c, 1680, 380, 150, { p: sm(tX, tX + .3, tau, s2lin), t: tau });
+    const ks = s2pop(tau, tS), pour = sm(tS + .35, tS + .75, tau), tilt = -.85 * pour;
+    pop(c, 1640, base - 70, ks, () => s2Mug(c, 1640, base, .9, tau));
+    pop(c, 1640, 250, ks, () => s2Spoon(c, 1640, 238, .85, tilt, tau, sm(tS + .6, tX, tau)));
+    if (pour > .9) for (let k = 0; k < 12; k++) { const t0 = tS + .6 + k * .06, u = clamp((tau - t0) / .35, 0, 1);
+      if (tau > t0 && u < 1) rshape(c, rectPts(1612 + (hash(k, 2) - .5) * 18 - 4, lerp(272, 352, u * u) - 4, 8, 8, 1), { fill: '#fff', stroke: P.ink2, w: 1.5, seed: k }); }
+    zh(c, '+ 一勺糖', 1640, base + 70, { size: 40, align: 'center', p: writeP(tau, tS + .1, '+ 一勺糖', .07) });
+    if (tau > tX) { cross(c, 1650, 350, 170, { p: sm(tX, tX + .3, tau, s2lin), t: tau });
       zh(c, '就算开饭！', 1660, base + 180, { size: 48, align: 'center', color: P.red, p: writeP(tau, tX + .2, '就算开饭！', .07) }); }
   });
 }
 
 // ===================== L9–L10：肠道和菌群 =====================
-const S2GUT = [[820, 238], [900, 290], [1200, 290], [1450, 290], [1528, 380], [1450, 470], [1200, 470], [920, 470], [838, 560], [920, 650], [1200, 650], [1470, 650]];
+const S2GUT = [[850, 290], [900, 290], [1200, 290], [1450, 290], [1528, 380], [1450, 470], [1200, 470], [920, 470], [838, 560], [920, 650], [1200, 650], [1470, 650]];
 const S2GUTP = spline(S2GUT, 4);
 const S2GUTC = (() => { const acc = [0]; for (let i = 1; i < S2GUTP.length; i++) acc.push(acc[i - 1] + Math.hypot(S2GUTP[i][0] - S2GUTP[i - 1][0], S2GUTP[i][1] - S2GUTP[i - 1][1])); return acc; })();
 function s2GutAt(u) {   // 沿肠道 u∈[0,1] 的位置和切线角
@@ -532,7 +534,7 @@ const S2BUGS = (() => {
   const r = rng(29), out = [], N = 24;
   const kinds = { 0: [['coccus', P.green], ['coccus', P.green], ['rod', P.green]], 1: [['rod', P.blue], ['spiral', P.orange], ['duo', P.purple]], 2: [['spiral', P.teal], ['spiky', P.gold], ['rod', P.sky], ['duo', P.red], ['coccus', P.purple], ['spiral', P.blue]] };
   for (let k = 0; k < N; k++) { const wave = [0, 2, 1][k % 3], list = kinds[wave], [kind, col] = list[Math.floor(r() * list.length)];
-    out.push({ u: .04 + .92 * (k + r() * .6) / N, off: (r() - .5) * 38, kind, col, sz: .9 + r() * .25, wave, ph: r() * TAU }); }
+    out.push({ u: .04 + .92 * (k + r() * .6) / N, off: (r() - .5) * 26, kind, col, sz: 1.25 + r() * .3, wave, ph: r() * TAU }); }
   return out;
 })();
 function s2Bug(c, x, y, sz, kind, col, ang, t, seed) {
@@ -596,20 +598,20 @@ function s2Gut(c, tau) {
     // 一碗发酵食品倒进来
     const kb = s2pop(tau, tbw) * (1 - sm(tp + 1.8, tp + 2.1, tau, easeIn)), tilt = .95 * sm(tp - .1, tp + .4, tau);
     if (kb > 0) {
-      pop(c, 800, 196, kb, () => { c.save(); c.translate(800, 196); c.rotate(tilt); s2FBowl(c, 0, 40, .62, tau); c.restore(); });
-      zh(c, '发酵食品', 872, 214, { size: 36, al: clamp(kb, 0, 1), p: writeP(tau, tbw + .1, '发酵食品', .06), outline: P.paper, ow: 8 });
-      if (tau > tp + .2) for (let k = 0; k < 10; k++) { const u = ((tau - tp - .2) * 1.6 + k / 10) % 1, cols = [P.teal, P.gold, P.sky, P.red, P.purple];
-        c.fillStyle = cols[k % 5]; c.globalAlpha = clamp(kb, 0, 1) * (1 - u); c.beginPath(); c.arc(812 + u * 12 + (hash(k, 3) - .5) * 20, 210 + u * 60, 6, 0, TAU); c.fill(); c.globalAlpha = 1; }
+      pop(c, 800, 170, kb, () => { c.save(); c.translate(800, 170); c.rotate(tilt); s2FBowl(c, 0, 36, .9, tau); c.restore(); });
+      zh(c, '发酵食品', 890, 196, { size: 38, al: clamp(kb, 0, 1), p: writeP(tau, tbw + .1, '发酵食品', .06), outline: P.paper, ow: 8 });
+      if (tau > tp + .2) for (let k = 0; k < 12; k++) { const u = ((tau - tp - .2) * 1.6 + k / 12) % 1, cols = [P.teal, P.gold, P.sky, P.red, P.purple];
+        c.fillStyle = cols[k % 5]; c.globalAlpha = clamp(kb, 0, 1) * (1 - u); c.beginPath(); c.arc(840 + u * 16 + (hash(k, 3) - .5) * 24, 200 + u * 90, 7, 0, TAU); c.fill(); c.globalAlpha = 1; }
     }
     // 炎症指标 ↓
     const ki = s2pop(tau, ti);
-    pop(c, 1650, 760, ki, () => {
-      const fs = lerp(1, .55, sm(ti + .3, ti + 1.0, tau)), fx = 1528, fy = 770;
+    pop(c, 1640, 760, ki, () => {
+      const fs = lerp(1.5, .8, sm(ti + .3, ti + 1.0, tau)), fx = 1500, fy = 775;
       c.save(); c.translate(fx, fy); c.scale(fs, fs);
       rshape(c, [[0, 18], [-20, 6], [-18, -14], [-8, -6], [-6, -30], [8, -16], [14, -38], [22, -8], [20, 8]], { fill: P.orange, stroke: P.ink, w: 3, seed: 11, t: tau, smooth: true });
       c.restore();
-      zh(c, '炎症指标', 1560, 784, { size: 40 });
-      s2Arrow(c, 1745, 768, 40, 1, P.green, tau);
+      zh(c, '炎症指标', 1540, 790, { size: 44 });
+      s2Arrow(c, 1745, 770, 46, 1, P.green, tau);
     });
   }));
 }
@@ -681,8 +683,9 @@ function s2Foods(c, tau) {
     pop(c, 1050, 700, kb, () => s2Box(c, 1050, 720, .95, tau, sm(tV, tV + 1.1, tau, s2lin)));
     zh(c, '+ 蔬菜粗粮', 1050, 800, { size: 40, align: 'center', color: mix(P.green, P.ink, .3), p: writeP(tau, tV + .2, '+ 蔬菜粗粮', .08) });
     pop(c, 1210, 590, s2pop(tau, tC), () => check(c, 1210, 590, 64, { t: tau }));
-    const kt = s2pop(tau, s2ch(10, 22) - .3), sh = lerp(1, .55, sm(tT, tT + .6, tau));
+    const kt = s2pop(tau, s2ch(10, 13) + .3), sh = lerp(1.05, .6, sm(tT + .1, tT + .8, tau));
     pop(c, 1560, 720, kt, () => s2Boba(c, 1560, 730, .95 * sh, tau));
+    if (tau > tT + .5) rshape(c, [[1560 + 70 * sh, 730 - 200 * sh], [1560 + 80 * sh, 730 - 178 * sh], [1560 + 70 * sh, 730 - 170 * sh], [1560 + 62 * sh, 730 - 178 * sh]], { fill: P.sky, stroke: P.ink, w: 2, seed: 9, t: tau, smooth: true });
     if (tau > tT) { zh(c, '少点奶茶', 1580, 800, { size: 40, align: 'center', color: P.red, p: writeP(tau, tT + .1, '少点奶茶', .08) });
       s2Arrow(c, 1680, 640, 46, 1, P.red, tau); }
   });
@@ -707,6 +710,10 @@ function s2Note(c, tau) {
       zh(c, '先问医生', S2BX - 200, 566, { size: 64, color: mix(P.blue, P.ink, .3), p: writeP(tau, t2, '先问医生', .1) }); }
     if (tau > t3) { zh(c, '别硬饿', S2BX + 150, 660, { size: 48, color: P.red, p: writeP(tau, t3, '别硬饿', .1) });
       rline(c, [[S2BX + 140, 676], [S2BX + 310, 672]], { w: 4, color: P.red, seed: 305, t: tau, p: sm(t3 + .3, t3 + .6, tau) }); }
+    // 小胃也来了：先紧张，听到「先问医生」松口气
+    const kt = s2pop(tau, s2ch(11, 8));
+    pop(c, S2BX + 250, 470, kt, () => s2Tummy(c, S2BX + 250, 450 - Math.abs(Math.sin(tau * 3)) * 4, .9, tau < t2 + .3 ? 'shock' : 'happy', tau, 11));
+    if (tau > t2 + .4) { const kh = s2pop(tau, t2 + .4); pop(c, S2BX + 320, 370, kh, () => rshape(c, heartPts(S2BX + 320, 370, 22), { fill: P.red, stroke: P.ink, w: 3, seed: 306, t: tau })); }
     c.restore();
   });
 }
