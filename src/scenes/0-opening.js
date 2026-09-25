@@ -232,7 +232,8 @@ function s0Endpaper(c) {
   cutPaper(c, rectPts(x0, y0, w, h, 10), mix(GRIMOIRE.leather, P.ink, .06), { seed: 2101, step: 28, shadow: false, grain: 0 });
   // 衬纸比翻过来的书页小一圈（外缘 48、上下 34），第一页落下时正好整张盖住
   const mx = x0 + 48, my = y0 + 34, mw = w - 52, mh = h - 68, path = cutPaper(c, rectPts(mx, my, mw, mh, 3), P.purple, { seed: 2102, step: 40, shadow: false, grain: 0, edge: false });
-  c.save(); c.clip(path); c.drawImage(S0MARBLE, mx, my, mw, mh); c.fillStyle = alpha(mix(P.purple, P.ink, .5), .22); c.fillRect(mx, my, mw, mh);
+  c.save(); c.clip(path); c.drawImage(S0MARBLE, mx, my, mw, mh); c.fillStyle = alpha(mix(P.purple, P.ink, .45), .5);   // 罩一层紫：石纹留着，对比压一半（颜色做减法）
+   c.fillRect(mx, my, mw, mh);
   const g = c.createLinearGradient(CX, 0, CX - 120, 0); g.addColorStop(0, 'rgba(30,18,14,.35)'); g.addColorStop(1, 'rgba(30,18,14,0)'); c.fillStyle = g; c.fillRect(CX - 120, my, 120, mh); c.restore();
   // 藏书票
   const bx = mx + mw / 2, by = BOOK.y + 440, bw = 300, bh = 400;
@@ -285,10 +286,6 @@ function s0Riffle(c, tau) {
   const us = S0H.riff.map(t0 => (tau - t0) / S0H.riffDur), started = us.filter(u => u > 0).length, landed = us.filter(u => u >= 1).length, R = BOOK.R;
   s0Tail(c, BOOK.y + BOOK.h + 6, 1 - sm(S0H.riff[0], S0H.spread, tau));
   if (landed === 0) s0Endpaper(c);
-  // 刚落下的那张纸：背面在半空时的暗色（turnPage 画的）0.25 秒里慢慢平成左页的纸色，不是一下跳亮
-  const dl = tau - (S0H.riff[landed - 1] + S0H.riffDur); if (landed > 0 && dl < .25) { const pts = [[CX, R.y], [CX - R.w, R.y], [CX - R.w, R.y + R.h], [CX, R.y + R.h]], a = 1 - dl / .25;
-    c.save(); c.globalAlpha *= a; c.fillStyle = BOOK.page2; c.fill(polyPath(pts)); c.clip(polyPath(pts)); grain(c, polyPath(pts), .14);
-    const g = c.createLinearGradient(CX, 0, CX - R.w, 0); g.addColorStop(0, 'rgba(60,40,20,.28)'); g.addColorStop(1, 'rgba(60,40,20,.18)'); c.fillStyle = g; c.fill(polyPath(pts)); c.restore(); }
   if (started === 1) s0HalfTitle(c);
   const moving = [0, 1, 2].filter(k => us[k] > 0 && us[k] < 1), onLeft = k => easeIO(us[k]) >= .5;
   for (const k of [...moving.filter(onLeft), ...moving.filter(k => !onLeft(k)).reverse()]) { turnPage(c, us[k]);
