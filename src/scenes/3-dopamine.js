@@ -63,10 +63,10 @@ function s3Line2D(tau) {
   C.pts.forEach((p, i) => {
     const f = [C.flat[i][0], wave(C.flat[i][0], yG)]; let m;
     if (C.kind[i]) { const j = (i - C.tA) / (C.tB - C.tA); m = sm(T0 + 2.2 + j * .9, T0 + 2.3 + j * .9, tau) * (1 - sm(T1 + .5 + (1 - j) * .6, T1 + .6 + (1 - j) * .6, tau)); }
-    else { const h = (S3GY - p[1]) / 260; m = sm(T0 + .2 + h * 1.1, T0 + .55 + h * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack)); }
-    if (C.kind[i]) { // 乱线的点在没画出来 / 解开后缩回头顶
-      const hm = sm(T0 + .2 + (S3GY - C.head[1]) / 260 * 1.1, T0 + .55 + (S3GY - C.head[1]) / 260 * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack));
-      const hp = [lerp(C.flat[C.tA][0], C.head[0], hm), lerp(yG, C.head[1], hm)]; out.push([lerp(hp[0], p[0], m), lerp(hp[1], p[1], m)]); }
+    else { const h = (S3GY - p[1]) / 260; m = Math.max(0, sm(T0 + .2 + h * 1.1, T0 + .55 + h * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack))); }   // 摊平时 easeOutBack 会冲过头，别压到地面以下
+    if (C.kind[i]) { // 乱线的点在没画出来 / 解开后缩回头顶（落点也跟着横线起伏，否则线上有个台阶）
+      const hm = Math.max(0, sm(T0 + .2 + (S3GY - C.head[1]) / 260 * 1.1, T0 + .55 + (S3GY - C.head[1]) / 260 * 1.1, tau, easeOutBack) * (1 - sm(T1 + 1.0, T1 + 1.5, tau, easeOutBack)));
+      const hp = [lerp(C.flat[C.tA][0], C.head[0], hm), lerp(wave(C.flat[C.tA][0], yG), C.head[1], hm)]; out.push([lerp(hp[0], p[0], m), lerp(hp[1], p[1], m)]); }
     else out.push([lerp(f[0], p[0], m), lerp(f[1], p[1], m)]);
   });
   for (let x = C.x1 + 16; x <= W + 20; x += 16) out.push([x, wave(x, yG)]);
