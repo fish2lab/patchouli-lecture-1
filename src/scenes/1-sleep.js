@@ -30,9 +30,9 @@ const S1B = (() => { const t = S1T, e = S1E, w = S1W; return {
   in0: .85, in1: 1.6,                                            // 穿窗进灯箱
   rise: [1.75, 2.0, 2.3, 2.6], found: w(0, .62), pat: 1.7,       // 远山、校园、宿舍、树依次立起；「地基」地面和草叶砸下来
   tick: w(1, .12), notch: w(1, .62), light: w(1, .86),           // 刻度环、拨一格、是光
-  sun0: w(2, .05), cort: w(2, .48), wake: w(2, .8),              // 日出、皮质醇、叫醒
+  sun0: w(2, .05), beam: w(2, .05) + 1.4, cort: w(2, .48), wake: w(2, .8),   // 日出、太阳越过远山后光带伸向窗、皮质醇、叫醒
   yawn: w(3, .5), glass: w(3, .3),                              // 困意、倒计时
-  door: w(4, .18), walk0: w(4, .3), walk1: w(4, .52), num4: w(4, .5), gag: e(4) - 1.15,
+  door: w(4, .18), walk0: w(4, .3), walk1: w(4, .52), num4: w(4, .5), pull: e(4) - 1.15,
   pane: t(5) + .35, tag5: w(5, .66),
   spin0: t(6) + .15, spin1: t(6) + 1.55, num6: w(6, .2), wedge: w(6, .3), curtain: w(6, .68),
   off0: t(7) + .15, phone: w(7, .3), yank: w(7, .72),
@@ -74,7 +74,7 @@ const s1Pal = (k, nk) => mix(S1PAL[k][0], S1PAL[k][1], nk);
 function s1Clock(tau) {
   const b = S1B;
   return key(tau, [[0, 3.4], [b.notch, 3.4], [b.notch + .16, 4.7], [b.light - .15, 4.7], [b.light + .45, 5.7],
-    [b.sun0, 5.7], [b.wake, 7.2], [b.spin0, 7.9], [b.spin1, 23.2], [b.yank, 23.45], [b.yank + .42, 13],
+    [b.sun0, 5.7], [b.beam + .1, 8.5], [b.spin0, 8.8], [b.spin1, 23.2], [b.yank, 23.45], [b.yank + .42, 13],
     [b.back, 13], [b.back + 1.15, 23.7], [b.pm - .1, 23.7], [b.pm + 1.0, 39],
     [b.trial, 39], [b.trial + .45, 37.4], [b.trial + 1.0, 40.1], [b.trial + 1.5, 38.6],
     [S1T(10) + .15, 38.6], [b.ribbon - .15, 51], [b.yankR, 51], [b.day, 62], [b.night - .1, 62], [b.night + .85, 73]]);
@@ -94,7 +94,7 @@ function s1Cam(tau) {
   const b = S1B, t = S1T, kw = S1WINS[S1KW], wide = [0, 0, 1];
   const win = s1Aim(kw, S1Z.dorm, 2.4, [800, 470]), win2 = s1Aim(kw, S1Z.dorm, 2.5, [820, 470]), door = s1Aim([840, 760], S1Z.ground, 1.35, [820, 590]);
   const cam = key(tau, [[0, wide], [b.found, [0, 10, 1.02]], [t(1) + .1, [0, 10, 1.03]], [b.tick + .9, [-30, -150, 1.06]], [b.light, [-40, -150, 1.07]],
-    [b.sun0, [-40, -150, 1.07]], [b.sun0 + 1.4, win], [S1E(2), win], [t(3) + 1.0, [-60, -30, 1.18]], [t(4) + .1, [-60, -30, 1.18]], [b.walk0, door], [b.gag, door], [b.gag + .5, [60, -20, 1.2]],
+    [b.sun0, [-40, -150, 1.07]], [b.sun0 + 1.4, win], [S1E(2), win], [t(3) + 1.0, [-60, -30, 1.18]], [t(4) + .1, [-60, -30, 1.18]], [b.walk0, door], [b.pull, door], [b.pull + .5, [60, -20, 1.2]],
     [t(5) + .1, [60, -20, 1.2]], [b.pane - .1, win], [t(6), win], [b.spin0 + .9, [0, -70, 1.0]], [b.curtain - .6, [0, -70, 1.0]], [b.curtain + .3, s1Aim(kw, S1Z.dorm, 1.5, [860, 500])], [b.off0 + .1, s1Aim(kw, S1Z.dorm, 1.5, [860, 500])], [b.phone, win2], [b.yank - .05, win2], [b.yank + .5, [0, -40, 1.04]], [S1T(8) + .2, [0, -40, 1.04]], [b.dim - .1, win], [b.back, win], [b.back + 1.1, [0, -30, 1.05]],
     [t(9), [30, 0, 1.0]], [t(9) + .6, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm - .2, s1Aim([S1LOCK[0] + 60, S1LOCK[1]], S1Z.props, 1.4, [620, 560])], [b.pm + .4, [30, 0, 1.0]], [b.pm + 1, [0, -60, 1.04]], [t(10) + .2, [0, -60, 1.04]], [b.ribbon + .6, [0, -170, 1.08]], [b.yankR, [0, -150, 1.08]],
     [b.day + .5, [-20, -80, 1.1]], [b.night + .2, [-20, -80, 1.1]], [b.file, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])], [b.exit0, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])]]);
@@ -133,6 +133,12 @@ function s1Clouds(c, tau, st) { const a = 1 - st.nk; if (a <= .02) return;
     for (let i = 0; i <= 26; i++) { const u = i / 26, bump = Math.abs(Math.sin(u * Math.PI * 3.2 + k)) * 34 * s + 18 * s; pts.push([cx + (u - .5) * 230 * s, cy - bump * Math.sin(u * Math.PI)]); }
     pts.push([cx + 115 * s, cy + 10 * s], [cx - 115 * s, cy + 10 * s]);
     cutPaper(c, pts, mix(S1C.sky[0], '#ffffff', .55), { seed: 410 + k, step: 14, blur: 10, sy: 6, al: a }); }); }
+function s1Sun(c, sx, sy, tau, st) {
+  cutPaper(c, starPts(sx, sy, 78, 14, .76, tau * .05), S1C.sun, { seed: 450, step: 8, blur: 10, sx: 0, sy: 4 });
+  cutPaper(c, circPts(sx, sy, 54, 40), S1C.sunIn, { seed: 451, step: 8, blur: 4, sx: 0, sy: 2 });
+  c.fillStyle = mix(P.ink2, P.moon, .3); for (const d of [-1, 1]) { c.beginPath(); c.ellipse(sx + d * 17, sy - 6, 4, st.sunEye ? 7 : 5, 0, 0, TAU); c.fill(); }
+  rline(c, st.sunEye ? [[sx - 9, sy + 20], [sx - 3, sy + 16], [sx + 3, sy + 20], [sx + 9, sy + 16]] : [[sx - 12, sy + 14], [sx, sy + 21], [sx + 12, sy + 14]], { w: 3, color: mix(P.ink2, P.moon, .3), seed: 452, smooth: !st.sunEye, amp: .3 });
+}
 function s1Sky(c, tau, st) {
   const { x, y, R, sun, ring } = S1SKY, b = S1B, T = st.T;
   // 背光：灯箱后面那盏灯的颜色就是天色（白天淡暖、晨昏金紫、夜里深紫），太阳那边亮一点
@@ -177,20 +183,19 @@ function s1Sky(c, tau, st) {
           c.save(); c.translate(q[0], q[1]); c.rotate(a); c.scale(k, k); zh(c, lab, 0, 0, { size: 34, align: 'center', base: 'middle', color: mix(P.purple, '#ffffff', .6) }); c.restore(); } }); }
     // 太阳（带一张小脸；被手机拽回白天时一脸困惑地转半圈）和月亮
     const [sx, sy] = [x, y - sun];
-    spin(c, sx, sy, st.sunSpin, () => {
-      cutPaper(c, starPts(sx, sy, 78, 14, .76, tau * .05), S1C.sun, { seed: 450, step: 8, blur: 10, sx: 0, sy: 4 });
-      cutPaper(c, circPts(sx, sy, 54, 40), S1C.sunIn, { seed: 451, step: 8, blur: 4, sx: 0, sy: 2 });
-      c.fillStyle = mix(P.ink2, P.moon, .3); for (const d of [-1, 1]) { c.beginPath(); c.ellipse(sx + d * 17, sy - 6, 4, st.sunEye ? 7 : 5, 0, 0, TAU); c.fill(); }
-      rline(c, st.sunEye ? [[sx - 9, sy + 20], [sx - 3, sy + 16], [sx + 3, sy + 20], [sx + 9, sy + 16]] : [[sx - 12, sy + 14], [sx, sy + 21], [sx + 12, sy + 14]], { w: 3, color: mix(P.ink2, P.moon, .3), seed: 452, smooth: !st.sunEye, amp: .3 });
-    });
+    spin(c, sx, sy, st.sunSpin, () => s1Sun(c, sx, sy, tau, st));
     cutPaper(c, circPts(x, y + sun, 50, 56), S1C.moon, { seed: 455, step: 10, blur: 16, sx: 0, sy: 4, grain: .12 });
   });
 }
 
 // ===================== 远山、校园 =====================
+const s1Ridge = x => 606 + 30 * Math.sin(x * .0042 + 1.3) + 14 * Math.sin(x * .013);   // 远山山脊（远山层的世界坐标）
+// s1SunUp：太阳在远山上露出多少（屏幕上太阳中心高出山脊几个太阳半径；≥1 整个太阳连光芒都露出来）
+function s1SunUp(sunS, cam) { const k = 1 / (1 + S1Z.hills), z = 1 + (cam[2] - 1) * k, wx = (sunS[0] - CX) / z + CX + cam[0] * k;
+  return (CY + z * (s1Ridge(wx) - CY - cam[1] * k) - sunS[1]) / (78 * sunS[2]); }
 function s1Hills(c, tau, st) {
   const nk = st.nk, far = [[-700, 1600]], near = [[-700, 1600]];
-  for (let x = -700; x <= 2620; x += 30) { far.push([x, 606 + 30 * Math.sin(x * .0042 + 1.3) + 14 * Math.sin(x * .013)]); near.push([x, 660 + 26 * Math.sin(x * .0033 + 4) + 10 * Math.sin(x * .017 + 1)]); }
+  for (let x = -700; x <= 2620; x += 30) { far.push([x, s1Ridge(x)]); near.push([x, 660 + 26 * Math.sin(x * .0033 + 4) + 10 * Math.sin(x * .017 + 1)]); }
   far.push([2620, 1600]); near.push([2620, 1600]);
   cutPaper(c, far, s1Pal('hills2', nk), { seed: 470, step: 40, blur: 12, sy: -3, sx: 0 });
   cutPaper(c, near, s1Pal('hills', nk), { seed: 471, step: 40, blur: 12, sy: -3, sx: 0 });
@@ -428,8 +433,7 @@ function s1Act(tau) {
     [b.yawn + 1.2, { pose: 'point', look: .7, tilt: -.06 }],
     [t(4), { pose: 'lecture', mood: 'smile' }],
     [b.num4 - .2, { pose: 'point', mood: 'smile', look: .9 }],
-    [b.gag + .25, { pose: 'hide', mood: 'flustered', hop: 14 }],
-    [t(5), { pose: 'hide', mood: 'normal', look: .8 }],
+    [t(5), { pose: 'lecture', look: .8 }],
     [b.tag5, { pose: 'cross', mood: 'smug', look: .6 }],
     [t(6), { pose: 'point', look: .9, tilt: -.06 }],
     [w(6, .62), { pose: 'lecture', look: .4 }],
@@ -490,7 +494,7 @@ function s1State(tau) {
   else st.kid = 'sleep';
   // 窗里的光：手机（冷白）→ 调暗 → 调暖（琥珀）；通宵台灯；夜里存档时的金光
   const ph = sm(b.phone, b.phone + .12, tau) * (1 - sm(t(9) + .1, t(9) + .5, tau)), dim = sm(b.dim, b.dim + .4, tau), warm = sm(b.warm, b.warm + .5, tau);
-  const sunIn = sm(b.light + .3, b.light + .6, tau) * (1 - sm(t(4) - .2, t(4) + .2, tau)) + sm(b.pane + .3, b.pane + .6, tau) * (1 - sm(t(6), t(6) + .3, tau)) * .45;
+  const sunIn = sm(b.beam + .4, b.beam + .65, tau) * (1 - sm(t(4) - .2, t(4) + .2, tau)) + sm(b.pane + .3, b.pane + .6, tau) * (1 - sm(t(6), t(6) + .3, tau)) * .45;
   if (sunIn > 0) { st.kidLit = sunIn * .75; st.kidCol = mix(S1C.lamp, '#fff4d6', .3); }
   if (ph > 0) { st.kidLit = ph * lerp(1, .55, dim); st.kidCol = mix(S1C.phone, S1C.amber, warm); st.phoneGlow = mix(S1C.phone, S1C.amber, warm); }
   if (tau > t(8) - .2 && tau < t(9) + .4) st.lampY = sm(b.lamp, b.lamp + .8, tau, easeIO);
@@ -518,12 +522,12 @@ function s1Box(c, tau, L, full = true) {
   parallax(c, [layer(S1Z.sky, null, s1Sky), layer(3.6, null, s1Clouds), layer(S1Z.hills, 0, s1Hills), layer(S1Z.campus, 1, s1Campus), layer(S1Z.dorm, 2, s1Dorm), layer(S1Z.trees, 3, s1Trees),
     layer(S1Z.ground, 4, s1Ground), layer(S1Z.props, null, s1Props), layer(S1Z.grass, 4, s1Grass)], cam[0], cam[1], cam[2]);
   c.restore();
-  // 光：一条剪纸光带，从太阳（或手机）伸出来
+  // 光：一条剪纸光带，从太阳背后伸出来（太阳整个越过远山之后才有）
   const sunS = s1Map(s1SkyAt(12, st.T, S1SKY.sun), S1Z.sky, cam), kwS = s1Map(S1WINS[S1KW], S1Z.dorm, cam), kwE = s1Map([S1WINS[S1KW][0] - S1WW / 2 + 4, S1WINS[S1KW][1]], S1Z.dorm, cam);
-  const beamA = sm(b.light, b.light + .5, tau) * (1 - sm(t(4) + .1, t(4) + .35, tau)) + sm(b.walk1 - .1, b.walk1 + .3, tau) * (1 - sm(t(6), t(6) + .3, tau));
+  const beamA = (sm(b.beam, b.beam + .5, tau) * (1 - sm(t(4) + .1, t(4) + .35, tau)) + sm(b.walk1 - .1, b.walk1 + .3, tau) * (1 - sm(t(6), t(6) + .3, tau))) * sm(.95, 1.15, s1SunUp(sunS, cam));
   if (beamA > 0 && st.nk < .9) {
-    let tgt = kwE; if (tau > t(4)) { const walkerS = s1Map([st.walker ? st.walker.x : 790, 765], S1Z.ground, cam), pat = [S1PX - 30, S1PY - 330];
-      tgt = key(tau, [[b.gag, walkerS], [b.gag + .3, pat], [t(5) + .1, pat], [t(5) + .5, kwE]]); if (tau > t(5) + .5) tgt = kwE; }
+    let tgt = kwE; if (tau > t(4)) { const walkerS = s1Map([st.walker ? st.walker.x : 790, 765], S1Z.ground, cam);
+      tgt = key(tau, [[t(5) + .1, walkerS], [t(5) + .5, kwE]]); }
     const pane = sm(b.pane, b.pane + .4, tau);
     if (tau > t(5) + .5 && tau < t(6)) tgt = [kwS[0] + 6 * kwS[2], kwS[1] + 4 * kwS[2]];
     const blen = Math.hypot(tgt[0] - sunS[0], tgt[1] - sunS[1]) || 1, cut = pane > .5 && tau > t(5) ? [1 - (S1WW / 2 + 18) * kwS[2] / blen, .3] : null, zz = Math.sqrt(cam[2]);
@@ -533,6 +537,9 @@ function s1Box(c, tau, L, full = true) {
       s1Walker(c, 0, 0, wk.w, wk.arms, mix(s1Pal('dorm', st.nk), P.ink, .5), tau); c.restore(); }
     for (let k = 0; k < 9; k++) { const u = ((hash(k, 71) + tau * .08) % 1) * beamA, q = [lerp(sunS[0], tgt[0], u), lerp(sunS[1], tgt[1], u) + Math.sin(tau * 2 + k) * 14 * zz];
       c.fillStyle = alpha('#fff4d6', .7 * Math.sin(u * Math.PI) * (cut && u > cut[0] ? cut[1] : 1)); c.beginPath(); c.arc(q[0], q[1], 2.5 * zz, 0, TAU); c.fill(); }
+    // 太阳盖回光带根部上面（和天空层同一个变换），光就像从太阳背后射出来
+    const [sx, sy] = [S1SKY.x, S1SKY.y - S1SKY.sun]; c.save(); c.translate(sunS[0], sunS[1]); c.scale(sunS[2], sunS[2]); c.rotate(s1Rot(st.T) + st.sunSpin); c.translate(-sx, -sy);
+    s1Sun(c, sx, sy, tau, st); c.restore();
   }
   if (st.kid === 'phone' && tau > b.phone + .1 && tau < t(9) + .4) {   // 手机的光：一路照到天上的「生物钟」指针（等于告诉它现在是白天），调暗调暖后变细变琥珀色
     const k = sm(b.phone + .1, b.phone + .45, tau) * (1 - sm(t(9), t(9) + .3, tau)), dim = sm(b.dim, b.dim + .4, tau), warm = sm(b.warm, b.warm + .5, tau);
@@ -554,7 +561,7 @@ function s1Box(c, tau, L, full = true) {
   const ez = tau > b.exit0 ? cam[2] / s1Cam(b.exit0)[2] : 1, exitT = fn => { if (ez > 8) return; c.save(); c.translate(CX, CY); c.scale(ez, ez); c.translate(-CX, -CY); fn(); c.restore(); };
   exitT(() => {
   // 顶檐上吊下来的东西
-  s1Glass(c, tau, 600, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
+  s1Glass(c, tau, 400, b.glass, S1T(6) + .6, sm(b.glass + .4, b.spin1, tau, t => t));
   s1Sign(c, tau, '生物钟', b.tick + .2, b.light - .2, { x: 1330, seed: 766 });
   s1Sign(c, tau, '皮质醇', b.cort, S1T(3) + .2, { x: 1350, seed: 760 });
   s1Sign(c, tau, '2–10 分钟', b.num4, S1T(6) - .1, { x: 1330, size: 84, seed: 761 });

@@ -225,12 +225,12 @@ function s2cup(c, C, x, y, kind, o = {}) {
     zh(c, '无糖', sx, sy + 9 * k, { size: 26 * k, align: 'center', color: P.ink2 }); }
   c.restore();
 }
-// 勺子（悬在空中 z0，带一小堆糖粒），tilt 0..1 倾倒
-function s2spoon(c, C, x, y, a, z0, sugar = 1) {
-  const pts = s2tf([...ellPts(0, 0, 30, 21, 20), [-24, 6], [-120, 7], [-126, 0], [-120, -7], [-24, -6]].slice(0, 20), x, y, a);
-  s2prism(c, C, s2tf([[-22, -5], [-122, -6], [-128, 0], [-122, 6], [-22, 5]], x, y, a), 3, S2C.steel, { z0, seed: 2110, step: 8, sh: .2 });
-  s2prism(c, C, pts, 4, S2C.steel, { z0, seed: 2111, step: 8, sh: .2 });
-  if (sugar > 0) { const r = rng(2112); for (let i = 0; i < 14 * sugar; i++) { const u = (r() - .5) * 34, v = (r() - .5) * 24; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ...s2tf([[u, v]], x, y, a)[0], r() * 2), 5, '#f7f3ea', { z0: z0 + 4, seed: 2113 + i, step: 4, sh: .12, gr: 0 }); } }
+// 勺子（悬在空中 z0）：(x, y) 是勺头中心，勺柄朝局部 -x；sugar 0..1 勺里剩多少糖；roll 0..1 绕长轴翻过去倒糖（俯拍看勺面变窄、变暗）
+function s2spoon(c, C, x, y, a, z0, sugar = 1, roll = 0) {
+  const w = 1 - .6 * roll, steel = mix(S2C.steel, P.ink, .22 * roll);
+  s2prism(c, C, s2tf([[-22, -5], [-122, -6], [-128, 0], [-122, 6], [-22, 5]], x, y, a, 1, w), 3, steel, { z0, seed: 2110, step: 8, sh: .2 });
+  s2prism(c, C, s2tf(ellPts(0, 0, 30, 21, 20), x, y, a, 1, w), 4, steel, { z0, seed: 2111, step: 8, sh: .2 });
+  if (sugar > 0) { const r = rng(2112); for (let i = 0; i < 14 * sugar; i++) { const u = (r() - .5) * 34, v = (r() - .5) * 24 * w; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ...s2tf([[u, v]], x, y, a)[0], r() * 2), 5, '#f7f3ea', { z0: z0 + 4, seed: 2113 + i, step: 4, sh: .12, gr: 0 }); } }
 }
 // 发酵罐：玻璃罐身、布盖（荷叶边）+ 一圈扎口的线；tip 0..1 侧倒（口朝左）
 function s2jar(c, C, x, y, o = {}) {
@@ -467,9 +467,11 @@ function s2stC(c, C, t) {
     s2cup(c, C, ox + x, cy, k, { z0: s2drop(t, t0 - .15, 200) });
     const ck = a(7, '不算') + i * .15, [sx, sy] = s2p(C, ox + x, cy - 92, 0);
     if (t > ck && !(k === 'coffee' && t > js)) check(c, sx, sy, 50, { p: sm(ck, ck + .25, t), seed: 2450 + i }); });
-  if (t > sg - .5 && dA > 0) { const u2 = s2mv(t, sg - .5, .5, 0, 1), tilt = sm(sg + .2, sg + .5, t), away = sm(js + .6, js + 1, t, easeIn), x = ox + lerp(1780, 1520, u2) + away * 300, y = cy - 70 + lerp(-300, 0, u2) - away * 300;
-    s2spoon(c, C, x, y, -.5 - tilt * .6, 110, 1 - tilt);
-    for (let j = 0; j < 8; j++) { const b = sg + .3 + j * .03, v = clamp((t - b) / .3, 0, 1); if (v <= 0) continue; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), ox + 1428 + (hash(j, 8) - .5) * 30, cy + (hash(j, 9) - .5) * 26, j), 3, '#f7f3ea', { z0: lerp(110, 46, v), seed: 2460 + j, step: 4, sh: .12, gr: 0 }); }
+  // 勺子从右上方飞来，勺头停在咖啡杯正上方（勺柄朝来的方向），绕长轴一翻，糖从勺头落进杯里，再原路飞走
+  if (t > sg - .5 && dA > 0) { const u2 = s2mv(t, sg - .5, .5, 0, 1), tilt = sm(sg + .2, sg + .5, t), away = sm(js + .6, js + 1, t, easeIn), sx = ox + 1428;
+    const kz = s2k(C, 46) / s2k(C, 110), rx = C.x + (sx - C.x) * kz, ry = C.y + (cy - C.y) * kz;   // 勺子高 110：按透视往回收，画面上正对杯口
+    s2spoon(c, C, rx + lerp(320, 0, u2) + away * 300, ry + lerp(-300, 0, u2) - away * 300, 2.44, 110, 1 - tilt, tilt);
+    for (let j = 0; j < 8; j++) { const b = sg + .3 + j * .03, v = clamp((t - b) / .3, 0, 1), e = easeIn(v); if (v <= 0) continue; s2prism(c, C, s2tf(rectPts(-4, -4, 8, 8), lerp(rx, sx, e) + (hash(j, 8) - .5) * 30, lerp(ry, cy, e) + (hash(j, 9) - .5) * 26, j), 3, '#f7f3ea', { z0: lerp(110, 46, e), seed: 2460 + j, step: 4, sh: .12, gr: 0 }); }
     if (t > js) s2cross(c, C, ox + 1428, cy, 70, 60, js, t); }
 }
 // D：衍纸肠道 + 小菌 + 发酵食品
