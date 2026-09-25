@@ -391,10 +391,10 @@ function tiltPlane(c, fn, o = {}) {
 // （开场画七曜阵和标题，片尾写演职信息）。颜色都从 P 调出来。
 const GRIMOIRE = { leather: '#5b3034', spine: 28, thick: 84, gold: mix(P.moon, P.cap, .32),
   brass: mix(P.moon, P.ink, .2), brassHi: mix(P.moon, P.cap, .6), brassLo: mix(P.moon, P.ink, .55) };
-// grimoireCover：o = { frame 金线框画出进度 0..1, flourish 角花进度 0..1, clasp 铜扣（null 不画；0 扣着 → 1 弹开、扣带翻到封面上躺平）}
+// grimoireCover：o = { frame 金线框画出进度 0..1, flourish 角花进度 0..1, clasp 铜扣（null 不画；0 扣着 → 1 弹开、扣带翻到封面上躺平）, shadow 书板投影（默认有）}
 function grimoireCover(c, x0, w, o = {}) {
-  const G = GRIMOIRE, { frame = 1, flourish = 1, clasp = null } = o, y0 = BOOK.y - 8, h = BOOK.h + 20, x1 = x0 + w, y1 = y0 + h, sw = G.spine;
-  cutPaper(c, rectPts(x0, y0, w, h, 10), G.leather, { seed: 1201, step: 28, blur: 16, sx: 0, sy: 8, grain: .14 });
+  const G = GRIMOIRE, { frame = 1, flourish = 1, clasp = null, shadow = true } = o, y0 = BOOK.y - 8, h = BOOK.h + 20, x1 = x0 + w, y1 = y0 + h, sw = G.spine;
+  cutPaper(c, rectPts(x0, y0, w, h, 10), G.leather, { seed: 1201, step: 28, blur: 16, sx: 0, sy: 8, grain: .14, shadow });
   // 书脊：左边一条圆起来的皮（略暗）、一道书槽、五道竹节
   cutPaper(c, [[x0 + 3, y0 + 7], [x0 + sw, y0 + 3], [x0 + sw, y1 - 3], [x0 + 3, y1 - 7]], mix(G.leather, P.ink, .25), { seed: 1231, step: 36, shadow: false, grain: .12, edge: false });
   c.save(); c.lineCap = 'round';

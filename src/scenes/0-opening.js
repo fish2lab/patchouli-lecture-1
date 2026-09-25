@@ -27,7 +27,7 @@ const S0H = {
   frame: .1, flour: .6, ring: .45, star: .8, glyph: 1.12, glyphStep: .1, moon: 1.5, rule: 1.6, title: 1.7, sub: 2.1, glint: 2.28,   // 金墨
   pop: 2.55, snap: 2.95,                                                 // 铜扣：舌片弹出 → 扣带翻到封面上
   open0: 2.95, open1: 3.9,                                               // 封面翻开（镜头同时平移到整本摊开）
-  riff: [4.15, 4.45, 4.75], riffDur: .55, spread: 5.3,                   // 哗哗翻三页，停在标题页
+  riff: [4.15, 4.5, 4.85], riffDur: .42, spread: 5.27,                  // 哗哗翻三页，停在标题页
   series: 5.35, big1: 5.6, big2: 6.15, orn: 6.8, foot: 6.95, cap0: 7.0, cap1: 7.55,
 };
 const S0CW = BOOK.w / 2 + 20, S0X0 = CX - 10, S0YM = BOOK.y - 8 + (BOOK.h + 20) / 2;   // 合着的书：宽、书脊那边的 x、竖直中线
@@ -35,7 +35,7 @@ const S0EMB = { x: S0X0 + 468, y: BOOK.y + 380, r: 232 };                       
 const S0GLYPHS = ['日', '月', '火', '水', '木', '金', '土'];
 // 桌上的东西（桌面坐标：正上方看、书摊开时就是屏幕坐标）。书摊开后左半边会被封面盖住，所以左边只放平的茶渍，
 // 立着的东西放在书摊开后的画面外面：镜头推近时自然出画。
-const S0INK = { x: 2130, y: 400 }, S0CUP = { x: 640, y: 1178 }, S0STAIN = { x: 610, y: 640, r: 58 }, S0STACK = { x: 520, y: -250 }, S0TAIL = { x: 1068, len: 92 };
+const S0INK = { x: 2130, y: 400 }, S0CUP = { x: 640, y: 1230 }, S0STAIN = { x: 610, y: 640, r: 58 }, S0STACK = { x: 520, y: -250 }, S0TAIL = { x: 1068, len: 92 };
 
 // ===================== 镜头 =====================
 // cam = { x, y 画面中心对着的桌面点, z 缩放, pitch 俯仰（0 = 正上方）}
@@ -64,7 +64,7 @@ function s0Desk(c, cam) {
   for (let n = n0; n <= n1; n++) { const odd = n % 2 !== 0, fx = u => odd ? (n + 1) * W - u : n * W + u;
     for (let m = m0; m <= m1; m++) for (let k = 0; k < 14; k++) { const y = 30 + k * 78 + Math.sin(k * 1.7) * 12 + m * H;
       c.beginPath();
-      if (flat) { c.moveTo(fx(0), y); c.bezierCurveTo(fx(W * .3), y + 10, fx(W * .6), y - 12, fx(W), y + 6); c.stroke(); continue; }
+      if (flat) { const sy = CY + (y - cam.y) * cam.z; if (sy < -30 || sy > H + 30) continue; c.moveTo(fx(0), y); c.bezierCurveTo(fx(W * .3), y + 10, fx(W * .6), y - 12, fx(W), y + 6); c.stroke(); continue; }
       let vis = false;
       for (let i = 0; i <= 24; i++) { const t = i / 24, s = 1 - t, bx = 3 * s * s * t * W * .3 + 3 * s * t * t * W * .6 + t * t * t * W,
         by = s * s * s * y + 3 * s * s * t * (y + 10) + 3 * s * t * t * (y - 12) + t * t * t * (y + 6), [sx, sy] = s0P(cam, fx(bx), by);
@@ -189,10 +189,11 @@ function s0Click(c, tau) { const t = tau - S0H.pop; if (t < 0 || t > .24) return
 // 合着的书在桌面上平的部分（丝带、影子、书页、封面），画在 tiltPlane 的缓冲里；ext = 朝镜头那一面在桌面上占的深度
 function s0BookFlat(c, tau, ext, jolt) {
   c.save(); c.translate(0, jolt);
-  c.save(); c.shadowColor = 'rgba(12,6,4,.5)'; c.shadowBlur = 26; c.shadowOffsetY = 10; c.fillStyle = 'rgba(12,6,4,.3)'; c.fill(polyPath(rectPts(S0X0 - 6, BOOK.y, S0CW + 10, BOOK.h + 14 + ext, 12))); c.restore();
+  // 接触影：几层淡影一圈圈往外（不用 shadowBlur，逐帧省时间），朝镜头那边拉长到厚边底下
+  c.save(); c.fillStyle = 'rgba(12,6,4,.13)'; for (const g of [22, 14, 7, 2]) c.fill(polyPath(rectPts(S0X0 - 4 - g, BOOK.y + 6 - g * .5, S0CW + 8 + 2 * g, BOOK.h + 14 + ext + g * 1.4, 12 + g))); c.restore();
   s0Tail(c, BOOK.y + BOOK.h + 6 + ext * .7, 1);
-  cutPaper(c, rectPts(S0X0 + 6, BOOK.y - 2, S0CW - 6, BOOK.h + 18, 6), BOOK.page2, { seed: 1210, step: 50, blur: 14, sx: 0, sy: 8, grain: .1 });
-  grimoireCover(c, S0X0, S0CW, { frame: sm(S0H.frame, S0H.frame + .7, tau, t => t), flourish: sm(S0H.flour, S0H.flour + .4, tau, t => t), clasp: s0ClaspU(tau) });
+  cutPaper(c, rectPts(S0X0 + 6, BOOK.y - 2, S0CW - 6, BOOK.h + 18, 6), BOOK.page2, { seed: 1210, step: 50, shadow: false, grain: .1 });
+  grimoireCover(c, S0X0, S0CW, { frame: sm(S0H.frame, S0H.frame + .7, tau, t => t), flourish: sm(S0H.flour, S0H.flour + .4, tau, t => t), clasp: s0ClaspU(tau), shadow: false });
   s0CoverArt(c, tau);
   s0Click(c, tau);
   c.restore();
@@ -202,7 +203,7 @@ function s0Closed(c, tau) {
   const cam = s0Cam(tau), pit = cam.pitch, T = GRIMOIRE.thick, ext = T * Math.tan(-pit), jolt = s0Jolt(tau);
   s0Desk(c, cam);
   s0Stack(c, cam);
-  tiltPlane(c, b => { b.save(); s0Apply(b, cam); s0Stain(b); s0BookFlat(b, tau, ext, jolt); b.restore(); }, { pitch: pit });
+  tiltPlane(c, b => { b.save(); s0Apply(b, cam); s0Stain(b); s0BookFlat(b, tau, ext, jolt); b.restore(); }, { pitch: pit, strip: 6 });
   if (pit < -.002) {   // 书朝镜头的那一面：厚边 + 垂下来的丝带
     const yb = BOOK.y + BOOK.h + 12 + jolt, [ax, ay] = s0P(cam, S0X0, yb), [bx, by] = s0P(cam, S0X0 + S0CW, yb), [, ey] = s0P(cam, S0X0, yb, -T);
     grimoireEdge(c, ax, ay, bx, by, ey - ay);
@@ -228,13 +229,13 @@ const S0MARBLE = (() => { const w = 480, h = 540, cv = document.createElement('c
 // 封面内侧（翻开后在左边）：皮面的包边、大理石纹衬纸、藏书票
 function s0Endpaper(c) {
   const x0 = BOOK.x - 10, y0 = BOOK.y - 8, w = CX - x0, h = BOOK.h + 20;
-  cutPaper(c, rectPts(x0, y0, w, h, 10), mix(GRIMOIRE.leather, P.ink, .06), { seed: 2101, step: 28, blur: 12, sx: 0, sy: 6, grain: .14 });
-  const mx = x0 + 28, my = y0 + 28, mw = w - 32, mh = h - 56, path = cutPaper(c, rectPts(mx, my, mw, mh, 3), P.purple, { seed: 2102, step: 40, shadow: false, grain: 0, edge: false });
-  c.save(); c.clip(path); c.drawImage(S0MARBLE, mx, my, mw, mh);
+  cutPaper(c, rectPts(x0, y0, w, h, 10), mix(GRIMOIRE.leather, P.ink, .06), { seed: 2101, step: 28, shadow: false, grain: 0 });
+  // 衬纸比翻过来的书页小一圈（外缘 48、上下 34），第一页落下时正好整张盖住
+  const mx = x0 + 48, my = y0 + 34, mw = w - 52, mh = h - 68, path = cutPaper(c, rectPts(mx, my, mw, mh, 3), P.purple, { seed: 2102, step: 40, shadow: false, grain: 0, edge: false });
+  c.save(); c.clip(path); c.drawImage(S0MARBLE, mx, my, mw, mh); c.fillStyle = alpha(mix(P.purple, P.ink, .5), .22); c.fillRect(mx, my, mw, mh);
   const g = c.createLinearGradient(CX, 0, CX - 120, 0); g.addColorStop(0, 'rgba(30,18,14,.35)'); g.addColorStop(1, 'rgba(30,18,14,0)'); c.fillStyle = g; c.fillRect(CX - 120, my, 120, mh); c.restore();
-  grain(c, path, .1);
   // 藏书票
-  const bx = (x0 + CX) / 2 + 6, by = BOOK.y + 440, bw = 300, bh = 400;
+  const bx = mx + mw / 2, by = BOOK.y + 440, bw = 300, bh = 400;
   cutPaper(c, rectPts(bx - bw / 2, by - bh / 2, bw, bh, 4), P.cap, { seed: 2110, step: 24, blur: 5, sx: 2, sy: 3, grain: .1 });
   rline(c, rectPts(bx - bw / 2 + 14, by - bh / 2 + 14, bw - 28, bh - 28), { w: 2.2, color: P.ink2, close: true, seed: 2111, amp: .5 });
   rline(c, rectPts(bx - bw / 2 + 21, by - bh / 2 + 21, bw - 42, bh - 42), { w: 1, color: P.ink2, close: true, seed: 2112, amp: .5 });
@@ -248,17 +249,19 @@ function s0Swing(c, tau, th, cam) {
   const sc = c.getTransform().a || 1; if (S0BUF.width !== Math.round(W * sc)) { S0BUF.width = Math.round(W * sc); S0BUF.height = Math.round(H * sc); }
   const b = S0BUF.getContext('2d'); b.setTransform(sc, 0, 0, sc, 0, 0); b.clearRect(0, 0, W, H);
   const face = Math.cos(th) > 0;   // true：看到的是封面内侧（衬纸）；false：封面
-  if (face) s0Endpaper(b); else { grimoireCover(b, S0X0, S0CW, { clasp: 1 }); s0CoverArt(b, 99); }
-  const f = 2900, y0 = BOOK.y - 8, y1 = BOOK.y + BOOK.h + 12, step = 3, span = face ? CX - (BOOK.x - 10) : S0CW, hx = face ? CX : S0X0;
+  if (face) s0Endpaper(b); else { grimoireCover(b, S0X0, S0CW, { clasp: 1, shadow: false }); s0CoverArt(b, 99); }
+  const f = 2900, y0 = BOOK.y - 8, y1 = BOOK.y + BOOK.h + 12, step = 4, span = face ? CX - (BOOK.x - 10) : S0CW, hx = face ? CX : S0X0;
   const col = s => { const k = f / (f - s * Math.sin(th) * cam.z); return [CX + (hx - s * Math.cos(th) - cam.x) * cam.z * k, k]; };
-  const shade = .36 * (1 - Math.abs(Math.cos(th)));
+  const shade = .36 * (1 - Math.abs(Math.cos(th))), up = [], dn = [];
   for (let s = 0; s < span; s += step) {
-    const [xa, ka] = col(s), [xb] = col(Math.min(span, s + step)), xs = face ? CX - s - step : S0X0 + s;
-    const dx = Math.min(xa, xb), dw = Math.abs(xb - xa) + .7; if (dw < .05) continue;
+    const [xa, ka] = col(s), [xb, kb] = col(Math.min(span, s + step)), xs = face ? CX - s - step : S0X0 + s;
     const top = CY + (y0 - cam.y) * cam.z * ka, hh = (y1 - y0) * cam.z * ka;
+    up.push([xa, top]); dn.push([xa, top + hh]); if (s + step >= span) { up.push([xb, CY + (y0 - cam.y) * cam.z * kb]); dn.push([xb, CY + (y1 - cam.y) * cam.z * kb]); }
+    const dx = Math.min(xa, xb), dw = Math.abs(xb - xa) + .7; if (dw < .05) continue;
     c.drawImage(S0BUF, xs * sc, y0 * sc, step * sc, (y1 - y0) * sc, dx, top, dw, hh);
-    if (shade > .01) { c.fillStyle = `rgba(20,12,10,${shade * (face ? 1 : .7)})`; c.fillRect(dx, top, dw, hh); }
   }
+  // 翻起来时整片压暗（一次填满，不逐列）
+  if (shade > .01) { c.fillStyle = `rgba(20,12,10,${shade * (face ? 1 : .7)})`; c.fill(polyPath([...up, ...dn.reverse()])); }
 }
 // open0 → open1：封面翻开，镜头平移到整本摊开的书（open1 时正好是 spread 的画面）
 function s0Opening(c, tau) {
@@ -270,7 +273,7 @@ function s0Opening(c, tau) {
   const sh = Math.sin(th); if (sh > .02) { const wv = S0CW * Math.abs(Math.cos(th)) + 160, side = Math.cos(th) < 0 ? 1 : -1, g = c.createLinearGradient(CX, 0, CX + side * wv, 0);
     g.addColorStop(0, `rgba(20,12,10,${.4 * sh})`); g.addColorStop(1, 'rgba(20,12,10,0)'); c.fillStyle = g; c.fillRect(Math.min(CX, CX + side * wv), BOOK.y - 8, wv, BOOK.h + 20); }
   c.restore();
-  s0Inkwell(c, cam);
+  s0Inkwell(c, cam); s0Cup(c, cam, tau);
   s0Swing(c, tau, th, cam);
 }
 
@@ -282,6 +285,10 @@ function s0Riffle(c, tau) {
   const us = S0H.riff.map(t0 => (tau - t0) / S0H.riffDur), started = us.filter(u => u > 0).length, landed = us.filter(u => u >= 1).length, R = BOOK.R;
   s0Tail(c, BOOK.y + BOOK.h + 6, 1 - sm(S0H.riff[0], S0H.spread, tau));
   if (landed === 0) s0Endpaper(c);
+  // 刚落下的那张纸：背面在半空时的暗色（turnPage 画的）0.25 秒里慢慢平成左页的纸色，不是一下跳亮
+  const dl = tau - (S0H.riff[landed - 1] + S0H.riffDur); if (landed > 0 && dl < .25) { const pts = [[CX, R.y], [CX - R.w, R.y], [CX - R.w, R.y + R.h], [CX, R.y + R.h]], a = 1 - dl / .25;
+    c.save(); c.globalAlpha *= a; c.fillStyle = BOOK.page2; c.fill(polyPath(pts)); c.clip(polyPath(pts)); grain(c, polyPath(pts), .14);
+    const g = c.createLinearGradient(CX, 0, CX - R.w, 0); g.addColorStop(0, 'rgba(60,40,20,.28)'); g.addColorStop(1, 'rgba(60,40,20,.18)'); c.fillStyle = g; c.fill(polyPath(pts)); c.restore(); }
   if (started === 1) s0HalfTitle(c);
   const moving = [0, 1, 2].filter(k => us[k] > 0 && us[k] < 1), onLeft = k => easeIO(us[k]) >= .5;
   for (const k of [...moving.filter(onLeft), ...moving.filter(k => !onLeft(k)).reverse()]) { turnPage(c, us[k]);
@@ -364,17 +371,22 @@ function s0Ribbon(c, x, len, col, label, tau, t0) { const k = sm(t0, t0 + .45, t
 function s0Doodle(c, kind, x, y, tau, t0) { const p = sm(t0, t0 + .9, tau, t => t); if (p <= 0) return;
   const o = { w: 4, color: P.ink, t: tau, amp: .9 }, seg = (a, b) => clamp((p - a) / (b - a), 0, 1), M = pts => pts.map(([u, v]) => [x + u, y + v]);
   if (kind === 'phone') {
-    rline(c, M([[-150, 100], [150, 100]]), { ...o, w: 3, p: seg(0, .2), seed: 1801 });
-    rline(c, M([[-146, 100], [-150, 50], [-128, -4], [-78, -42], [-10, -56], [58, -38], [110, -2], [138, 52], [146, 100]]), { ...o, smooth: true, p: seg(.05, .45), seed: 1802 });
-    rline(c, M([[20, -40], [48, 10], [58, 96]]), { ...o, w: 2.5, smooth: true, p: seg(.3, .45), seed: 1803 });
-    rline(c, M([[84, -12], [100, 40], [104, 96]]), { ...o, w: 2.5, smooth: true, p: seg(.35, .5), seed: 1804 });
-    fade(c, seg(.4, .55), () => cutPaper(c, M([[-132, 96], [-128, 40], [-100, 8], [-50, -2], [-8, 14], [8, 58], [4, 96]]), P.ink, { seed: 1805, step: 10, shadow: false, grain: .08 }));
-    fade(c, seg(.5, .7), () => { spin(c, x - 40, y + 50, -.22, () => { cutPaper(c, rectPts(x - 58, y + 18, 36, 62, 6), P.paper, { seed: 1806, step: 12, shadow: false, grain: .06 });
-      rline(c, M([[-52, 36], [-30, 36]]), { w: 2, color: P.g2, seed: 1807, amp: .3 }); rline(c, M([[-52, 46], [-36, 46]]), { w: 2, color: P.g2, seed: 1808, amp: .3 }); });
-      for (const [ax, ay] of [[-96, 44], [-80, 44]]) { c.fillStyle = P.paper; c.beginPath(); c.ellipse(x + ax, y + ay, 5, 3.4, 0, 0, TAU); c.fill(); }
-      c.save(); c.strokeStyle = alpha(P.paper, .7); c.lineWidth = 2; c.lineCap = 'round'; for (const a of [-2.5, -2.05, -1.6]) { c.beginPath(); c.moveTo(x - 40 + Math.cos(a) * 44, y + 50 + Math.sin(a) * 44); c.lineTo(x - 40 + Math.cos(a) * 60, y + 50 + Math.sin(a) * 60); c.stroke(); } c.restore(); });
-    zh(c, '2:00', x + 70, y - 70, { size: 46, align: 'center', color: P.ink, p: writeP(tau, t0 + .55, '2:00', .08) });
-    fade(c, seg(.7, .85), () => drawMoonIcon(c, x + 128, y - 92, 16, P.moon, -.5));
+    // 侧面的一张床：床头板、床板和腿、枕头；被子在头那一端被撑起来，里面黑着，露出两只眼睛和一块亮着的手机屏
+    rline(c, M([[-150, 110], [-150, -20], [-128, -20], [-128, 110]]), { ...o, p: seg(0, .2), seed: 1801 });
+    rline(c, M([[-128, 66], [150, 66], [150, 110]]), { ...o, p: seg(.08, .28), seed: 1802 }); rline(c, M([[-128, 84], [150, 84]]), { ...o, w: 2.5, p: seg(.12, .3), seed: 1803 });
+    rline(c, M([[-124, 64], [-120, 44], [-92, 38], [-70, 46], [-74, 64]]), { ...o, w: 3, smooth: true, p: seg(.2, .32), seed: 1804 });
+    const quilt = [[-116, 64], [-112, 6], [-86, -34], [-46, -42], [-18, -16], [30, 8], [90, 14], [136, 30], [146, 64]];
+    fade(c, seg(.3, .5), () => cutPaper(c, M([[-112, 62], [-108, 10], [-86, -26], [-48, -32], [-30, -10], [-34, 62]]), P.ink, { seed: 1805, step: 10, shadow: false, grain: .08 }));
+    rline(c, M(quilt), { ...o, smooth: true, p: seg(.25, .55), seed: 1806 });
+    rline(c, M([[-30, -12], [-36, 30], [-30, 64]]), { ...o, w: 3, smooth: true, p: seg(.45, .6), seed: 1807 });
+    rline(c, M([[40, 12], [52, 38], [50, 64]]), { ...o, w: 2.2, smooth: true, p: seg(.5, .62), seed: 1808 }); rline(c, M([[96, 18], [104, 40], [102, 64]]), { ...o, w: 2.2, smooth: true, p: seg(.55, .66), seed: 1809 });
+    fade(c, seg(.55, .72), () => {
+      c.save(); c.strokeStyle = alpha(P.paper, .75); c.lineWidth = 2; c.lineCap = 'round';
+      for (const a of [2.6, 3.0, 3.4]) { c.beginPath(); c.moveTo(x - 52 + Math.cos(a) * 18, y + 12 + Math.sin(a) * 18); c.lineTo(x - 52 + Math.cos(a) * 30, y + 12 + Math.sin(a) * 30); c.stroke(); } c.restore();
+      spin(c, x - 50, y + 14, .18, () => { cutPaper(c, rectPts(x - 60, y - 4, 20, 34, 4), P.paper, { seed: 1810, step: 8, shadow: false, grain: .05 }); });
+      for (const [ax, ay] of [[-94, 12], [-80, 10]]) { c.fillStyle = P.paper; c.beginPath(); c.ellipse(x + ax, y + ay, 4.6, 3, 0, 0, TAU); c.fill(); } });
+    zh(c, '2:00', x + 58, y - 70, { size: 48, align: 'center', color: P.ink, p: writeP(tau, t0 + .55, '2:00', .08) });
+    fade(c, seg(.75, .9), () => drawMoonIcon(c, x + 132, y - 100, 18, P.moon, -.5));
   }
   if (kind === 'chair') {
     rline(c, M([[-78, -104], [-58, -104], [-50, 26], [-72, 26], [-78, -104]]), { ...o, p: seg(0, .25), seed: 1811 });
@@ -415,7 +427,7 @@ scene({ order: 0, key: 'opening', title: '开场', dur: seqEnd(S0LINES) + 1.2, l
     const R = BOOK.R, Lp = BOOK.L, edge = R.y + R.h;
     spread(c, tau);
     // 衬纸 → 翻页 → 标题页（L0 结束后收走，给 L1 的图书馆腾地方）
-    if (tau < S0H.spread) s0Riffle(c, tau);
+    if (tau < S0H.spread + .3) s0Riffle(c, tau);
     const tA = 1 - sm(s0E(0) + .1, s0E(0) + .6, tau);
     if (tA > 0) { s0Frontis(c, tau, tA); s0TitlePage(c, tau, tA); }
     // 左页：图书馆（L1 画出，L6 起淡下去让给书签，L7 换成涂鸦）
