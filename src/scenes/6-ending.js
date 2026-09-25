@@ -285,11 +285,11 @@ function s6Char(c, tau, L) {
 }
 
 // ===================== 合书与片尾 =====================
-// 封面（合着的书）：皮面、金线框、月牙徽记；ct = 封面落下后的秒数（< 0 不写字）
+// 封面（合着的书）：书板和开场是同一本（kit 的 grimoireCover：皮面、书脊竹节、金线双框、角花、铜包角、铜扣）+ 月牙徽记；
+// ct = 封面落下后的秒数（< 0 不写字）。翻书时扣带还躺在封面上（开场弹开后翻上去的样子），落下的一瞬「咔」地扣回书口
 function s6Cover(c, tau, x0, ct) {
   const { y, h } = BOOK, cx = x0 + S6CW / 2;
-  cutPaper(c, rectPts(x0, y - 8, S6CW, h + 20, 10), S6LEATHER, { seed: 1201, step: 28, blur: 16, sx: 0, sy: 8, grain: .14 });
-  rline(c, rectPts(x0 + 36, y + 26, S6CW - 72, h - 52, 6), { w: 2, color: alpha(P.moon, .55), close: true, seed: 1202 });
+  grimoireCover(c, x0, S6CW, { clasp: ct < 0 ? 1 : 1 - sm(0, .3, ct) });
   drawMoonIcon(c, cx, y + 88, 34, P.moon, -.5);
   if (ct < 0) return;
   const K = S6K, T = s => s - K.close1;   // 以封面落下为 0
@@ -342,11 +342,9 @@ function s6Closing(c, tau, L) {
       // 书口的厚度：封面底下露出一圈书页
       cutPaper(b, rectPts(CX - 10 + 6, BOOK.y - 2, S6CW - 6, BOOK.h + 18, 6), BOOK.page2, { seed: 1210, step: 50, blur: 14, sx: 0, sy: 8, grain: .1 });
       s6Cover(b, tau, CX - 10, ct); b.restore(); }, { pitch, cy: CY });
-    // 书的前侧面（镜头抬起来才看得到）：一道书页的厚边
-    if (pitch < -.01) { const [ax, ay, ka] = s6TiltMap(x0 + 6, BOOK.y + BOOK.h + 12, pitch), [bx] = s6TiltMap(x0 + S6CW, BOOK.y + BOOK.h + 12, pitch), th2 = 30 * Math.sin(-pitch) * ka;
-      cutPaper(c, [[ax, ay], [bx, ay], [bx, ay + th2], [ax, ay + th2]], BOOK.page2, { seed: 1211, step: 60, shadow: false, grain: .1 });
-      c.strokeStyle = alpha(P.paperEdge, .7); c.lineWidth = 1; for (let k = 1; k < 5; k++) { c.beginPath(); c.moveTo(ax, ay + th2 * k / 5); c.lineTo(bx, ay + th2 * k / 5); c.stroke(); }
-      cutPaper(c, [[ax - 6, ay + th2], [bx, ay + th2], [bx, ay + th2 + 10 * Math.sin(-pitch) * ka], [ax - 6, ay + th2 + 10 * Math.sin(-pitch) * ka]], mix(S6LEATHER, P.ink, .3), { seed: 1212, step: 60, shadow: false }); }
+    // 书的前侧面（镜头抬起来才看得到）：和开场同一道厚边（kit 的 grimoireEdge）
+    if (pitch < -.01) { const [ax, ay, ka] = s6TiltMap(x0, BOOK.y + BOOK.h + 12, pitch), [bx] = s6TiltMap(x0 + S6CW, BOOK.y + BOOK.h + 12, pitch);
+      grimoireEdge(c, ax, ay, bx, ay, GRIMOIRE.thick * Math.sin(-pitch) * ka); }
   }
   s6Sleeper(c, tau, L, dx, pitch);
   c.restore();

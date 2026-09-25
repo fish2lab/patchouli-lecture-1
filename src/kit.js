@@ -387,3 +387,84 @@ function tiltPlane(c, fn, o = {}) {
     const w = W * k0; c.drawImage(TILT_BUF, 0, y * sc, W * sc, strip * sc, cx - cx * k0, y0, w, y1 - y0 + .6); }
   c.restore();
 }
+
+// ===================== 同一本魔导书的书板（开场桌上合着的书、片尾合上的书共用） =====================
+// 开场和片尾是同一本书：皮面、书脊竹节、压印线、金线双框、四角角花、四角铜包角、书口的铜扣。
+// 书板占 x0..x0+w、y = BOOK.y-8 .. BOOK.y+BOOK.h+12，书脊在左边（x0 一侧）。封面中间的纹章和字由调用方画
+// （开场画七曜阵和标题，片尾写演职信息）。颜色都从 P 调出来。
+const GRIMOIRE = { leather: '#5b3034', spine: 28, thick: 84, gold: mix(P.moon, P.cap, .32),
+  brass: mix(P.moon, P.ink, .2), brassHi: mix(P.moon, P.cap, .6), brassLo: mix(P.moon, P.ink, .55) };
+// grimoireCover：o = { frame 金线框画出进度 0..1, flourish 角花进度 0..1, clasp 铜扣（null 不画；0 扣着 → 1 弹开、扣带翻到封面上躺平）, shadow 书板投影（默认有）}
+function grimoireCover(c, x0, w, o = {}) {
+  const G = GRIMOIRE, { frame = 1, flourish = 1, clasp = null, shadow = true } = o, y0 = BOOK.y - 8, h = BOOK.h + 20, x1 = x0 + w, y1 = y0 + h, sw = G.spine;
+  cutPaper(c, rectPts(x0, y0, w, h, 10), G.leather, { seed: 1201, step: 28, blur: 16, sx: 0, sy: 8, grain: .14, shadow });
+  // 书脊：左边一条圆起来的皮（略暗）、一道书槽、五道竹节
+  cutPaper(c, [[x0 + 3, y0 + 7], [x0 + sw, y0 + 3], [x0 + sw, y1 - 3], [x0 + 3, y1 - 7]], mix(G.leather, P.ink, .25), { seed: 1231, step: 36, shadow: false, grain: .12, edge: false });
+  c.save(); c.lineCap = 'round';
+  c.strokeStyle = alpha(P.ink, .55); c.lineWidth = 3; c.beginPath(); c.moveTo(x0 + sw + 1, y0 + 8); c.lineTo(x0 + sw + 1, y1 - 8); c.stroke();
+  c.strokeStyle = alpha(mix(G.leather, P.cap, .35), .45); c.lineWidth = 1.2; c.beginPath(); c.moveTo(x0 + sw + 4.5, y0 + 10); c.lineTo(x0 + sw + 4.5, y1 - 10); c.stroke(); c.restore();
+  for (let k = 0; k < 5; k++) { const by = y0 + h * (k + .5) / 5;
+    cutPaper(c, rectPts(x0 - 4, by - 10, sw + 3, 20, 7), mix(G.leather, P.cap, .1), { seed: 1240 + k, step: 9, blur: 4, sx: 0, sy: 3, grain: .1 });
+    rline(c, [[x0, by - 5], [x0 + sw - 4, by - 5]], { w: 1.5, color: alpha(mix(G.leather, P.cap, .5), .5), seed: 1245 + k, amp: .4 }); }
+  // 压印线（暗）+ 金线双框
+  rline(c, rectPts(x0 + sw + 12, y0 + 16, w - sw - 28, h - 32, 4), { w: 2, color: alpha(P.ink, .35), close: true, seed: 1250, amp: .5 });
+  const fx = x0 + 40, fy = y0 + 30, fw = w - 70, fh = h - 60;
+  rline(c, rectPts(fx, fy, fw, fh), { w: 2.8, color: G.gold, close: true, p: frame, seed: 1251, amp: .45 });
+  rline(c, rectPts(fx + 10, fy + 10, fw - 20, fh - 20), { w: 1.5, color: alpha(G.gold, .85), close: true, p: clamp((frame - .15) / .85, 0, 1), seed: 1252, amp: .45 });
+  if (flourish > 0) [[fx + 10, fy + 10, 1, 1], [fx + fw - 10, fy + 10, -1, 1], [fx + fw - 10, fy + fh - 10, -1, -1], [fx + 10, fy + fh - 10, 1, -1]]
+    .forEach(([cx, cy, sx, sy], i) => grimoireFlourish(c, cx, cy, sx, sy, flourish, G.gold, 1260 + i * 3));
+  // 四角铜包角
+  [[x0, y0, 1, 1], [x1, y0, -1, 1], [x1, y1, -1, -1], [x0, y1, 1, -1]].forEach(([cx, cy, sx, sy], i) => { const m = (u, v) => [cx + sx * u, cy + sy * v], s = 58;
+    cutPaper(c, [m(-2, -2), m(s, -2), m(s - 4, 7), m(s * .55, 12), m(12, s * .55), m(7, s - 4), m(-2, s)], G.brass, { seed: 1270 + i, step: 8, blur: 3, sx: 1, sy: 2.5, grain: .12 });
+    rline(c, [m(s - 9, 5), m(s * .52, 9), m(9, s * .52), m(5, s - 9)], { w: 1.4, color: G.brassLo, seed: 1274 + i, amp: .3 });
+    rline(c, [m(1, s - 8), m(1, 1), m(s - 8, 1)], { w: 1.4, color: alpha(G.brassHi, .8), seed: 1278 + i, amp: .3 });
+    const [rx, ry] = m(15, 15); c.fillStyle = G.brassLo; c.beginPath(); c.arc(rx, ry, 3.6, 0, TAU); c.fill(); c.fillStyle = alpha(G.brassHi, .9); c.beginPath(); c.arc(rx - 1, ry - 1, 1.3, 0, TAU); c.fill(); });
+  if (clasp !== null) grimoireClasp(c, x1, (y0 + y1) / 2, clasp);
+}
+// grimoireFlourish：金线框内角的花饰（一道圆弧，两头卷进去，角上一片小叶和一个点）。(cx, cy) 是内框的角，sx/sy 朝框内
+function grimoireFlourish(c, cx, cy, sx, sy, p, color, seed) { if (p <= 0) return;
+  const m = pts => pts.map(([u, v]) => [cx + sx * u, cy + sy * v]), arc = [];
+  for (let i = 0; i <= 10; i++) { const a = i / 10 * Math.PI / 2; arc.push([48 * Math.cos(a), 48 * Math.sin(a)]); }
+  // 一笔：v 轴那头的卷（倒着走）→ 圆弧 → u 轴那头的卷
+  const curl = [[62, 2], [72, 9], [70, 19], [62, 20], [60, 13]], full = [...curl.map(([u, v]) => [v, u]).reverse(), ...arc.slice().reverse(), ...curl];
+  rline(c, spline(m(full), 3), { w: 1.8, color, p, seed, amp: .35 });
+  if (p > .6) { const k = sm(.6, 1, p, easeOutBack), q = ([u, v]) => [5 + (u - 5) * k, 5 + (v - 5) * k];
+    c.save(); c.fillStyle = color; c.fill(polyPath(m([[5, 5], [21, 12], [30, 30], [12, 21]].map(q))));
+    const [dx, dy] = m([[38, 38]])[0]; c.beginPath(); c.arc(dx, dy, 3.4 * k, 0, TAU); c.fill(); c.restore(); }
+}
+// grimoireClasp：书口的铜扣。扣带钉在封面上（根上一块铜片），绕过书口扣在底下；
+// u 0→1：舌片弹出来 → 扣带立起、翻过去、躺在封面上（翻到半空时离镜头近、变大）
+function grimoireClasp(c, x1, ym, u) {
+  const G = GRIMOIRE, rx = x1 - 74, sh = 20, a = Math.PI * sm(.15, 1, u), s = Math.sin(a), lf = lerp(74, 140, sm(0, .3, u, easeOut)), k = 1 / (1 - .0022 * lf * s);
+  const ex = u <= 0 ? x1 + 2 : rx + lf * Math.cos(a) * k, hs = sh * k, up = Math.cos(a) >= 0;
+  if (s > .02) { c.save(); c.fillStyle = `rgba(20,12,10,${.3 * s})`; c.fill(polyPath([[rx + 4, ym - sh + 6], [ex + 10 * s, ym - hs + 14 * s], [ex + 10 * s, ym + hs + 14 * s], [rx + 4, ym + sh + 6]])); c.restore(); }
+  if (Math.abs(ex - rx) > 1) {
+    cutPaper(c, [[rx, ym - sh], [ex, ym - hs], [ex, ym + hs], [rx, ym + sh]], up ? mix(G.leather, P.ink, .32) : mix(G.leather, P.g2, .3), { seed: 1280, step: 14, shadow: u <= 0, blur: 3, sx: 1, sy: 2, grain: .12 });
+    if (up) { c.save(); c.setLineDash([6, 5]); c.strokeStyle = alpha(P.cap, .32); c.lineWidth = 1.2; c.beginPath(); c.moveTo(rx + 4, ym - sh + 5); c.lineTo(ex - 4, ym - hs + 5 * k); c.moveTo(rx + 4, ym + sh - 5); c.lineTo(ex - 4, ym + hs - 5 * k); c.stroke(); c.restore(); }
+  }
+  // 末端：扣着时是包住书口的铜套，弹开后是一枚带槽的铜舌
+  if (u <= 0) { cutPaper(c, rectPts(x1 - 16, ym - 25, 20, 50, 4), G.brass, { seed: 1283, step: 8, blur: 3, sx: 1, sy: 2, grain: .1 }); rline(c, [[x1 - 10, ym - 18], [x1 - 10, ym + 18]], { w: 1.4, color: G.brassLo, seed: 1284, amp: .3 }); }
+  else { const tl = (ex - rx) * .2, t0 = ex - tl;
+    if (Math.abs(tl) > .8) { cutPaper(c, [[t0, ym - hs * 1.18], [ex, ym - hs * 1.05], [ex, ym + hs * 1.05], [t0, ym + hs * 1.18]], G.brass, { seed: 1285, step: 6, blur: 3, sx: 1, sy: 2, grain: .1 });
+      c.save(); c.fillStyle = G.brassLo; c.fill(polyPath([[t0 + tl * .35, ym - hs * .35], [t0 + tl * .7, ym - hs * .35], [t0 + tl * .7, ym + hs * .35], [t0 + tl * .35, ym + hs * .35]])); c.restore(); } }
+  // 根上的铜片（压在扣带上），两颗铆钉
+  cutPaper(c, [[rx - 13, ym - 31], [rx + 11, ym - 31], [rx + 16, ym], [rx + 11, ym + 31], [rx - 13, ym + 31], [rx - 18, ym]], G.brass, { seed: 1286, step: 7, blur: 3, sx: 1, sy: 2.5, grain: .12 });
+  rline(c, [[rx - 9, ym - 26], [rx + 7, ym - 26]], { w: 1.2, color: alpha(G.brassHi, .8), seed: 1287, amp: .3 });
+  for (const yy of [ym - 15, ym + 15]) { c.fillStyle = G.brassLo; c.beginPath(); c.arc(rx - 1, yy, 3.4, 0, TAU); c.fill(); c.fillStyle = alpha(G.brassHi, .9); c.beginPath(); c.arc(rx - 2, yy - 1, 1.2, 0, TAU); c.fill(); }
+}
+// grimoireEdge：合着的书朝镜头的那一面（书尾的厚边）。(ax, ay)–(bx, by) 是封面下边在屏幕上的两端（书脊在 a 端），th 是这一面在屏幕上的高。
+// 从上到下：上书板的边、一叠书页（几道细线，书口那头缩进去一点）、下书板；书脊那头是一个圆起来的皮头。
+function grimoireEdge(c, ax, ay, bx, by, th) {
+  if (th < .6) return; const G = GRIMOIRE, n = Math.hypot(bx - ax, by - ay) || 1, us = th * .5 / n, ue = th * .14 / n;
+  const at = (u, v) => [lerp(ax, bx, u), lerp(ay, by, u) + th * v];
+  cutPaper(c, [at(0, .8), at(1, .8), at(1, 1), at(0, 1)], mix(G.leather, P.ink, .35), { seed: 1291, step: 50, shadow: false, grain: .1, edge: false });
+  cutPaper(c, [at(us, .12), at(1 - ue, .12), at(1 - ue, .84), at(us, .84)], BOOK.page2, { seed: 1292, step: 60, shadow: false, grain: .12, edge: false });
+  c.save(); c.strokeStyle = alpha(P.paperEdge, .8); c.lineWidth = .9;
+  for (let k = 1; k < 7; k++) { const v = .12 + .72 * k / 7, [p0x, p0y] = at(us, v), [p1x, p1y] = at(1 - ue, v); c.beginPath(); c.moveTo(p0x, p0y); c.lineTo(p1x, p1y); c.stroke(); }
+  c.restore();
+  cutPaper(c, [at(0, 0), at(1, 0), at(1, .15), at(0, .15)], mix(G.leather, P.cap, .1), { seed: 1293, step: 50, shadow: false, grain: .1, edge: false });
+  // 书脊的圆头
+  const cap = [at(us * 1.2, 0), at(0, 0)]; for (let i = 1; i < 10; i++) { const v = i / 10; cap.push([ax - th * .3 * Math.sin(v * Math.PI), ay + th * v]); } cap.push(at(0, 1), at(us * 1.2, 1));
+  cutPaper(c, cap, mix(G.leather, P.ink, .18), { seed: 1294, step: 20, shadow: false, grain: .1, edge: false });
+  rline(c, [at(us * .9, .1), [ax - th * .18, ay + th * .5], at(us * .9, .9)], { w: 1.2, color: alpha(mix(G.leather, P.cap, .45), .5), smooth: true, seed: 1295, amp: .2 });
+}
