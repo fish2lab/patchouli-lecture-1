@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>帕秋莉讲座 第 1 集 · 视频封面</title>
+<style>
+@font-face { font-family: WenKai; src: url(fonts/LXGWWenKai-Regular.ttf); font-display: block; }
+html, body { margin: 0; background: #1a1418; }
+canvas { display: block; max-width: 100%; margin: 0 auto; }
+</style>
+</head>
+<body>
+<!-- 视频封面。默认 16:9（1920×1080）；?ar=43 出 4:3（1440×1080，从 16:9 画面正中裁）。导出 PNG：node tools/cover.mjs -->
+<canvas id="c"></canvas>
+<script src="src/core.js"></script>
+<script src="src/kit.js"></script>
+<script src="src/character/patchouli.js"></script>
+<script src="src/scenes/0-opening.js"></script>
+<script>
+'use strict';
+// 摊开的魔导书：左页七曜阵当光环，剪纸帕秋莉（point + smug）指向右页；右页是扉页式标题、五页目录、「反面教材」红印。
+// 16:9 和 4:3 共用一套布局：要读的东西都在 x 240–1680 里（4:3 从正中裁掉左右各 240）。
+const CV_T = 3.1, CV_SAFE = [240, 1680];
+function cvDraw(c) {
+  const t = CV_T, R = BOOK.R, L0 = Math.max(R.x + 30, CV_SAFE[0]), R0 = Math.min(R.x + R.w - 30, CV_SAFE[1]) - 10, x = (L0 + R0) / 2, room = R0 - L0;
+  const fit = (text, max) => Math.min(max, room / zhWidth(c, text, 100) * 100);
+  spread(c, t);
+  // 左页：淡墨七曜阵衬在帕秋莉身后（阵心的金月牙被她的头挡住，不画）
+  const px = 610, py = 1004, ph = 830;
+  s0Sigil(c, px, 470, 350, { color: alpha(P.ink, .26), text: alpha(P.ink, .45), fill: BOOK.page, w: 2.6, seed: 40, moon: 0 });
+  drawPatchouli(c, { x: px, y: py, h: ph, pose: 'point', mood: 'smug', facing: 1, look: .6, t, blink: 0, mouth: 0 });
+  // 右页：扉页式标题
+  for (const [yy, lw, sd] of [[150, 1.8, 2211], [158, .9, 2212], [228, .9, 2213], [236, 1.8, 2214]]) rline(c, [[x - 250, yy], [x + 250, yy]], { w: lw, color: P.ink2, seed: sd, amp: .4 });
+  zh(c, '帕秋莉讲座 · 第 1 集', x, 207, { size: 42, align: 'center', color: P.ink2 });
+  zh(c, '我是帕秋莉，', x, 372, { size: fit('我是帕秋莉，', 100), align: 'center', color: P.ink });
+  zh(c, '我来教你', x, 548, { size: fit('我来教你', 150), align: 'center', color: P.ink });
+  zh(c, '调理身体！', x, 712, { size: fit('调理身体！', 150), align: 'center', color: P.ink });
+  s0Ornament(c, x, 790, 1);
+  zh(c, '睡眠 · 吃饭 · 动力 · 专注 · 运动', x, 872, { size: fit('睡眠 · 吃饭 · 动力 · 专注 · 运动', 46), align: 'center', color: P.ink2 });
+  s0Stamp(c, R0 - 170, 958, 99, 0);
+}
+(async () => {
+  await document.fonts.load('48px WenKai');
+  const w = Q.get('ar') === '43' ? 1440 : 1920, cv = document.getElementById('c'); cv.width = w; cv.height = H;
+  const c = cv.getContext('2d'); c.translate(-(W - w) / 2, 0); cvDraw(c);
+  window.__ready = true;
+})();
+</script>
+</body>
+</html>

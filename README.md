@@ -50,6 +50,7 @@ node tools/frames.mjs --scene sleep --grid 36   # 抽一段的联系表到 out/f
 node tools/build.mjs                            # 单文件页面 → dist/index.html（需要 pip install fonttools brotli）
 node tools/voice.mjs                            # 改了台词后重新合成油库里语音 → src/voice-data.js（需要 ffmpeg）
 node tools/render.mjs                           # 出片 → out/patchouli-lecture-1.mp4（需要 ffmpeg）
+node tools/cover.mjs                            # 视频封面 → out/cover/cover-16x9.png、cover-4x3.png（cover.html）
 ```
 
 ## 许可
