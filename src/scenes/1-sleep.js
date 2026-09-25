@@ -100,7 +100,7 @@ function s1Cam(tau) {
     [b.day + .5, [-20, -80, 1.1]], [b.night + .2, [-20, -80, 1.1]], [b.file, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])], [b.exit0, s1Aim(kw, S1Z.dorm, 1.6, [800, 520])]]);
   if (tau <= b.exit0) return cam;
   // 出场：推向月亮。天空层的放大倍数按指数长到 300/月亮半径，月亮从原位滑到正中
-  const u = sm(b.exit0, b.exit1, tau, easeIO), moon = s1SkyAt(24, s1Clock(tau), S1SKY.sun), zs = Math.pow(300 / 50, u), k = 1 / (1 + S1Z.sky);
+  const u = sm(b.exit0, b.exit1, tau, easeIO), moon = s1SkyAt(24, s1Clock(tau), S1SKY.sun), k = 1 / (1 + S1Z.sky), zs = Math.pow(300 / (50 * (1 + (cam[2] - 1) * k)), u);
   const S0 = s1Map(moon, S1Z.sky, cam), S = [lerp(S0[0], CX, u), lerp(S0[1], CY, u)], zoom = 1 + (zs * (1 + (cam[2] - 1) * k) - 1) / k;
   return s1Aim(moon, S1Z.sky, zoom, S);
 }
@@ -456,19 +456,22 @@ function s1Act(tau) {
   ];
   let i = 0; for (let k = 0; k < A.length; k++) if (tau >= A[k][0]) i = k;
   const pv = i > 0 ? A[i - 1][1] : A[0][1];
-  return { ...A[i][1], t0: A[i][0], px: pv.x ?? S1PX, py: pv.y ?? S1PY };
+  return { ...A[i][1], t0: A[i][0], px: pv.x ?? S1PX, py: pv.y ?? S1PY, pp: pv.pose, pf: pv.facing };
 }
 function s1Patchouli(c, tau, L) {
   const b = S1B, a = s1Act(tau), dt = tau - a.t0;
   const rise = sm(b.pat, b.pat + .4, tau, easeOutBack) * (1 - sm(b.exit0, b.exit0 + .35, tau, easeIn)); if (rise <= .001) return null;
-  let x = a.x ?? S1PX, y = (a.y ?? S1PY) - (a.hop ? a.hop * Math.sin(Math.PI * clamp(dt / .34, 0, 1)) : 0);
+  // 换位置：往上是一道弧线跳过去；往下（从吊牌上）保持原来的姿势掉下来，落地再做这一拍的动作（先站起来往上跳，头会出画）
+  const ty = a.y ?? S1PY, moving = a.px !== (a.x ?? S1PX) || a.py !== ty, down = moving && a.py < ty - 1, ht = dt - (down ? .42 : 0);
+  let x = a.x ?? S1PX, y = ty - (a.hop && ht > 0 ? a.hop * Math.sin(Math.PI * clamp(ht / .34, 0, 1)) : 0), pose = a.pose, facing = a.facing ?? -1;
   if (a.bed) y += s1SignLoad(tau, a.t0);
-  if ((a.px !== x || a.py !== (a.y ?? S1PY)) && dt < .42) { const u = easeIO(dt / .42); x = lerp(a.px, x, u); y = lerp(a.py, y, u) - Math.sin(u * Math.PI) * 160; }   // 跳到别处：一道弧线
+  if (moving && dt < .42) { if (down) { const e = easeIn(dt / .42); x = lerp(a.px, x, e); y = lerp(a.py, ty, e); pose = a.pp; facing = a.pf ?? -1; }
+    else { const u = easeIO(dt / .42); x = lerp(a.px, x, u); y = lerp(a.py, y, u) - Math.sin(u * Math.PI) * 160; } }
   const wob = .05 * Math.exp(-dt * 9) * Math.sin(dt * 38);   // 换姿势时纸片晃一下
   let gesture = null; if (a.g) gesture = .5 + .5 * Math.sin((tau - a.t0) * 4.2);
   let r = null;
   c.save(); c.translate(x, y); c.scale(1, rise); c.translate(-x, -y);
-  r = drawPatchouli(c, { x, y, h: 530, pose: a.pose, mood: a.mood || L.mood || 'normal', look: a.look ?? .3, tilt: (a.tilt || 0) + wob, facing: a.facing ?? -1,
+  r = drawPatchouli(c, { x, y, h: 530, pose, mood: a.mood || L.mood || 'normal', look: a.look ?? .3, tilt: (a.tilt || 0) + wob, facing,
     mouth: a.yawn ? .85 * sm(a.t0, a.t0 + .25, tau) * (1 - sm(a.t0 + .8, a.t0 + 1.1, tau)) : L.mouth, blink: blinkAt(tau, 5), t: tau, gesture });
   c.restore(); return r;
 }
@@ -615,5 +618,7 @@ scene({ order: 1, key: 'sleep', title: '睡眠', dur: S1DUR, lines: S1LINES,
     if (tau < b.in1) return s1Portal(c, tau, L);
     if (tau >= b.exit1) return handoffDisc(c);
     s1Box(c, tau, L);
-    const x = sm(b.exit1 - .3, b.exit1, tau); if (x > 0) fade(c, x, () => handoffDisc(c));
+    // 淡到交接圆盘：夜色只盖月亮外面，月亮和圆盘同色直接淡换（整片一起淡，中间会暗一档）
+    const x = sm(b.exit1 - .3, b.exit1, tau); if (x > 0) { const m = s1Map(s1SkyAt(24, s1Clock(tau), S1SKY.sun), S1Z.sky, s1Cam(tau)), hole = new Path2D();
+      hole.rect(0, 0, W, H); hole.arc(m[0], m[1], 48 * m[2], 0, TAU); c.save(); c.clip(hole, 'evenodd'); fade(c, x, () => handoffDisc(c, { disc: false })); c.restore(); fade(c, x, () => handoffDisc(c, { bg: false })); }
   } });

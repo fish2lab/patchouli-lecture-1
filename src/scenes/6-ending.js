@@ -239,7 +239,7 @@ function s6Stain(c, tau) { const a = sm(S6K.riff0 + 5 * S6K.riffStep, S6K.riff0 
 // ===================== 左页 =====================
 function s6LeftPage(c, tau) {
   const K = S6K;
-  pageHeader(c, '合上魔导书', tau, .2, { t1: K.riff0 + .02 });
+  // 页眉等快速翻页翻完才写（段首 0.8 秒 film 在画翻页，1.25 秒起又快速翻页，中间只剩半秒，写了也是一闪）
   pageHeader(c, '合上魔导书', tau, K.riff0 + 5 * K.riffStep + .15, { t1: 1e6 });   // 不传 t1 时 kit 里 Infinity−Infinity 得 NaN，月牙会提前出现
   for (let i = 0; i < 4; i++) {
     // L6：四件东西依次轻轻跳一下
@@ -272,7 +272,8 @@ function s6Char(c, tau, L) {
     else { pose = 'tired'; mood = 'sleepy'; }
     const yw = Math.sin(clamp((tau - K.yawn0) / (K.yawn1 - K.yawn0), 0, 1) * Math.PI); if (yw > 0) { mouth = Math.max(mouth, clamp(yw * 1.4, 0, 1)); tilt -= yw * .12; bl = Math.max(bl, clamp(yw * 1.6 - .3, 0, 1)); }
   }
-  c.save(); c.translate(x, y); c.rotate(rot * facing); c.translate(-x, -y);
+  const up = sm(.8, 1.15, tau, easeOutBack); if (up <= .001) return;   // 段首 film 画的翻页（0–0.8 秒）落下后，才从书页上立起来
+  c.save(); c.translate(x, y); c.rotate(rot * facing); c.scale(1, up); c.translate(-x, -y);
   const r = drawPatchouli(c, { x, y, h: S6PAT.h, pose, mood, look, facing, mouth, blink: bl, t: tau, gesture, tilt });
   c.restore();
   // 咳嗽：两朵小纸云（L3，烟飘过来）

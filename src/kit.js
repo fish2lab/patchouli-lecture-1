@@ -320,10 +320,13 @@ function pageHeader(c, text, tau, t0 = 0, o = {}) {
 function turnPage(c, u) {
   if (u <= 0 || u >= 1) return; const R = BOOK.R, e = easeIO(u), cw = R.w * Math.cos(e * Math.PI), lift = Math.sin(e * Math.PI) * 36;
   if (Math.abs(cw) < 2) return;
-  const pts = [[CX, R.y], [CX + cw, R.y - lift], [CX + cw, R.y + R.h + lift], [CX, R.y + R.h]];
-  c.save(); c.shadowColor = 'rgba(30,20,10,.35)'; c.shadowBlur = 30; c.shadowOffsetY = 10; c.fillStyle = cw > 0 ? BOOK.page : BOOK.page2; c.fill(polyPath(pts)); c.restore();
+  // land：快落平时背面渐渐变成左页的样子（纸色、只剩书脊那 150 像素的阴影、投影淡掉），落下那一帧左页不会突然变亮
+  const pts = [[CX, R.y], [CX + cw, R.y - lift], [CX + cw, R.y + R.h + lift], [CX, R.y + R.h]], land = cw > 0 ? 0 : sm(.6, 1, e);
+  c.save(); c.shadowColor = `rgba(30,20,10,${.35 * (1 - land)})`; c.shadowBlur = 30; c.shadowOffsetY = 10; c.fillStyle = cw > 0 ? BOOK.page : mix(BOOK.page2, BOOK.page, land); c.fill(polyPath(pts)); c.restore();
   c.save(); c.clip(polyPath(pts)); grain(c, polyPath(pts), .14);
-  const g = c.createLinearGradient(CX, 0, CX + cw, 0); g.addColorStop(0, 'rgba(60,40,20,.28)'); g.addColorStop(1, `rgba(60,40,20,${cw > 0 ? .05 : .18})`); c.fillStyle = g; c.fill(polyPath(pts)); c.restore();
+  const a1 = cw > 0 ? .05 : .18, sp = Math.min(1, 150 / Math.abs(cw)), g = c.createLinearGradient(CX, 0, CX + cw, 0);
+  g.addColorStop(0, `rgba(60,40,20,${.28 + .02 * land})`); g.addColorStop(sp, `rgba(60,40,20,${lerp(.28, a1, sp) * (1 - land)})`); g.addColorStop(1, `rgba(60,40,20,${a1 * (1 - land)})`);
+  c.fillStyle = g; c.fill(polyPath(pts)); c.restore();
 }
 
 // ===================== 纸机关（第二版书页上用） =====================
@@ -359,8 +362,8 @@ function parallax(c, layers, camX = 0, camY = 0, zoom = 1) {
 // ---- 段与段的交接画面：前一段最后 ≥0.15 秒、后一段最前 ≥0.15 秒都只画同一个交接函数，拼起来看不出接缝 ----
 const NIGHT_BG = '#1d1a22';
 // 睡眠 → 吃饭：夜色里正中一轮淡色圆盘（月亮 → 盘子）
-function handoffDisc(c) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06);
-  cutPaper(c, circPts(CX, CY, 300, 72), '#ede6d6', { seed: 2001, step: 26, blur: 20, sx: 0, sy: 6 }); }
+function handoffDisc(c, o = {}) { if (o.bg !== false) { c.fillStyle = NIGHT_BG; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .06); }
+  if (o.disc !== false) cutPaper(c, circPts(CX, CY, 300, 72), '#ede6d6', { seed: 2001, step: 26, blur: 20, sx: 0, sy: 6 }); }
 // 吃饭 → 动力：纸面上一根横贯画面的线（桌布上的线被拉直）
 function handoffThread(c) { c.fillStyle = P.paper; c.fillRect(0, 0, W, H); grain(c, polyPath(rectPts(0, 0, W, H)), .12);
   rline(c, [[-20, CY], [W + 20, CY]], { w: 3, color: '#6b4f55', seed: 2002, amp: .3 }); }
